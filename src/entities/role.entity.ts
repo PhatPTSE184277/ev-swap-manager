@@ -1,0 +1,32 @@
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+export enum RoleName {
+    ADMIN = 'ADMIN',
+    USER = 'USER',
+    STAFF = 'STAFF'
+}
+
+@Entity('roles')
+export class Role {
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column({ type: 'enum', enum: RoleName, default: RoleName.USER, unique: true })
+    name: RoleName;
+
+    @Column({ length: 255 })
+    description: string;
+
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    createdAt: Date;
+
+    @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP'
+    })
+    updatedAt: Date;
+}

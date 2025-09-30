@@ -2,8 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
-import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { MailModule } from './modules/mail/mail.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
     imports: [
@@ -16,7 +17,8 @@ import { AuthModule } from './modules/auth/auth.module';
                 typeOrmConfig(configService)
         }),
         UserModule,
-        AuthModule
+        AuthModule,
+        MailModule
     ],
     controllers: [],
     providers: []

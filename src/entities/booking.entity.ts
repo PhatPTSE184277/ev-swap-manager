@@ -4,14 +4,7 @@ import { UserMembership } from './user-membership.entity';
 import { Transaction } from './transaction.entity';
 import { BookingDetail } from './booking-detail.entity';
 import { BatteryUsedHistory } from './battery-used-history.entity';
-
-export enum BookingStatus {
-    PENDING = 'PENDING',
-    CONFIRMED = 'CONFIRMED',
-    IN_PROGRESS = 'IN_PROGRESS',
-    COMPLETED = 'COMPLETED',
-    CANCELLED = 'CANCELLED'
-}
+import { BookingStatus } from '../enums';
 
 @Entity('bookings')
 export class Booking {

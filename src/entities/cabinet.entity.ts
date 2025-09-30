@@ -3,12 +3,6 @@ import { Station } from './station.entity';
 import { Slot } from './slot.entity';
 import { CabinetHistory } from './cabinet-history.entity';
 
-export enum CabinetStatus {
-    ACTIVE = 'ACTIVE',
-    INACTIVE = 'INACTIVE',
-    MAINTENANCE = 'MAINTENANCE'
-}
-
 @Entity('cabinets')
 export class Cabinet {
     @PrimaryGeneratedColumn()
@@ -21,10 +15,7 @@ export class Cabinet {
     temperature: number;
 
     @Column({ type: 'boolean', default: true })
-    isActive: boolean;
-
-    @Column({ type: 'enum', enum: CabinetStatus, default: CabinetStatus.ACTIVE })
-    status: CabinetStatus;
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

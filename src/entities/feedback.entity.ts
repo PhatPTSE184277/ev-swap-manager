@@ -2,12 +2,6 @@ import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 't
 import { User } from './user.entity';
 import { Station } from './station.entity';
 
-export enum FeedbackStatus {
-    PENDING = 'PENDING',
-    REVIEWED = 'REVIEWED',
-    RESOLVED = 'RESOLVED'
-}
-
 @Entity('feedbacks')
 export class Feedback {
     @PrimaryGeneratedColumn()
@@ -25,8 +19,8 @@ export class Feedback {
     @Column({ type: 'int', default: 5 })
     rating: number;
 
-    @Column({ type: 'enum', enum: FeedbackStatus, default: FeedbackStatus.PENDING })
-    status: FeedbackStatus;
+    @Column({ default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

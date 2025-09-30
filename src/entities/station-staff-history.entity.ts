@@ -1,12 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { StationStaff } from './station-staff.entity';
 import { Station } from './station.entity';
-
-export enum StaffHistoryShift {
-    MORNING = 'MORNING',
-    AFTERNOON = 'AFTERNOON',
-    NIGHT = 'NIGHT'
-}
+import { StaffHistoryShift } from '../enums';
 
 @Entity('station_staff_histories')
 export class StationStaffHistory {

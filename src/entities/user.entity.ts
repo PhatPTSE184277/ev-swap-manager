@@ -1,9 +1,17 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    OneToMany
+} from 'typeorm';
 import { Role } from './role.entity';
 import { UserMembership } from './user-membership.entity';
 import { StationStaff } from './station-staff.entity';
 import { UserVehicle } from './user-vehicle.entity';
 import { Feedback } from './feedback.entity';
+import { UserStatus } from '../enums/user.enum';
 
 @Entity('users')
 export class User {
@@ -28,11 +36,23 @@ export class User {
     @Column({ nullable: true, length: 10 })
     otp: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, type: 'datetime' })
     expireOtp: Date;
 
-    @Column({ default: true })
-    status: boolean;
+    @Column({ nullable: true, length: 100, type: 'varchar' })
+    emailVerificationToken: string | null;
+
+    @Column({ nullable: true, type: 'datetime' })
+    emailVerificationExpire: Date | null;
+
+    @Column({ nullable: true, length: 100, type: 'varchar' })
+    resetPasswordToken: string | null;
+
+    @Column({ nullable: true, type: 'datetime' })
+    resetPasswordExpire: Date | null;
+
+    @Column({ type: 'enum', enum: UserStatus, default: UserStatus.PENDING_VERIFICATION })
+    status: UserStatus;
 
     @Column()
     roleId: number;
@@ -51,15 +71,15 @@ export class User {
     @JoinColumn({ name: 'roleId' })
     role: Role;
 
-    @OneToMany(() => UserMembership, userMembership => userMembership.user)
+    @OneToMany(() => UserMembership, (userMembership) => userMembership.user)
     userMemberships: UserMembership[];
 
-    @OneToMany(() => StationStaff, stationStaff => stationStaff.user)
+    @OneToMany(() => StationStaff, (stationStaff) => stationStaff.user)
     stationStaffs: StationStaff[];
 
-    @OneToMany(() => UserVehicle, userVehicle => userVehicle.user)
+    @OneToMany(() => UserVehicle, (userVehicle) => userVehicle.user)
     userVehicles: UserVehicle[];
 
-    @OneToMany(() => Feedback, feedback => feedback.user)
+    @OneToMany(() => Feedback, (feedback) => feedback.user)
     feedbacks: Feedback[];
 }

@@ -4,14 +4,7 @@ import { BatteryUsedHistory } from './battery-used-history.entity';
 import { SlotHistory } from './slot-history.entity';
 import { UserVehicle } from './user-vehicle.entity';
 import { Slot } from './slot.entity';
-
-export enum BatteryStatus {
-    AVAILABLE = 'AVAILABLE',
-    IN_USE = 'IN_USE',
-    CHARGING = 'CHARGING',
-    MAINTENANCE = 'MAINTENANCE',
-    DAMAGED = 'DAMAGED'
-}
+import { BatteryStatus } from '../enums';
 
 @Entity('batteries')
 export class Battery {

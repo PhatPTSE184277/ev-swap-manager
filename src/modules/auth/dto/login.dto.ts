@@ -1,11 +1,9 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { StringRequired } from "src/common/decorators";
 
 export class LoginDto {
-  @IsNotEmpty({ message: 'Tên tài khoản hoặc email không được để trống' })
-  @IsString({ message: 'Tên tài khoản hoặc email phải là một chuỗi' })
-  account: string;
+    @StringRequired('Tên đăng nhập hoặc email')
+    usernameOrEmail: string;
 
-  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
-  @IsString({ message: 'Mật khẩu phải là một chuỗi' })
-  password: string;
+    @StringRequired('Mật khẩu')
+    password: string;
 }

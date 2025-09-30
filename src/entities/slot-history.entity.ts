@@ -1,12 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Slot } from './slot.entity';
 import { Battery } from './battery.entity';
-
-export enum SlotHistoryStatus {
-    AVAILABLE = 'AVAILABLE',
-    OCCUPIED = 'OCCUPIED',
-    MAINTENANCE = 'MAINTENANCE'
-}
+import { SlotHistoryStatus } from '../enums';
 
 @Entity('slot_histories')
 export class SlotHistory {

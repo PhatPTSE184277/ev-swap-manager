@@ -1,12 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Booking } from './booking.entity';
 import { Slot } from './slot.entity';
-
-export enum BookingDetailStatus {
-    PENDING = 'PENDING',
-    COMPLETED = 'COMPLETED',
-    CANCELLED = 'CANCELLED'
-}
+import { BookingDetailStatus } from '../enums';
 
 @Entity('booking_details')
 export class BookingDetail {

@@ -1,5 +1,12 @@
+import { StringRequired } from "src/common/decorators";
+
 export class CreateUserDto {
-    username: string;
-    email: string;
+    @StringRequired('Tên đăng nhập')
+    userName: string;
+
+    @StringRequired('Mật khẩu')
     password: string;
+
+    @StringRequired('Email')
+    email: string;
 }

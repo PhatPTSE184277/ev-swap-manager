@@ -2,12 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMan
 import { User } from './user.entity';
 import { Membership } from './membership.entity';
 import { Booking } from './booking.entity';
-
-export enum UserMembershipStatus {
-    ACTIVE = 'ACTIVE',
-    EXPIRED = 'EXPIRED',
-    CANCELLED = 'CANCELLED'
-}
+import { UserMembershipStatus } from '../enums';
 
 @Entity('user_memberships')
 export class UserMembership {

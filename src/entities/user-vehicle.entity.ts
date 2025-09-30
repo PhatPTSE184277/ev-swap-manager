@@ -4,10 +4,6 @@ import { VehicleType } from './vehicle-type.entity';
 import { Battery } from './battery.entity';
 import { Booking } from './booking.entity';
 
-export enum UserVehicleStatus {
-    ACTIVE = 'ACTIVE',
-    INACTIVE = 'INACTIVE'
-}
 
 @Entity('user_vehicles')
 export class UserVehicle {
@@ -23,8 +19,8 @@ export class UserVehicle {
     @Column()
     batteryId: number;
 
-    @Column({ type: 'enum', enum: UserVehicleStatus, default: UserVehicleStatus.ACTIVE })
-    status: UserVehicleStatus;
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

@@ -1,12 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Battery } from './battery.entity';
 import { Booking } from './booking.entity';
-
-export enum BatteryUsedStatus {
-    ACTIVE = 'ACTIVE',
-    COMPLETED = 'COMPLETED',
-    CANCELLED = 'CANCELLED'
-}
+import { BatteryUsedStatus } from '../enums';
 
 @Entity('battery_used_histories')
 export class BatteryUsedHistory {

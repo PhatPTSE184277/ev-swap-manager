@@ -1,11 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { UserMembership } from './user-membership.entity';
 
-export enum MembershipStatus {
-    ACTIVE = 'ACTIVE',
-    INACTIVE = 'INACTIVE'
-}
-
 @Entity('memberships')
 export class Membership {
     @PrimaryGeneratedColumn()
@@ -23,8 +18,8 @@ export class Membership {
     @Column({ type: 'int' })
     duration: number;
 
-    @Column({ type: 'enum', enum: MembershipStatus, default: MembershipStatus.ACTIVE })
-    status: MembershipStatus;
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

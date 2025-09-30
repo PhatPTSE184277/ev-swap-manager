@@ -1,11 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { Transaction } from './transaction.entity';
 
-export enum PaymentStatus {
-    ACTIVE = 'ACTIVE',
-    INACTIVE = 'INACTIVE'
-}
-
 @Entity('payments')
 export class Payment {
     @PrimaryGeneratedColumn()
@@ -17,8 +12,8 @@ export class Payment {
     @Column({ length: 255 })
     description: string;
 
-    @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.ACTIVE })
-    status: PaymentStatus;
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

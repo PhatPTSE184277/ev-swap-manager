@@ -12,6 +12,14 @@ async function bootstrap() {
     const logger = new Logger('Bootstrap');
     app.setGlobalPrefix('api/v1');
 
+    app.enableCors({
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:8081',
+        ],
+        credentials: true,
+    });
+
     app.useGlobalPipes(
         new ValidationPipe({
             whitelist: true,

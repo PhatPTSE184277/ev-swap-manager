@@ -1,13 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
 import { Payment } from './payment.entity';
 import { Booking } from './booking.entity';
-
-export enum TransactionStatus {
-    PENDING = 'PENDING',
-    COMPLETED = 'COMPLETED',
-    FAILED = 'FAILED',
-    CANCELLED = 'CANCELLED'
-}
+import { TransactionStatus } from '../enums';
 
 @Entity('transactions')
 export class Transaction {

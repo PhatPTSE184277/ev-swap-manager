@@ -2,11 +2,6 @@ import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { Battery } from './battery.entity';
 import { VehicleType } from './vehicle-type.entity';
 
-export enum BatteryTypeStatus {
-    ACTIVE = 'ACTIVE',
-    INACTIVE = 'INACTIVE'
-}
-
 @Entity('battery_types')
 export class BatteryType {
     @PrimaryGeneratedColumn()
@@ -18,8 +13,8 @@ export class BatteryType {
     @Column({ length: 255 })
     description: string;
 
-    @Column({ type: 'enum', enum: BatteryTypeStatus, default: BatteryTypeStatus.ACTIVE })
-    status: BatteryTypeStatus;
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

@@ -3,12 +3,7 @@ import { Cabinet } from './cabinet.entity';
 import { Battery } from './battery.entity';
 import { SlotHistory } from './slot-history.entity';
 import { BookingDetail } from './booking-detail.entity';
-
-export enum SlotStatus {
-    AVAILABLE = 'AVAILABLE',
-    OCCUPIED = 'OCCUPIED',
-    MAINTENANCE = 'MAINTENANCE'
-}
+import { SlotStatus } from '../enums';
 
 @Entity('slots')
 export class Slot {

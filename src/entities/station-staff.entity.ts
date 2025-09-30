@@ -3,11 +3,6 @@ import { User } from './user.entity';
 import { Station } from './station.entity';
 import { StationStaffHistory } from './station-staff-history.entity';
 
-export enum StationStaffStatus {
-    ACTIVE = 'ACTIVE',
-    INACTIVE = 'INACTIVE'
-}
-
 @Entity('station_staffs')
 export class StationStaff {
     @PrimaryGeneratedColumn()
@@ -22,8 +17,8 @@ export class StationStaff {
     @Column({ type: 'boolean', default: true })
     isHead: boolean;
 
-    @Column({ type: 'enum', enum: StationStaffStatus, default: StationStaffStatus.ACTIVE })
-    status: StationStaffStatus;
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

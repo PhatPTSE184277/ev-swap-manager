@@ -2,11 +2,6 @@ import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMan
 import { BatteryType } from './battery-type.entity';
 import { UserVehicle } from './user-vehicle.entity';
 
-export enum VehicleTypeStatus {
-    ACTIVE = 'ACTIVE',
-    INACTIVE = 'INACTIVE'
-}
-
 @Entity('vehicle_types')
 export class VehicleType {
     @PrimaryGeneratedColumn()
@@ -21,8 +16,8 @@ export class VehicleType {
     @Column({ length: 255 })
     description: string;
 
-    @Column({ type: 'enum', enum: VehicleTypeStatus, default: VehicleTypeStatus.ACTIVE })
-    status: VehicleTypeStatus;
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

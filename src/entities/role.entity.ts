@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { User } from './user.entity';
 
 export enum RoleName {
     ADMIN = 'ADMIN',
@@ -29,4 +30,7 @@ export class Role {
         onUpdate: 'CURRENT_TIMESTAMP'
     })
     updatedAt: Date;
+
+    @OneToMany(() => User, user => user.role)
+    users: User[];
 }

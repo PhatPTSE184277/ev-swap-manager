@@ -1,33 +1,40 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { StationStaff } from './station-staff.entity';
+import { Cabinet } from './cabinet.entity';
+import { StationStaffHistory } from './station-staff-history.entity';
+import { Feedback } from './feedback.entity';
+
+export enum StationStatus {
+    ACTIVE = 'ACTIVE',
+    INACTIVE = 'INACTIVE',
+    MAINTENANCE = 'MAINTENANCE'
+}
 
 @Entity('stations')
 export class Station {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ length: 100, unique: true })
+    @Column({ length: 100 })
     name: string;
 
-    @Column({ length: 255, nullable: true })
+    @Column({ length: 255 })
     description: string;
 
     @Column({ length: 255 })
     address: string;
 
-    @Column({ type: 'float' })
+    @Column({ type: 'decimal', precision: 10, scale: 8 })
     latitude: number;
 
-    @Column({ type: 'float' })
+    @Column({ type: 'decimal', precision: 11, scale: 8 })
     longitude: number;
 
-    @Column({ type: 'int', default: 0 })
-    totalCabinet: number;
-
-    @Column({ type: 'float', nullable: true })
+    @Column({ type: 'decimal', precision: 5, scale: 2 })
     temperature: number;
 
-    @Column({ type: 'boolean', default: true })
-    status: boolean;
+    @Column({ type: 'enum', enum: StationStatus, default: StationStatus.ACTIVE })
+    status: StationStatus;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
@@ -38,4 +45,16 @@ export class Station {
         onUpdate: 'CURRENT_TIMESTAMP'
     })
     updatedAt: Date;
+
+    @OneToMany(() => StationStaff, stationStaff => stationStaff.station)
+    stationStaffs: StationStaff[];
+
+    @OneToMany(() => Cabinet, cabinet => cabinet.station)
+    cabinets: Cabinet[];
+
+    @OneToMany(() => StationStaffHistory, stationStaffHistory => stationStaffHistory.station)
+    stationStaffHistories: StationStaffHistory[];
+
+    @OneToMany(() => Feedback, feedback => feedback.station)
+    feedbacks: Feedback[];
 }

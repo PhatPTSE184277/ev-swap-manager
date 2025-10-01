@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    UnauthorizedException,
+    BadRequestException
+} from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -12,18 +16,24 @@ export class AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
-        private readonly mailService: MailService,
+        private readonly mailService: MailService
     ) {}
 
-    async validateUser(usernameOrEmail: string, password: string): Promise<User | null> {
-        const user = await this.userService.findUserByUserNameOrEmail(usernameOrEmail);
-        
+    async validateUser(
+        usernameOrEmail: string,
+        password: string
+    ): Promise<User | null> {
+        const user =
+            await this.userService.findUserByUserNameOrEmail(usernameOrEmail);
+
         if (!user) {
             return null;
         }
 
         if (user.status !== UserStatus.VERIFIED) {
-            throw new UnauthorizedException('Vui lòng xác thực email trước khi đăng nhập');
+            throw new UnauthorizedException(
+                'Vui lòng xác thực email trước khi đăng nhập'
+            );
         }
 
         if (bcrypt.compareSync(password, user.password)) {
@@ -33,13 +43,20 @@ export class AuthService {
     }
 
     login(user: User) {
-        const payload = { sub: user.id, username: user.username, role: user.roleId };
-        return { access_token: this.jwtService.sign(payload) };
+        const payload = {
+            sub: user.id,
+            username: user.username,
+            role: user.role?.name || null
+        };
+        return {
+            access_token: this.jwtService.sign(payload),
+            message: 'Đăng nhập thành công'
+        };
     }
 
     async register(createUserDto: CreateUserDto) {
         const user = await this.userService.createUser(createUserDto);
-        
+
         // Kiểm tra token trước khi gửi email
         if (!user.emailVerificationToken) {
             throw new BadRequestException('Lỗi tạo token xác thực email');
@@ -47,25 +64,28 @@ export class AuthService {
 
         // Gửi email xác thực
         await this.mailService.sendEmailVerification(
-            user.email, 
-            user.emailVerificationToken, 
+            user.email,
+            user.emailVerificationToken,
             user.username
         );
 
         return {
-            message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+            message:
+                'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
             email: user.email
         };
     }
 
     async verifyEmail(token: string) {
         await this.userService.verifyEmail(token);
-        return { message: 'Xác thực email thành công! Bây giờ bạn có thể đăng nhập.' };
+        return {
+            message: 'Xác thực email thành công! Bây giờ bạn có thể đăng nhập.'
+        };
     }
 
     async forgotPassword(email: string) {
         const user = await this.userService.generateResetPasswordToken(email);
-        
+
         // Kiểm tra token trước khi gửi email
         if (!user.resetPasswordToken) {
             throw new BadRequestException('Lỗi tạo token đặt lại mật khẩu');

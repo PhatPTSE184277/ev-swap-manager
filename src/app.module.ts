@@ -27,6 +27,7 @@ import { BatteryTypeModule } from './modules/battery-type/battery-type.module';
         BatteryTypeModule
     ],
     controllers: [],
-    providers: []
+    providers: [
+    ]
 })
 export class AppModule {}

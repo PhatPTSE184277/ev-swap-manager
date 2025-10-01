@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { readFile } from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class MailService {
@@ -13,40 +15,74 @@ export class MailService {
             secure: false,
             auth: {
                 user: this.configService.get<string>('MAIL_USER'),
-                pass: this.configService.get<string>('MAIL_PASS'),
-            },
+                pass: this.configService.get<string>('MAIL_PASS')
+            }
         });
     }
 
-    async sendEmailVerification(email: string, token: string, userName: string) {
+    async sendEmailVerification(
+        email: string,
+        token: string,
+        userName: string
+    ) {
         const verificationUrl = `${this.configService.get<string>('FRONTEND_URL')}/verify-email?token=${token}`;
-        
+
+        const templatePath = path.join(
+            process.cwd(),
+            'src',
+            'modules',
+            'mail',
+            'html',
+            'EmailVerify.html'
+        );
+        let html = await readFile(templatePath, 'utf-8');
+
+        html = html
+            .replace(/\$\{name\}/g, userName)
+            .replace(/\$\{link\}/g, verificationUrl)
+            .replace(/\$\{button\}/g, 'Xác thực email')
+            .replace(/\$\{email\}/g, email)
+            .replace(
+                /\$\{#dates.year\(date\)\}/g,
+                new Date().getFullYear().toString()
+            );
+
         await this.transporter.sendMail({
             from: this.configService.get<string>('MAIL_FROM'),
             to: email,
             subject: 'Xác thực email tài khoản',
-            html: `
-                <h2>Chào ${userName}!</h2>
-                <p>Vui lòng click vào link bên dưới để xác thực email:</p>
-                <a href="${verificationUrl}">Xác thực email</a>
-                <p>Link này sẽ hết hạn sau 1 giờ.</p>
-            `,
+            html
         });
     }
 
     async sendPasswordReset(email: string, token: string, userName: string) {
         const resetUrl = `${this.configService.get<string>('FRONTEND_URL')}/reset-password?token=${token}`;
-        
+
+        const templatePath = path.join(
+            process.cwd(),
+            'src',
+            'modules',
+            'mail',
+            'html',
+            'EmailResetPassword.html'
+        );
+        let html = await readFile(templatePath, 'utf-8');
+
+        html = html
+            .replace(/\$\{name\}/g, userName)
+            .replace(/\$\{link\}/g, resetUrl)
+            .replace(/\$\{button\}/g, 'Đặt lại mật khẩu')
+            .replace(/\$\{email\}/g, email)
+            .replace(
+                /\$\{#dates.year\(date\)\}/g,
+                new Date().getFullYear().toString()
+            );
+
         await this.transporter.sendMail({
             from: this.configService.get<string>('MAIL_FROM'),
             to: email,
             subject: 'Đặt lại mật khẩu',
-            html: `
-                <h2>Chào ${userName}!</h2>
-                <p>Bạn đã yêu cầu đặt lại mật khẩu. Click vào link bên dưới:</p>
-                <a href="${resetUrl}">Đặt lại mật khẩu</a>
-                <p>Link này sẽ hết hạn sau 1 giờ.</p>
-            `,
+            html
         });
     }
 }

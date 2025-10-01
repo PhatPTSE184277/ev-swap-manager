@@ -5,6 +5,7 @@ import { Battery } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
 import { CreateBatteryDto } from './dto/create-battery.dto';
+import { BatteryStatus } from 'src/enums/battery.enum';
 
 @Injectable()
 export class BatteryService {
@@ -33,17 +34,19 @@ export class BatteryService {
             relations: ['batteryType']
         });
 
-        const mappedData = data.map(({ createdAt, updatedAt, batteryTypeId, ...rest }) => {
-            if (rest.batteryType) {
-                const { createdAt, updatedAt, ...batteryTypeRest } =
-                    rest.batteryType;
-                return {
-                    ...rest,
-                    batteryType: batteryTypeRest
-                };
+        const mappedData = data.map(
+            ({ createdAt, updatedAt, batteryTypeId, ...rest }) => {
+                if (rest.batteryType) {
+                    const { createdAt, updatedAt, ...batteryTypeRest } =
+                        rest.batteryType;
+                    return {
+                        ...rest,
+                        batteryType: batteryTypeRest
+                    };
+                }
+                return rest;
             }
-            return rest;
-        });
+        );
 
         return {
             data: mappedData,
@@ -63,7 +66,8 @@ export class BatteryService {
         }
         const { createdAt, updatedAt, batteryTypeId, ...rest } = battery;
         if (battery.batteryType) {
-            const { createdAt, updatedAt, ...batteryTypeRest } = battery.batteryType;
+            const { createdAt, updatedAt, ...batteryTypeRest } =
+                battery.batteryType;
             return {
                 data: { ...rest, batteryType: batteryTypeRest },
                 message: 'Lấy thông tin pin thành công'
@@ -71,27 +75,40 @@ export class BatteryService {
         }
     }
 
+    getAllStatuses(): any {
+        return {
+            data: Promise.resolve(Object.values(BatteryStatus)),
+            message: 'Lấy danh sách trạng thái pin thành công'
+        };
+    }
+
     async create(createBatteryDto: CreateBatteryDto): Promise<any> {
         try {
-            const result = await this.dataSource.transaction(async (manager) => {
-                const existingBattery = await manager.findOne(Battery, {
-                    where: { model: createBatteryDto.model }
-                });
-                if (existingBattery) {
-                    throw new BadRequestException('Pin đã tồn tại');
+            const result = await this.dataSource.transaction(
+                async (manager) => {
+                    const existingBattery = await manager.findOne(Battery, {
+                        where: { model: createBatteryDto.model }
+                    });
+                    if (existingBattery) {
+                        throw new BadRequestException('Pin đã tồn tại');
+                    }
+
+                    const newBattery = manager.create(
+                        Battery,
+                        createBatteryDto
+                    );
+                    await manager.save(Battery, newBattery);
+                    const { createdAt, updatedAt, batteryTypeId, ...rest } =
+                        newBattery;
+                    return {
+                        data: rest,
+                        message: 'Tạo pin thành công'
+                    };
                 }
-                
-                const newBattery = manager.create(Battery, createBatteryDto);
-                await manager.save(Battery, newBattery);
-                const { createdAt, updatedAt, batteryTypeId, ...rest } = newBattery;
-                return {
-                    data: rest,
-                    message: 'Tạo pin thành công'
-                };
-             });
+            );
             return result;
         } catch (error) {
-             throw new BadRequestException(error?.message || 'Tạo pin thất bại');
+            throw new BadRequestException(error?.message || 'Tạo pin thất bại');
         }
     }
 
@@ -100,7 +117,10 @@ export class BatteryService {
         if (!battery) {
             throw new BadRequestException('Pin không tồn tại');
         }
-        if (updateBatteryDto.model && updateBatteryDto.model !== battery.model) {
+        if (
+            updateBatteryDto.model &&
+            updateBatteryDto.model !== battery.model
+        ) {
             const existingBattery = await this.batteryRepository.findOne({
                 where: { model: updateBatteryDto.model }
             });

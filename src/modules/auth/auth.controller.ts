@@ -16,6 +16,7 @@ export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
     @ApiOperation({ summary: 'Đăng ký tài khoản' })
+    @HttpCode(200)
     @Post('register')
     async register(@Body() createUserDto: CreateUserDto) {
         return await this.authService.register(createUserDto);

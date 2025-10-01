@@ -1,12 +1,14 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { ArrayMaxSize, ArrayMinSize, ArrayNotEmpty, IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
+import { ArrayMaxSize, ArrayMinSize, ArrayNotEmpty, IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 
-export const StringRequired = (name: string) => applyDecorators(
-    ApiProperty({ required: true }),
+export const StringRequired = (name: string, min?: number, max?: number) => applyDecorators(
+    ApiProperty({ required: true, minLength: min, maxLength: max }),
     IsString({ message: `${name} phải là chuỗi` }),
-    IsNotEmpty({ message: `${name} không được để trống` })
+    IsNotEmpty({ message: `${name} không được để trống` }),
+    ...(min !== undefined ? [MinLength(min, { message: `${name} phải có ít nhất ${min} ký tự` })] : []),
+    ...(max !== undefined ? [MaxLength(max, { message: `${name} tối đa ${max} ký tự` })] : [])
 );
 
 export const StringNotRequired = (name: string) => applyDecorators(

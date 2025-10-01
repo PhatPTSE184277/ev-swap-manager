@@ -1,15 +1,15 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { BatteryService } from './battery.service';
 import { ApiQuery } from '@nestjs/swagger';
-import { BatteryStatus } from 'src/enums/battery.enum';
+import { fail } from 'assert';
 
 @Controller('battery')
 export class BatteryController {
     constructor(private readonly batteryService: BatteryService) {}
 
     @Get()
-    @ApiQuery({ name: 'page', required: true, type: Number })
-    @ApiQuery({ name: 'limit', required: true, type: Number })
+    @ApiQuery({ name: 'page', required: false, type: Number })
+    @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'search', required: false, type: String })
     @ApiQuery({
         name: 'order',
@@ -42,17 +42,14 @@ export class BatteryController {
     }
 
     @Get(':id')
-    async findById(@Query('id') id: number) {
+    async findById(@Param('id') id: number) {
         const result = await this.batteryService.findById(id);
         return result;
     }
 
     @Get('statuses')
     getAllStatuses() {
-        return {
-            success: true,
-            message: 'Lấy danh sách trạng thái pin thành công',
-            data: Object.values(BatteryStatus)
-        };
+        const result = this.batteryService.getAllStatuses();
+        return result;
     }
 }

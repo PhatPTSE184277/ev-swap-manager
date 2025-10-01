@@ -30,7 +30,8 @@ export class AllExceptionFilter implements ExceptionFilter {
             if (typeof exceptionResponse === 'string') {
                 message = exceptionResponse;
             } else if (
-                typeof exceptionResponse === 'object' && exceptionResponse !== null
+                typeof exceptionResponse === 'object' &&
+                exceptionResponse !== null
             ) {
                 const exceptionResponseObj = exceptionResponse as Record<
                     string,
@@ -46,8 +47,15 @@ export class AllExceptionFilter implements ExceptionFilter {
                     message = 'Dữ liệu không hợp lệ';
                     error = exceptionResponseObj.message;
                 }
-            }else {
+            } else {
                 message = 'Lỗi không xác định';
+            }
+
+            if (status === Number(HttpStatus.UNAUTHORIZED)) {
+                message = 'Người dùng chưa đăng nhập hoặc token không hợp lệ';
+            }
+            if (status === Number(HttpStatus.FORBIDDEN)) {
+                message = 'Người dùng không có quyền truy cập chức năng này';
             }
         } else {
             // Lỗi không mong muốn (không biết trước - lỗi hệ thống)
@@ -56,7 +64,7 @@ export class AllExceptionFilter implements ExceptionFilter {
             this.logger.error(exception);
         }
 
-         const errorResponse: ApiResponse<any> = {
+        const errorResponse: ApiResponse<any> = {
             success: false,
             message,
             ...(error && { error })

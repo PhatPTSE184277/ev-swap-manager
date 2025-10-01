@@ -3,8 +3,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Battery } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
-import { CreateBatteryTypeDto } from '../battery-type/dto/create-battery-type.dto';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
+import { CreateBatteryDto } from './dto/create-battery.dto';
 
 @Injectable()
 export class BatteryService {
@@ -29,7 +29,7 @@ export class BatteryService {
             where,
             skip: (page - 1) * limit,
             take: limit,
-            order: { name: order },
+            order: { model: order },
             relations: ['batteryType']
         });
 
@@ -71,11 +71,11 @@ export class BatteryService {
         }
     }
 
-    async create(createBatteryDto: CreateBatteryTypeDto): Promise<any> {
+    async create(createBatteryDto: CreateBatteryDto): Promise<any> {
         try {
             const result = await this.dataSource.transaction(async (manager) => {
                 const existingBattery = await manager.findOne(Battery, {
-                    where: { name: createBatteryDto.name }
+                    where: { model: createBatteryDto.model }
                 });
                 if (existingBattery) {
                     throw new BadRequestException('Pin đã tồn tại');
@@ -100,5 +100,19 @@ export class BatteryService {
         if (!battery) {
             throw new BadRequestException('Pin không tồn tại');
         }
+        if (updateBatteryDto.model && updateBatteryDto.model !== battery.model) {
+            const existingBattery = await this.batteryRepository.findOne({
+                where: { model: updateBatteryDto.model }
+            });
+            if (existingBattery) {
+                throw new BadRequestException('Pin đã tồn tại');
+            }
+        }
+
+        Object.assign(battery, updateBatteryDto);
+        await this.batteryRepository.update(id, battery);
+        return {
+            message: 'Cập nhật pin thành công'
+        };
     }
 }

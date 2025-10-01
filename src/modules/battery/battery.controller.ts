@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { BatteryService } from './battery.service';
 import { ApiQuery } from '@nestjs/swagger';
+import { BatteryStatus } from 'src/enums/battery.enum';
 
 @Controller('battery')
 export class BatteryController {
@@ -46,4 +47,12 @@ export class BatteryController {
         return result;
     }
 
+    @Get('statuses')
+    getAllStatuses() {
+        return {
+            success: true,
+            message: 'Lấy danh sách trạng thái pin thành công',
+            data: Object.values(BatteryStatus)
+        };
+    }
 }

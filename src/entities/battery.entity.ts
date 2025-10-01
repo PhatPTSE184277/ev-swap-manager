@@ -15,7 +15,7 @@ export class Battery {
     batteryTypeId: number;
 
     @Column({ length: 100 })
-    name: string;
+    model: string;
 
     @Column({ type: 'int' })
     capacity: number;

@@ -2,7 +2,7 @@ import { NumberRequired, StringRequired } from "src/common/decorators";
 
 export class CreateBatteryDto {
     @StringRequired('Tên pin')
-    name?: string;
+    model: string;
 
     @NumberRequired('Dung lượng')
     capacity: number;

@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { BatteryTypeService } from './battery-type.service';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateBatteryTypeDto } from './dto/create-battery-type.dto';
+import { UpdateBatteryTypeDto } from './dto/update-battery-type.dto';
 
 @ApiTags('Battery Types')
 @Controller('battery-type')
@@ -52,7 +53,7 @@ export class BatteryTypeController {
     @Patch(':id')
     async update(
         @Param('id') id: number,
-        @Body() updateBatteryTypeDto: CreateBatteryTypeDto
+        @Body() updateBatteryTypeDto: UpdateBatteryTypeDto
     ) {
         const result = await this.batteryTypeService.update(
             id,

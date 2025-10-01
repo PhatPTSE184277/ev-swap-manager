@@ -16,9 +16,6 @@ export class UserMembership {
     membershipId: number;
 
     @Column({ type: 'timestamp' })
-    registerDate: Date;
-
-    @Column({ type: 'timestamp' })
     expiredDate: Date;
 
     @Column({ type: 'enum', enum: UserMembershipStatus, default: UserMembershipStatus.ACTIVE })

@@ -33,17 +33,8 @@ export class AuthService {
     }
 
     login(user: User) {
-        const payload = { sub: user.id, username: user.userName, role: user.roleId };
-        return {
-            access_token: this.jwtService.sign(payload),
-            user: {
-                id: user.id,
-                userName: user.userName,
-                email: user.email,
-                fullName: user.fullName,
-                roleId: user.roleId
-            }
-        };
+        const payload = { sub: user.id, username: user.username, role: user.roleId };
+        return { access_token: this.jwtService.sign(payload) };
     }
 
     async register(createUserDto: CreateUserDto) {
@@ -58,7 +49,7 @@ export class AuthService {
         await this.mailService.sendEmailVerification(
             user.email, 
             user.emailVerificationToken, 
-            user.userName
+            user.username
         );
 
         return {
@@ -83,7 +74,7 @@ export class AuthService {
         await this.mailService.sendPasswordReset(
             user.email,
             user.resetPasswordToken,
-            user.userName
+            user.username
         );
 
         return { message: 'Email đặt lại mật khẩu đã được gửi!' };
@@ -112,7 +103,7 @@ export class AuthService {
         await this.mailService.sendEmailVerification(
             user.email,
             user.emailVerificationToken,
-            user.userName
+            user.username
         );
 
         return { message: 'Email xác thực đã được gửi lại!' };

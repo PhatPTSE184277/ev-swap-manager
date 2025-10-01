@@ -16,7 +16,7 @@ export class UserService {
     async findUserByUserNameOrEmail(usernameOrEmail: string): Promise<User | undefined> {
         const user = await this.userRepository.findOne({
             where: [
-                { userName: usernameOrEmail },
+                { username: usernameOrEmail },
                 { email: usernameOrEmail }
             ]
         });
@@ -24,7 +24,7 @@ export class UserService {
     }
 
     async createUser(createUserDto: CreateUserDto): Promise<User> {
-        const existingUser = await this.findUserByUserNameOrEmail(createUserDto.userName);
+        const existingUser = await this.findUserByUserNameOrEmail(createUserDto.username);
         if (existingUser) {
             throw new BadRequestException('Tên đăng nhập đã tồn tại');
         }

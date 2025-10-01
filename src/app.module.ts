@@ -5,6 +5,9 @@ import { typeOrmConfig } from './config/typeorm.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailModule } from './modules/mail/mail.module';
 import { UserModule } from './modules/user/user.module';
+import { SeedModule } from './modules/seed/seed.module';
+import { BatteryModule } from './modules/battery/battery.module';
+import { BatteryTypeModule } from './modules/battery-type/battery-type.module';
 
 @Module({
     imports: [
@@ -18,7 +21,10 @@ import { UserModule } from './modules/user/user.module';
         }),
         UserModule,
         AuthModule,
-        MailModule
+        MailModule,
+        SeedModule,
+        BatteryModule,
+        BatteryTypeModule
     ],
     controllers: [],
     providers: []

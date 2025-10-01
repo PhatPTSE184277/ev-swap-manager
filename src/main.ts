@@ -12,10 +12,12 @@ async function bootstrap() {
     const logger = new Logger('Bootstrap');
     app.setGlobalPrefix('api/v1');
 
+    const configService = app.get(ConfigService);
+
     app.enableCors({
         origin: [
-            'http://localhost:5173',
-            'http://localhost:8081',
+            configService.get('FRONTEND_URL'),
+            configService.get('MOBILE_APP_URL')
         ],
         credentials: true,
     });
@@ -54,7 +56,6 @@ async function bootstrap() {
     const documentFactory = () => SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/v1/docs', app, documentFactory());
 
-    const configService = app.get(ConfigService);
     const port = configService.get<number>('PORT') || 8080;
     await app.listen(port);
     console.log(`Server is running on http://localhost:${port}`);

@@ -11,7 +11,7 @@ export class BatteryType {
     name: string;
 
     @Column({ length: 255 })
-    description: string;
+    description?: string;
 
     @Column({ type: 'boolean', default: true })
     status: boolean;

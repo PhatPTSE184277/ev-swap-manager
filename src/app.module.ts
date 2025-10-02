@@ -8,6 +8,7 @@ import { UserModule } from './modules/user/user.module';
 import { SeedModule } from './modules/seed/seed.module';
 import { BatteryModule } from './modules/battery/battery.module';
 import { BatteryTypeModule } from './modules/battery-type/battery-type.module';
+import { StationModule } from './modules/station/station.module';
 
 @Module({
     imports: [
@@ -24,7 +25,8 @@ import { BatteryTypeModule } from './modules/battery-type/battery-type.module';
         MailModule,
         SeedModule,
         BatteryModule,
-        BatteryTypeModule
+        BatteryTypeModule,
+        StationModule
     ],
     controllers: [],
     providers: [

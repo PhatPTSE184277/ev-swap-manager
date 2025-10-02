@@ -1,9 +1,23 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Patch,
+    Post,
+    Query,
+    UseGuards
+} from '@nestjs/common';
 import { BatteryTypeService } from './battery-type.service';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateBatteryTypeDto } from './dto/create-battery-type.dto';
 import { UpdateBatteryTypeDto } from './dto/update-battery-type.dto';
 import { ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { RoleName } from 'src/enums/role.enum';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Battery Types')
 @ApiBearerAuth()
@@ -11,14 +25,33 @@ import { ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
 export class BatteryTypeController {
     constructor(private readonly batteryTypeService: BatteryTypeService) {}
 
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
     @Get()
     @ApiOperation({
         summary: 'Lấy danh sách loại pin (phân trang, filter, search)',
         description: 'ADMIN'
     })
-    @ApiQuery({ name: 'page', required: false, type: Number, example: 1, description: 'Trang hiện tại' })
-    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Số lượng mỗi trang' })
-    @ApiQuery({ name: 'search', required: false, type: String, description: 'Tìm kiếm theo tên loại pin' })
+    @ApiQuery({
+        name: 'page',
+        required: false,
+        type: Number,
+        example: 1,
+        description: 'Trang hiện tại'
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        type: Number,
+        example: 10,
+        description: 'Số lượng mỗi trang'
+    })
+    @ApiQuery({
+        name: 'search',
+        required: false,
+        type: String,
+        description: 'Tìm kiếm theo tên loại pin'
+    })
     @ApiQuery({
         name: 'order',
         required: false,
@@ -50,6 +83,8 @@ export class BatteryTypeController {
         return result;
     }
 
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
     @Get(':id')
     @ApiOperation({ summary: 'Lấy chi tiết loại pin', description: 'ADMIN' })
     @ApiParam({ name: 'id', type: Number, description: 'ID loại pin' })
@@ -58,13 +93,18 @@ export class BatteryTypeController {
         return result;
     }
 
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
     @Post()
     @ApiOperation({ summary: 'Tạo mới loại pin', description: 'ADMIN' })
     async create(@Body() createBatteryTypeDto: CreateBatteryTypeDto) {
-        const result = await this.batteryTypeService.create(createBatteryTypeDto);
+        const result =
+            await this.batteryTypeService.create(createBatteryTypeDto);
         return result;
     }
 
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
     @Patch(':id')
     @ApiOperation({ summary: 'Cập nhật loại pin', description: 'ADMIN' })
     @ApiParam({ name: 'id', type: Number, description: 'ID loại pin' })

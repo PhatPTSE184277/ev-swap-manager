@@ -5,7 +5,6 @@ import { Battery } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
 import { CreateBatteryDto } from './dto/create-battery.dto';
-import { BatteryStatus } from 'src/enums/battery.enum';
 
 @Injectable()
 export class BatteryService {
@@ -25,7 +24,7 @@ export class BatteryService {
         let where: any = {};
         if (status) where.status = status;
         if (search) where.name = Like(`%${search}%`);
-
+        
         const [data, total] = await this.batteryRepository.findAndCount({
             where,
             skip: (page - 1) * limit,
@@ -35,17 +34,16 @@ export class BatteryService {
         });
 
         const mappedData = data.map(
-            ({ createdAt, updatedAt, batteryTypeId, ...rest }) => {
-                if (rest.batteryType) {
-                    const { createdAt, updatedAt, ...batteryTypeRest } =
-                        rest.batteryType;
-                    return {
-                        ...rest,
-                        batteryType: batteryTypeRest
-                    };
-                }
-                return rest;
-            }
+            ({
+                createdAt,
+                updatedAt,
+                batteryTypeId,
+                batteryType,
+                ...rest
+            }) => ({
+                ...rest,
+                batteryType: batteryType?.name || null
+            })
         );
 
         return {
@@ -73,13 +71,6 @@ export class BatteryService {
                 message: 'Lấy thông tin pin thành công'
             };
         }
-    }
-
-    getAllStatuses(): any {
-        return {
-            data: Promise.resolve(Object.values(BatteryStatus)),
-            message: 'Lấy danh sách trạng thái pin thành công'
-        };
     }
 
     async create(createBatteryDto: CreateBatteryDto): Promise<any> {

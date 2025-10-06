@@ -2,7 +2,8 @@
 import {
     BadRequestException,
     Injectable,
-    NotFoundException
+    NotFoundException,
+    InternalServerErrorException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Station } from 'src/entities';
@@ -26,43 +27,87 @@ export class StationService {
         order: 'ASC' | 'DESC' = 'ASC',
         status?: boolean
     ): Promise<any> {
-        let where: any = {};
-        if (typeof status === 'boolean') where.status = status;
-        if (search) where.name = Like(`%${search}%`);
+        try {
+            let where: any = {};
+            if (typeof status === 'boolean') where.status = status;
+            if (search) where.name = Like(`%${search}%`);
 
-        const [data, total] = await this.stationRepository.findAndCount({
-            where,
-            order: { name: order },
-            skip: (page - 1) * limit,
-            take: limit
-        });
+            const [data, total] = await this.stationRepository.findAndCount({
+                where,
+                order: { name: order },
+                skip: (page - 1) * limit,
+                take: limit
+            });
 
-        const mappedData = data.map((station) => {
-            const { createdAt, updatedAt, ...rest } = station;
-            return rest;
-        });
+            const mappedData = data.map((station) => {
+                const { createdAt, updatedAt, ...rest } = station;
+                return rest;
+            });
 
-        return {
-            success: true,
-            message: 'Lấy danh sách trạm thành công',
-            data: mappedData,
-            total,
-            page,
-            limit
-        };
+            return {
+                success: true,
+                message: 'Lấy danh sách trạm thành công',
+                data: mappedData,
+                total,
+                page,
+                limit
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách trạm');
+        }
+    }
+
+    async findAllPublic(
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        order: 'ASC' | 'DESC' = 'ASC',
+        status: boolean = true
+    ): Promise<any> {
+        try {
+            let where: any = { status };
+            if (search) where.name = Like(`%${search}%`);
+
+            const [data, total] = await this.stationRepository.findAndCount({
+                where,
+                order: { name: order },
+                skip: (page - 1) * limit,
+                take: limit
+            });
+
+            const mappedData = data.map(
+                ({ createdAt, updatedAt, ...rest }) => rest
+            );
+
+            return {
+                success: true,
+                message: 'Lấy danh sách trạm thành công',
+                data: mappedData,
+                total,
+                page,
+                limit
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách trạm');
+        }
     }
 
     async findById(id: number): Promise<{ data: Station; message: string }> {
-        const station = await this.stationRepository.findOne({ where: { id } });
-        if (!station) {
-            throw new NotFoundException('Trạm không tồn tại');
-        }
+        try {
+            const station = await this.stationRepository.findOne({ where: { id } });
+            if (!station) {
+                throw new NotFoundException('Trạm không tồn tại');
+            }
 
-        const { createdAt, updatedAt, ...rest } = station;
-        return {
-            data: rest as Station,
-            message: 'Lấy thông tin trạm thành công'
-        };
+            const { createdAt, updatedAt, ...rest } = station;
+            return {
+                data: rest as Station,
+                message: 'Lấy thông tin trạm thành công'
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy thông tin trạm');
+        }
     }
 
     async create(createStationDto: CreateStationDto): Promise<any> {
@@ -90,58 +135,69 @@ export class StationService {
             );
             return result;
         } catch (error) {
-            throw new BadRequestException(
-                error?.message || 'Tạo trạm thất bại'
-            );
+            if (error instanceof BadRequestException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tạo trạm');
         }
     }
 
     async update(id: number, updateStationDto: UpdateStationDto): Promise<any> {
-        const station = await this.stationRepository.findOne({ where: { id } });
-        if (!station) {
-            throw new BadRequestException('Trạm không tồn tại');
-        }
-        if (
-            updateStationDto.name &&
-            updateStationDto.name !== station.name
-        ) {
-            const existingStation = await this.stationRepository.findOne({
-                where: { name: updateStationDto.name }
-            });
-            if (existingStation) {
-                throw new BadRequestException('Trạm đã tồn tại');
+        try {
+            const station = await this.stationRepository.findOne({ where: { id } });
+            if (!station) {
+                throw new NotFoundException('Trạm không tồn tại');
             }
-        }
+            if (updateStationDto.name && updateStationDto.name !== station.name) {
+                const existingStation = await this.stationRepository.findOne({
+                    where: { name: updateStationDto.name }
+                });
+                if (existingStation) {
+                    throw new BadRequestException('Trạm đã tồn tại');
+                }
+            }
 
-        Object.assign(station, updateStationDto);
-        await this.stationRepository.update(id, station);
-        return {
-            message: 'Cập nhật trạm thành công'
-        };
+            Object.assign(station, updateStationDto);
+            await this.stationRepository.update(id, station);
+            return {
+                message: 'Cập nhật trạm thành công'
+            };
+        } catch (error) {
+            if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi cập nhật trạm');
+        }
     }
 
     async softDelete(id: number): Promise<any> {
-        const station = await this.stationRepository.findOne({ where: { id } });
-        if (!station) {
-            throw new BadRequestException('Trạm không tồn tại');
-        }
+        try {
+            const station = await this.stationRepository.findOne({ where: { id } });
+            if (!station) {
+                throw new NotFoundException('Trạm không tồn tại');
+            }
 
-        station.status = false;
-        await this.stationRepository.save(station);
-        return {
-            message: 'Xóa trạm thành công'
-        };
+            station.status = false;
+            await this.stationRepository.save(station);
+            return {
+                message: 'Xóa trạm thành công'
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi xóa trạm');
+        }
     }
 
     async restore(id: number): Promise<any> {
-        const station = await this.stationRepository.findOne({ where: { id } });
-        if (!station) {
-            throw new BadRequestException('Trạm không tồn tại');
+        try {
+            const station = await this.stationRepository.findOne({ where: { id } });
+            if (!station) {
+                throw new NotFoundException('Trạm không tồn tại');
+            }
+            station.status = true;
+            await this.stationRepository.save(station);
+            return {
+                message: 'Khôi phục trạm thành công'
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi khôi phục trạm');
         }
-        station.status = true;
-        await this.stationRepository.save(station);
-        return {
-            message: 'Khôi phục trạm thành công'
-        };
     }
 }

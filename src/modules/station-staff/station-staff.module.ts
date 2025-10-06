@@ -1,0 +1,12 @@
+import { Module } from '@nestjs/common';
+import { StationStaffService } from './station-staff.service';
+import { StationStaffController } from './station-staff.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { StationStaff } from 'src/entities';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([StationStaff])],
+  controllers: [StationStaffController],
+  providers: [StationStaffService],
+})
+export class StationStaffModule {}

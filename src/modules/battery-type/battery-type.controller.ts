@@ -25,6 +25,37 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 export class BatteryTypeController {
     constructor(private readonly batteryTypeService: BatteryTypeService) {}
 
+    @Get('public')
+    @ApiOperation({
+        summary: 'Lấy danh sách loại pin đang hoạt động cho user chọn',
+        description: 'Public - chỉ trả về loại pin có status=true'
+    })
+    @ApiQuery({
+        name: 'search',
+        required: false,
+        type: String,
+        description: 'Tìm kiếm theo tên loại pin'
+    })
+    @ApiQuery({
+        name: 'order',
+        required: false,
+        enum: ['ASC', 'DESC'],
+        example: 'ASC',
+        description: 'Sắp xếp theo tên'
+    })
+    async findAllPublic(
+        @Query('search') search?: string,
+        @Query('order') order: 'ASC' | 'DESC' = 'ASC'
+    ) {
+        return this.batteryTypeService.findAllPublic(
+            1,
+            1000,
+            search,
+            order,
+            true
+        );
+    }
+
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(RoleName.ADMIN)
     @Get()
@@ -119,11 +150,22 @@ export class BatteryTypeController {
         return result;
     }
 
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa loại pin', description: 'ADMIN' })
     @ApiParam({ name: 'id', type: Number, description: 'ID loại pin' })
     async remove(@Param('id') id: number) {
-        const result = await this.batteryTypeService.remove(id);
+        const result = await this.batteryTypeService.softDelete(id);
         return result;
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Patch('restore/:id')
+    @ApiOperation({ summary: 'Khôi phục loại pin', description: 'ADMIN' })
+    @ApiParam({ name: 'id', type: Number, description: 'ID loại pin' })
+    async restore(@Param('id') id: number) {
+        return this.batteryTypeService.restore(id);
     }
 }

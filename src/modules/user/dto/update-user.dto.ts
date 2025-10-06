@@ -1,11 +1,10 @@
 import { IsOptional, MaxLength } from 'class-validator';
+import { StringNotRequired } from 'src/common/decorators';
 
 export class UpdateUserDto {
-    @IsOptional()
-    @MaxLength(100, { message: 'Họ tên tối đa 100 ký tự' })
+    @StringNotRequired('Họ và tên')
     fullName?: string;
 
-    @IsOptional()
-    @MaxLength(255, { message: 'Avatar tối đa 255 ký tự' })
+    @StringNotRequired('Avatar')
     avatar?: string;
 }

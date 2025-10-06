@@ -52,7 +52,10 @@ export class AllExceptionFilter implements ExceptionFilter {
             }
 
             if (status === Number(HttpStatus.UNAUTHORIZED)) {
-                message = 'Người dùng chưa đăng nhập hoặc token không hợp lệ';
+                if (message === 'Unauthorized') {
+                    message =
+                        'Người dùng chưa đăng nhập hoặc token không hợp lệ';
+                }
             }
             if (status === Number(HttpStatus.FORBIDDEN)) {
                 message = 'Người dùng không có quyền truy cập chức năng này';

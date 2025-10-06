@@ -9,6 +9,13 @@ import { SeedModule } from './modules/seed/seed.module';
 import { BatteryModule } from './modules/battery/battery.module';
 import { BatteryTypeModule } from './modules/battery-type/battery-type.module';
 import { StationModule } from './modules/station/station.module';
+import { BatteryUsedHistoryModule } from './modules/battery-used-history/battery-used-history.module';
+import { VehicleTypeModule } from './modules/vehicle-type/vehicle-type.module';
+import { UserVehicleModule } from './modules/user-vehicle/user-vehicle.module';
+import { BookingModule } from './modules/booking/booking.module';
+import { MembershipModule } from './modules/membership/membership.module';
+import { CabinetModule } from './modules/cabinet/cabinet.module';
+import { StationStaffModule } from './modules/station-staff/station-staff.module';
 
 @Module({
     imports: [
@@ -26,7 +33,14 @@ import { StationModule } from './modules/station/station.module';
         SeedModule,
         BatteryModule,
         BatteryTypeModule,
-        StationModule
+        StationModule,
+        BatteryUsedHistoryModule,
+        VehicleTypeModule,
+        UserVehicleModule,
+        BookingModule,
+        MembershipModule,
+        CabinetModule,
+        StationStaffModule
     ],
     controllers: [],
     providers: [

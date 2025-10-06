@@ -1,7 +1,8 @@
 import {
     Injectable,
     UnauthorizedException,
-    BadRequestException
+    BadRequestException,
+    InternalServerErrorException
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -23,109 +24,142 @@ export class AuthService {
         usernameOrEmail: string,
         password: string
     ): Promise<User | null> {
-        const user =
-            await this.userService.findUserByUserNameOrEmail(usernameOrEmail);
+        try {
+            const user =
+                await this.userService.findUserByUserNameOrEmail(usernameOrEmail);
 
-        if (!user) {
+            if (!user) {
+                return null;
+            }
+
+            if (user.status !== UserStatus.VERIFIED) {
+                throw new UnauthorizedException(
+                    'Vui lòng xác thực email trước khi đăng nhập'
+                );
+            }
+
+            if (bcrypt.compareSync(password, user.password)) {
+                return user;
+            }
             return null;
+        } catch (error) {
+            if (error instanceof UnauthorizedException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi xác thực người dùng');
         }
-
-        if (user.status !== UserStatus.VERIFIED) {
-            throw new UnauthorizedException(
-                'Vui lòng xác thực email trước khi đăng nhập'
-            );
-        }
-
-        if (bcrypt.compareSync(password, user.password)) {
-            return user;
-        }
-        return null;
     }
 
     login(user: User) {
-        const payload = {
-            sub: user.id,
-            username: user.username,
-            role: user.role?.name || null
-        };
-        return {
-            access_token: this.jwtService.sign(payload),
-            message: 'Đăng nhập thành công'
-        };
+        try {
+            const payload = {
+                sub: user.id,
+                username: user.username,
+                role: user.role?.name || null
+            };
+            return {
+                access_token: this.jwtService.sign(payload),
+                message: 'Đăng nhập thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi đăng nhập');
+        }
     }
 
     async register(createUserDto: CreateUserDto) {
-        const user = await this.userService.createUser(createUserDto);
+        try {
+            const user = await this.userService.createUser(createUserDto);
 
-        // Kiểm tra token trước khi gửi email
-        if (!user.emailVerificationToken) {
-            throw new BadRequestException('Lỗi tạo token xác thực email');
+            // Kiểm tra token trước khi gửi email
+            if (!user.emailVerificationToken) {
+                throw new BadRequestException('Lỗi tạo token xác thực email');
+            }
+
+            // Gửi email xác thực
+            await this.mailService.sendEmailVerification(
+                user.email,
+                user.emailVerificationToken,
+                user.username
+            );
+
+            return {
+                message:
+                    'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+                email: user.email
+            };
+        } catch (error) {
+            if (error instanceof BadRequestException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi đăng ký');
         }
-
-        // Gửi email xác thực
-        await this.mailService.sendEmailVerification(
-            user.email,
-            user.emailVerificationToken,
-            user.username
-        );
-
-        return {
-            message:
-                'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
-            email: user.email
-        };
     }
 
     async verifyEmail(token: string) {
-        await this.userService.verifyEmail(token);
-        return {
-            message: 'Xác thực email thành công! Bây giờ bạn có thể đăng nhập.'
-        };
+        try {
+            await this.userService.verifyEmail(token);
+            return {
+                message: 'Xác thực email thành công! Bây giờ bạn có thể đăng nhập.'
+            };
+        } catch (error) {
+            if (error instanceof BadRequestException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi xác thực email');
+        }
     }
 
     async forgotPassword(email: string) {
-        const user = await this.userService.generateResetPasswordToken(email);
+        try {
+            const user = await this.userService.generateResetPasswordToken(email);
 
-        // Kiểm tra token trước khi gửi email
-        if (!user.resetPasswordToken) {
-            throw new BadRequestException('Lỗi tạo token đặt lại mật khẩu');
+            // Kiểm tra token trước khi gửi email
+            if (!user.resetPasswordToken) {
+                throw new BadRequestException('Lỗi tạo token đặt lại mật khẩu');
+            }
+
+            await this.mailService.sendPasswordReset(
+                user.email,
+                user.resetPasswordToken,
+                user.username
+            );
+
+            return { message: 'Email đặt lại mật khẩu đã được gửi!' };
+        } catch (error) {
+            if (error instanceof BadRequestException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi gửi email đặt lại mật khẩu');
         }
-
-        await this.mailService.sendPasswordReset(
-            user.email,
-            user.resetPasswordToken,
-            user.username
-        );
-
-        return { message: 'Email đặt lại mật khẩu đã được gửi!' };
     }
 
     async resetPassword(token: string, newPassword: string) {
-        await this.userService.resetPassword(token, newPassword);
-        return { message: 'Đặt lại mật khẩu thành công!' };
+        try {
+            await this.userService.resetPassword(token, newPassword);
+            return { message: 'Đặt lại mật khẩu thành công!' };
+        } catch (error) {
+            if (error instanceof BadRequestException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi đặt lại mật khẩu');
+        }
     }
 
     async resendVerification(email: string) {
-        const user = await this.userService.findUserByUserNameOrEmail(email);
-        if (!user) {
-            throw new UnauthorizedException('Email không tồn tại');
+        try {
+            const user = await this.userService.findUserByUserNameOrEmail(email);
+            if (!user) {
+                throw new UnauthorizedException('Email không tồn tại');
+            }
+
+            if (user.status === UserStatus.VERIFIED) {
+                throw new UnauthorizedException('Email đã được xác thực');
+            }
+
+            if (!user.emailVerificationToken) {
+                throw new BadRequestException('Token xác thực không tồn tại');
+            }
+
+            await this.mailService.sendEmailVerification(
+                user.email,
+                user.emailVerificationToken,
+                user.username
+            );
+
+            return { message: 'Email xác thực đã được gửi lại!' };
+        } catch (error) {
+            if (error instanceof UnauthorizedException || error instanceof BadRequestException) throw error;
+            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi gửi lại email xác thực');
         }
-
-        if (user.status === UserStatus.VERIFIED) {
-            throw new UnauthorizedException('Email đã được xác thực');
-        }
-
-        // Kiểm tra token trước khi gửi email
-        if (!user.emailVerificationToken) {
-            throw new BadRequestException('Token xác thực không tồn tại');
-        }
-
-        await this.mailService.sendEmailVerification(
-            user.email,
-            user.emailVerificationToken,
-            user.username
-        );
-
-        return { message: 'Email xác thực đã được gửi lại!' };
     }
 }

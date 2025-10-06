@@ -4,6 +4,5 @@ export * from "./membership.enum";
 export * from "./station.enum";
 export * from "./battery.enum";
 export * from "./booking.enum";
-export * from "./common.enum";
 export * from "./slot.enum";
 export * from "./transaction.enum";

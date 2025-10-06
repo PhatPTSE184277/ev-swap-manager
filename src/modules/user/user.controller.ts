@@ -34,19 +34,14 @@ export class UserController {
     @Get('me')
     @ApiOperation({ summary: 'Lấy thông tin cá nhân' })
     async getProfile(@Req() req) {
-        const result = await this.userService.findById(req.user.id);
-        return result;
+        return this.userService.findById(req.user.id);
     }
 
     @UseGuards(JwtAuthGuard)
     @Patch('update-profile')
     @ApiOperation({ summary: 'Cập nhật thông tin cá nhân' })
     async updateProfile(@Req() req, @Body() updateUserDto: UpdateUserDto) {
-        const result = await this.userService.updateProfile(
-            req.user.id,
-            updateUserDto
-        );
-        return result;
+        return this.userService.updateProfile(req.user.id, updateUserDto);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -56,16 +51,12 @@ export class UserController {
         @Req() req,
         @Body() changePasswordDto: ChangePasswordDto
     ) {
-        const result = await this.userService.changePassword(
-            req.user.id,
-            changePasswordDto
-        );
-        return result;
+        return this.userService.changePassword(req.user.id, changePasswordDto);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(RoleName.ADMIN)
-    @Get('')
+    @Get()
     @ApiOperation({
         summary: 'Lấy danh sách người dùng (phân trang, filter, search)',
         description: 'ADMIN'
@@ -117,7 +108,7 @@ export class UserController {
         @Query('role') role?: RoleName,
         @Query('order') order: 'ASC' | 'DESC' = 'DESC'
     ) {
-        const result = await this.userService.getAllUsers(
+        return this.userService.getAllUsers(
             page,
             limit,
             search,
@@ -125,7 +116,6 @@ export class UserController {
             role,
             order
         );
-        return result;
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -137,8 +127,7 @@ export class UserController {
     })
     @ApiParam({ name: 'id', type: Number, description: 'ID người dùng' })
     async softDeleteUser(@Param('id') id: number) {
-        const result = await this.userService.softDeleteUser(id);
-        return result;
+        return this.userService.softDeleteUser(id);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -150,7 +139,6 @@ export class UserController {
     })
     @ApiParam({ name: 'id', type: Number, description: 'ID người dùng' })
     async restoreUser(@Param('id') id: number) {
-        const result = await this.userService.restoreUser(id);
-        return result;
+        return this.userService.restoreUser(id);
     }
 }

@@ -1,9 +1,15 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    ManyToOne,
+    JoinColumn,
+    OneToMany
+} from 'typeorm';
 import { User } from './user.entity';
 import { VehicleType } from './vehicle-type.entity';
 import { Battery } from './battery.entity';
 import { Booking } from './booking.entity';
-
 
 @Entity('user_vehicles')
 export class UserVehicle {
@@ -18,6 +24,9 @@ export class UserVehicle {
 
     @Column()
     batteryId: number;
+
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    name: string;
 
     @Column({ type: 'boolean', default: true })
     status: boolean;
@@ -44,6 +53,6 @@ export class UserVehicle {
     @JoinColumn({ name: 'batteryId' })
     battery: Battery;
 
-    @OneToMany(() => Booking, booking => booking.userVehicle)
+    @OneToMany(() => Booking, (booking) => booking.userVehicle)
     bookings: Booking[];
 }

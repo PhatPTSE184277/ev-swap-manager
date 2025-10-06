@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    ManyToOne,
+    JoinColumn,
+    OneToMany
+} from 'typeorm';
 import { Station } from './station.entity';
 import { Slot } from './slot.entity';
 import { CabinetHistory } from './cabinet-history.entity';
@@ -7,6 +14,9 @@ import { CabinetHistory } from './cabinet-history.entity';
 export class Cabinet {
     @PrimaryGeneratedColumn()
     id: number;
+
+    @Column({ length: 100 })
+    name: string;
 
     @Column()
     stationId: number;
@@ -31,9 +41,9 @@ export class Cabinet {
     @JoinColumn({ name: 'stationId' })
     station: Station;
 
-    @OneToMany(() => Slot, slot => slot.cabinet)
+    @OneToMany(() => Slot, (slot) => slot.cabinet)
     slots: Slot[];
 
-    @OneToMany(() => CabinetHistory, cabinetHistory => cabinetHistory.cabinet)
+    @OneToMany(() => CabinetHistory, (cabinetHistory) => cabinetHistory.cabinet)
     cabinetHistories: CabinetHistory[];
 }

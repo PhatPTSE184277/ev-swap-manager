@@ -16,6 +16,7 @@ import { BookingModule } from './modules/booking/booking.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { CabinetModule } from './modules/cabinet/cabinet.module';
 import { StationStaffModule } from './modules/station-staff/station-staff.module';
+import { SlotModule } from './modules/slot/slot.module';
 
 @Module({
     imports: [
@@ -40,7 +41,8 @@ import { StationStaffModule } from './modules/station-staff/station-staff.module
         BookingModule,
         MembershipModule,
         CabinetModule,
-        StationStaffModule
+        StationStaffModule,
+        SlotModule
     ],
     controllers: [],
     providers: [

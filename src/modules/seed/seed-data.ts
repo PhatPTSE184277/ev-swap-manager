@@ -218,7 +218,7 @@ export const seedData = {
         }
     ],
 
-     cabinets: [
+    cabinets: [
         {
             id: 1,
             name: 'Tủ 1',
@@ -341,7 +341,7 @@ export const seedData = {
             id: 1,
             cabinetId: 1,
             batteryId: 1,
-            status: SlotStatus.OCCUPIED,
+            status: SlotStatus.FULL,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -349,7 +349,7 @@ export const seedData = {
             id: 2,
             cabinetId: 1,
             batteryId: 2,
-            status: SlotStatus.OCCUPIED,
+            status: SlotStatus.CHARGING,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -357,7 +357,7 @@ export const seedData = {
             id: 3,
             cabinetId: 1,
             batteryId: null,
-            status: SlotStatus.AVAILABLE,
+            status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -366,6 +366,14 @@ export const seedData = {
             cabinetId: 2,
             batteryId: 3,
             status: SlotStatus.OCCUPIED,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 5,
+            cabinetId: 2,
+            batteryId: null,
+            status: SlotStatus.MAINTENANCE,
             createdAt: new Date(),
             updatedAt: new Date()
         }
@@ -377,7 +385,43 @@ export const seedData = {
             slotId: 1,
             batteryId: 1,
             date: new Date('2024-09-30T08:00:00'),
-            status: SlotHistoryStatus.AVAILABLE,
+            status: SlotHistoryStatus.FULL,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 2,
+            slotId: 2,
+            batteryId: 2,
+            date: new Date('2024-09-30T09:00:00'),
+            status: SlotHistoryStatus.CHARGING,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 3,
+            slotId: 3,
+            batteryId: null,
+            date: new Date('2024-09-30T10:00:00'),
+            status: SlotHistoryStatus.EMPTY,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 4,
+            slotId: 4,
+            batteryId: 3,
+            date: new Date('2024-09-30T11:00:00'),
+            status: SlotHistoryStatus.OCCUPIED,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 5,
+            slotId: 5,
+            batteryId: null,
+            date: new Date('2024-09-30T12:00:00'),
+            status: SlotHistoryStatus.MAINTENANCE,
             createdAt: new Date(),
             updatedAt: new Date()
         }

@@ -16,7 +16,7 @@ export class Slot {
     @Column({ nullable: true })
     batteryId: number;
 
-    @Column({ type: 'enum', enum: SlotStatus, default: SlotStatus.AVAILABLE })
+    @Column({ type: 'enum', enum: SlotStatus, default: SlotStatus.EMPTY })
     status: SlotStatus;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

@@ -47,6 +47,12 @@ export class CabinetController {
         example: 'ASC'
     })
     @ApiQuery({
+        name: 'stationId',
+        required: false,
+        type: Number,
+        description: 'Lọc theo trạm'
+    })
+    @ApiQuery({
         name: 'status',
         required: false,
         type: Boolean,
@@ -57,9 +63,26 @@ export class CabinetController {
         @Query('limit') limit: number = 10,
         @Query('search') search?: string,
         @Query('order') order: 'ASC' | 'DESC' = 'ASC',
+        @Query('stationId') stationId?: number,
         @Query('status') status?: boolean
     ) {
-        return this.cabinetService.findAll(page, limit, search, order, status);
+        return this.cabinetService.findAll(
+            page,
+            limit,
+            search,
+            order,
+            stationId,
+            status
+        );
+    }
+
+    @Get('public/by-station/:stationId')
+    @ApiOperation({
+        summary: 'Lấy danh sách tủ đang hoạt động tại một trạm (cho user)'
+    })
+    @ApiParam({ name: 'stationId', type: Number, description: 'ID trạm' })
+    async findActiveByStation(@Param('stationId') stationId: number) {
+        return this.cabinetService.findActiveByStation(stationId);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)

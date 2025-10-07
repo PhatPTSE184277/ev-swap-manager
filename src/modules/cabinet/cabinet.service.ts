@@ -24,11 +24,13 @@ export class CabinetService {
         limit: number = 10,
         search?: string,
         order: 'ASC' | 'DESC' = 'ASC',
+        stationId?: number,
         status?: boolean
     ): Promise<any> {
         try {
             let where: any = {};
             if (typeof status === 'boolean') where.status = status;
+              if (stationId) where.stationId = stationId;
             if (search) {
                 where = [
                     { ...where, name: Like(`%${search}%`) },
@@ -78,6 +80,21 @@ export class CabinetService {
         }
     }
 
+    async findActiveByStation(stationId: number): Promise<any> {
+    try {
+        const cabinets = await this.cabinetRepository.find({
+            where: { stationId, status: true }
+        });
+        const mappedData = cabinets.map(({ createdAt, updatedAt, status, ...rest }) => rest);
+        return {
+            data: mappedData,
+            message: 'Lấy danh sách tủ đang hoạt động tại trạm thành công'
+        };
+    } catch (error) {
+        throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách tủ theo trạm');
+    }
+}
+
     async create(createCabinetDto: CreateCabinetDto): Promise<any> {
         try {
             const result = await this.dataSource.transaction(async (manager) => {
@@ -94,9 +111,7 @@ export class CabinetService {
                 const newCabinet = manager.create(Cabinet, createCabinetDto);
                 await manager.save(Cabinet, newCabinet);
 
-                const { createdAt, updatedAt, ...rest } = newCabinet;
                 return {
-                    data: rest,
                     message: 'Tạo tủ thành công'
                 };
             });

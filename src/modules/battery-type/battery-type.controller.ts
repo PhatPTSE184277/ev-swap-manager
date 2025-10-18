@@ -102,7 +102,7 @@ export class BatteryTypeController {
         @Query('limit') limit: number = 10,
         @Query('search') search?: string,
         @Query('order') order: 'ASC' | 'DESC' = 'ASC',
-        @Query('status') status: boolean | string = true
+        @Query('status') status?: boolean | string
     ) {
         const result = await this.batteryTypeService.findAll(
             page,

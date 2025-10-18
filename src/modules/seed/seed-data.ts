@@ -100,6 +100,7 @@ export const seedData = {
             description: 'Gói cơ bản - 10 lần đổi pin/tháng',
             price: 150000,
             duration: 30,
+            swapLimit: 10,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -110,6 +111,7 @@ export const seedData = {
             description: 'Gói cao cấp - 30 lần đổi pin/tháng',
             price: 350000,
             duration: 30,
+            swapLimit: 30,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -120,6 +122,7 @@ export const seedData = {
             description: 'Gói VIP - Không giới hạn đổi pin',
             price: 500000,
             duration: 30,
+            swapLimit: null,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -333,6 +336,28 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
+        },
+        {
+            id: 4,
+            batteryTypeId: 2,
+            model: 'BAT60V002',
+            capacity: 3000,
+            cycleLife: 1200,
+            price: 3500000,
+            status: BatteryStatus.AVAILABLE,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 5,
+            batteryTypeId: 1,
+            model: 'BAT48V003',
+            capacity: 2000,
+            cycleLife: 1000,
+            price: 2500000,
+            status: BatteryStatus.AVAILABLE,
+            createdAt: new Date(),
+            updatedAt: new Date()
         }
     ],
 
@@ -356,7 +381,7 @@ export const seedData = {
         {
             id: 3,
             cabinetId: 1,
-            batteryId: null,
+            batteryId: 5,
             status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -372,7 +397,7 @@ export const seedData = {
         {
             id: 5,
             cabinetId: 2,
-            batteryId: null,
+            batteryId: 4,
             status: SlotStatus.MAINTENANCE,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -384,7 +409,7 @@ export const seedData = {
             id: 1,
             slotId: 1,
             batteryId: 1,
-            date: new Date('2024-09-30T08:00:00'),
+            date: new Date('2025-09-30T08:00:00'),
             status: SlotHistoryStatus.FULL,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -393,7 +418,7 @@ export const seedData = {
             id: 2,
             slotId: 2,
             batteryId: 2,
-            date: new Date('2024-09-30T09:00:00'),
+            date: new Date('2025-09-30T09:00:00'),
             status: SlotHistoryStatus.CHARGING,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -401,8 +426,8 @@ export const seedData = {
         {
             id: 3,
             slotId: 3,
-            batteryId: null,
-            date: new Date('2024-09-30T10:00:00'),
+            batteryId: 5,
+            date: new Date('2025-09-30T10:00:00'),
             status: SlotHistoryStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -411,7 +436,7 @@ export const seedData = {
             id: 4,
             slotId: 4,
             batteryId: 3,
-            date: new Date('2024-09-30T11:00:00'),
+            date: new Date('2025-09-30T11:00:00'),
             status: SlotHistoryStatus.OCCUPIED,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -419,8 +444,8 @@ export const seedData = {
         {
             id: 5,
             slotId: 5,
-            batteryId: null,
-            date: new Date('2024-09-30T12:00:00'),
+            batteryId: 4,
+            date: new Date('2025-09-30T12:00:00'),
             status: SlotHistoryStatus.MAINTENANCE,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -449,6 +474,7 @@ export const seedData = {
             updatedAt: new Date()
         }
     ],
+
     payments: [
         {
             id: 1,
@@ -465,7 +491,8 @@ export const seedData = {
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
-        }
+        },
+       
     ],
 
     transactions: [
@@ -473,7 +500,7 @@ export const seedData = {
             id: 1,
             paymentId: 2,
             totalPrice: 50000,
-            dateTime: new Date('2024-09-30T08:00:00'),
+            dateTime: new Date('2025-09-30T08:00:00'),
             status: TransactionStatus.COMPLETED,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -482,7 +509,27 @@ export const seedData = {
             id: 2,
             paymentId: 1,
             totalPrice: 75000,
-            dateTime: new Date('2024-09-30T10:00:00'),
+            dateTime: new Date('2025-09-30T10:00:00'),
+            status: TransactionStatus.COMPLETED,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 3,
+            paymentId: 2,
+            userMembershipId: 1,
+            totalPrice: 150000,
+            dateTime: new Date('2025-09-28T09:00:00'),
+            status: TransactionStatus.COMPLETED,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 4,
+            paymentId: 1,
+            userMembershipId: 2,
+            totalPrice: 350000,
+            dateTime: new Date('2025-09-29T11:00:00'),
             status: TransactionStatus.COMPLETED,
             createdAt: new Date(),
             updatedAt: new Date()

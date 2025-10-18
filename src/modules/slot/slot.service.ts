@@ -60,23 +60,33 @@ export class SlotService {
         }
     }
 
-    async findById(id: number): Promise<any> {
-        try {
-            const slot = await this.slotRepository.findOne({
-                where: { id },
-                relations: ['cabinet', 'battery']
-            });
-            if (!slot) throw new NotFoundException('Slot không tồn tại');
-            const { createdAt, updatedAt, ...rest } = slot;
-            return {
-                data: rest,
-                message: 'Lấy chi tiết slot thành công'
-            };
-        } catch (error) {
-            if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy chi tiết slot');
+   async findById(id: number): Promise<any> {
+    try {
+        const slot = await this.slotRepository.findOne({
+            where: { id },
+            relations: ['cabinet', 'battery']
+        });
+        if (!slot) throw new NotFoundException('Slot không tồn tại');
+        const { createdAt, updatedAt, cabinet, battery, ...rest } = slot;
+
+        let batteryData: any = null;
+        if (battery) {
+            const { createdAt, updatedAt, ...batteryRest } = battery;
+            batteryData = batteryRest;
         }
+
+        return {
+            data: {
+                ...rest,
+                battery: batteryData
+            },
+            message: 'Lấy chi tiết slot thành công'
+        };
+    } catch (error) {
+        if (error instanceof NotFoundException) throw error;
+        throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy chi tiết slot');
     }
+}
 
     async create(createDto: CreateSlotDto): Promise<any> {
         try {

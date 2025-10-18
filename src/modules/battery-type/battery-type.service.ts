@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BatteryType } from 'src/entities/battery-type.entity';
 import { DataSource, Like, Repository } from 'typeorm';
@@ -18,24 +23,35 @@ export class BatteryTypeService {
         limit: number = 10,
         search?: string,
         order: 'ASC' | 'DESC' = 'ASC',
-        status: boolean | string = true
+        status?: boolean | string
     ): Promise<any> {
         try {
-            const statusBool =
-                typeof status === 'string' ? status === 'true' : !!status;
-            let where: any = { status: statusBool };
+            let where: any = {};
+            if (typeof status !== 'undefined') {
+                const statusBool =
+                    typeof status === 'string' ? status === 'true' : !!status;
+                where.status = statusBool;
+            }
             if (search) {
-                where = [{ status: statusBool, name: Like(`%${search}%`) }];
+                if (where.status !== undefined) {
+                    where = [
+                        { status: where.status, name: Like(`%${search}%`) }
+                    ];
+                } else {
+                    where = [{ name: Like(`%${search}%`) }];
+                }
             }
 
-            const [data, total] = await this.batteryTypeRepository.findAndCount({
-                where,
-                skip: (page - 1) * limit,
-                take: limit,
-                order: { name: order }
-            });
+            const [data, total] = await this.batteryTypeRepository.findAndCount(
+                {
+                    where,
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    order: { name: order }
+                }
+            );
             const mappedData = data.map(
-                ({ createdAt, updatedAt, status, ...rest }) => rest
+                ({ createdAt, updatedAt, ...rest }) => rest
             );
             return {
                 data: {
@@ -46,7 +62,9 @@ export class BatteryTypeService {
                 }
             };
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách loại pin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách loại pin'
+            );
         }
     }
 
@@ -65,12 +83,14 @@ export class BatteryTypeService {
                 where = [{ status: statusBool, name: Like(`%${search}%`) }];
             }
 
-            const [data, total] = await this.batteryTypeRepository.findAndCount({
-                where,
-                skip: (page - 1) * limit,
-                take: limit,
-                order: { name: order }
-            });
+            const [data, total] = await this.batteryTypeRepository.findAndCount(
+                {
+                    where,
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    order: { name: order }
+                }
+            );
 
             const mappedData = data.map(({ id, name }) => ({ id, name }));
 
@@ -82,7 +102,9 @@ export class BatteryTypeService {
                 message: 'Lấy danh sách loại pin thành công'
             };
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách loại pin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách loại pin'
+            );
         }
     }
 
@@ -101,7 +123,9 @@ export class BatteryTypeService {
             };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy thông tin loại pin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy thông tin loại pin'
+            );
         }
     }
 
@@ -117,7 +141,9 @@ export class BatteryTypeService {
             return rest;
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy thông tin loại pin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy thông tin loại pin'
+            );
         }
     }
 
@@ -150,7 +176,9 @@ export class BatteryTypeService {
             return result;
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tạo loại pin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi tạo loại pin'
+            );
         }
     }
 
@@ -184,8 +212,14 @@ export class BatteryTypeService {
                 message: 'Cập nhật loại pin thành công'
             };
         } catch (error) {
-            if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi cập nhật loại pin');
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi cập nhật loại pin'
+            );
         }
     }
 
@@ -206,8 +240,14 @@ export class BatteryTypeService {
                 message: 'Xoá loại pin thành công'
             };
         } catch (error) {
-            if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi xoá loại pin');
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi xoá loại pin'
+            );
         }
     }
 
@@ -220,7 +260,9 @@ export class BatteryTypeService {
                 throw new NotFoundException('Loại pin không tồn tại');
             }
             if (batteryType.status === true) {
-                throw new BadRequestException('Loại pin đã được kích hoạt trước đó');
+                throw new BadRequestException(
+                    'Loại pin đã được kích hoạt trước đó'
+                );
             }
             batteryType.status = true;
             await this.batteryTypeRepository.save(batteryType);
@@ -228,8 +270,14 @@ export class BatteryTypeService {
                 message: 'Khôi phục loại pin thành công'
             };
         } catch (error) {
-            if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi khôi phục loại pin');
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi khôi phục loại pin'
+            );
         }
     }
 }

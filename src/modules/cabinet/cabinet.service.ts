@@ -30,7 +30,7 @@ export class CabinetService {
         try {
             let where: any = {};
             if (typeof status === 'boolean') where.status = status;
-              if (stationId) where.stationId = stationId;
+            if (stationId) where.stationId = stationId;
             if (search) {
                 where = [
                     { ...where, name: Like(`%${search}%`) },
@@ -46,7 +46,9 @@ export class CabinetService {
                 relations: ['station']
             });
 
-            const mappedData = data.map(({ createdAt, updatedAt, ...rest }) => rest);
+            const mappedData = data.map(
+                ({ createdAt, updatedAt, ...rest }) => rest
+            );
 
             return {
                 data: mappedData,
@@ -56,7 +58,9 @@ export class CabinetService {
                 message: 'Lấy danh sách tủ thành công'
             };
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách tủ');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách tủ'
+            );
         }
     }
 
@@ -64,67 +68,98 @@ export class CabinetService {
         try {
             const cabinet = await this.cabinetRepository.findOne({
                 where: { id },
-                relations: ['station', 'slots']
+                relations: ['slots']
             });
             if (!cabinet) {
                 throw new NotFoundException('Tủ không tồn tại');
             }
-            const { createdAt, updatedAt, ...rest } = cabinet;
+
+            const { createdAt, updatedAt, status, slots, ...cabinetRest } =
+                cabinet;
+
+            const slotsData = (slots || []).map((slot) => {
+                const { createdAt, updatedAt, cabinetId, ...slotRest } = slot;
+
+                return {
+                    ...slotRest
+                };
+            });
+
             return {
-                data: rest,
+                data: {
+                    ...cabinetRest,
+                    slots: slotsData
+                },
                 message: 'Lấy thông tin tủ thành công'
             };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy thông tin tủ');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy thông tin tủ'
+            );
         }
     }
 
     async findActiveByStation(stationId: number): Promise<any> {
-    try {
-        const cabinets = await this.cabinetRepository.find({
-            where: { stationId, status: true }
-        });
-        const mappedData = cabinets.map(({ createdAt, updatedAt, status, ...rest }) => rest);
-        return {
-            data: mappedData,
-            message: 'Lấy danh sách tủ đang hoạt động tại trạm thành công'
-        };
-    } catch (error) {
-        throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách tủ theo trạm');
+        try {
+            const cabinets = await this.cabinetRepository.find({
+                where: { stationId }
+            });
+            const mappedData = cabinets.map(
+                ({ createdAt, updatedAt, ...rest }) => rest
+            );
+            return {
+                data: mappedData,
+                message: 'Lấy danh sách tủ đang hoạt động tại trạm thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách tủ theo trạm'
+            );
+        }
     }
-}
 
     async create(createCabinetDto: CreateCabinetDto): Promise<any> {
         try {
-            const result = await this.dataSource.transaction(async (manager) => {
-                const existed = await manager.findOne(Cabinet, {
-                    where: {
-                        name: createCabinetDto.name,
-                        stationId: createCabinetDto.stationId
+            const result = await this.dataSource.transaction(
+                async (manager) => {
+                    const existed = await manager.findOne(Cabinet, {
+                        where: {
+                            name: createCabinetDto.name,
+                            stationId: createCabinetDto.stationId
+                        }
+                    });
+                    if (existed) {
+                        throw new BadRequestException(
+                            'Tủ đã tồn tại tại trạm này'
+                        );
                     }
-                });
-                if (existed) {
-                    throw new BadRequestException('Tủ đã tồn tại tại trạm này');
+
+                    const newCabinet = manager.create(
+                        Cabinet,
+                        createCabinetDto
+                    );
+                    await manager.save(Cabinet, newCabinet);
+
+                    return {
+                        message: 'Tạo tủ thành công'
+                    };
                 }
-
-                const newCabinet = manager.create(Cabinet, createCabinetDto);
-                await manager.save(Cabinet, newCabinet);
-
-                return {
-                    message: 'Tạo tủ thành công'
-                };
-            });
+            );
             return result;
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tạo tủ');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi tạo tủ'
+            );
         }
     }
 
     async update(id: number, updateCabinetDto: UpdateCabinetDto): Promise<any> {
         try {
-            const cabinet = await this.cabinetRepository.findOne({ where: { id } });
+            const cabinet = await this.cabinetRepository.findOne({
+                where: { id }
+            });
             if (!cabinet) {
                 throw new NotFoundException('Tủ không tồn tại');
             }
@@ -140,7 +175,9 @@ export class CabinetService {
                     }
                 });
                 if (existed) {
-                    throw new BadRequestException('Tên tủ đã tồn tại tại trạm này');
+                    throw new BadRequestException(
+                        'Tên tủ đã tồn tại tại trạm này'
+                    );
                 }
             }
             Object.assign(cabinet, updateCabinetDto);
@@ -149,14 +186,22 @@ export class CabinetService {
                 message: 'Cập nhật tủ thành công'
             };
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi cập nhật tủ');
+            if (
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi cập nhật tủ'
+            );
         }
     }
 
     async softDelete(id: number): Promise<any> {
         try {
-            const cabinet = await this.cabinetRepository.findOne({ where: { id } });
+            const cabinet = await this.cabinetRepository.findOne({
+                where: { id }
+            });
             if (!cabinet) {
                 throw new NotFoundException('Tủ không tồn tại');
             }
@@ -169,19 +214,29 @@ export class CabinetService {
                 message: 'Xóa tủ thành công'
             };
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi xóa tủ');
+            if (
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi xóa tủ'
+            );
         }
     }
 
     async restore(id: number): Promise<any> {
         try {
-            const cabinet = await this.cabinetRepository.findOne({ where: { id } });
+            const cabinet = await this.cabinetRepository.findOne({
+                where: { id }
+            });
             if (!cabinet) {
                 throw new NotFoundException('Tủ không tồn tại');
             }
             if (cabinet.status === true) {
-                throw new BadRequestException('Tủ đã được kích hoạt sẵn trước đó');
+                throw new BadRequestException(
+                    'Tủ đã được kích hoạt sẵn trước đó'
+                );
             }
             cabinet.status = true;
             await this.cabinetRepository.save(cabinet);
@@ -189,8 +244,14 @@ export class CabinetService {
                 message: 'Khôi phục tủ thành công'
             };
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi khôi phục tủ');
+            if (
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi khôi phục tủ'
+            );
         }
     }
 }

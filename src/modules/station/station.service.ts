@@ -6,19 +6,46 @@ import {
     InternalServerErrorException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Station } from 'src/entities';
-import { DataSource, Like, Repository } from 'typeorm';
+import { Station, Slot, Battery, Cabinet } from 'src/entities';
+import { DataSource, In, Like, Repository } from 'typeorm';
 import { CreateStationDto } from './dto/create-station.dto';
 import { UpdateBatteryDto } from '../battery/dto/update-battery.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
+import { BatteryStatus } from 'src/enums/battery.enum';
+import { SlotStatus } from 'src/enums/slot.enum';
 
 @Injectable()
 export class StationService {
     constructor(
         @InjectRepository(Station)
         private readonly stationRepository: Repository<Station>,
-        private readonly dataSource: DataSource
+        private readonly dataSource: DataSource,
+        @InjectRepository(Cabinet)
+        private readonly cabinetRepository: Repository<Cabinet>,
+        @InjectRepository(Battery)
+        private readonly batteryRepository: Repository<Battery>,
+        @InjectRepository(Slot)
+        private readonly slotRepository: Repository<Slot>
     ) {}
+
+    private calcDistance(
+        lat1: number,
+        lon1: number,
+        lat2: number,
+        lon2: number
+    ): number {
+        const toRad = (x: number) => (x * Math.PI) / 180;
+        const R = 6371;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) *
+                Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 
     async findAll(
         page: number = 1,
@@ -53,7 +80,9 @@ export class StationService {
                 limit
             };
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách trạm');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách trạm'
+            );
         }
     }
 
@@ -76,7 +105,7 @@ export class StationService {
             });
 
             const mappedData = data.map(
-                ({ createdAt, updatedAt, ...rest }) => rest
+                ({ createdAt, updatedAt, status, ...rest }) => rest
             );
 
             return {
@@ -88,25 +117,31 @@ export class StationService {
                 limit
             };
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách trạm');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách trạm'
+            );
         }
     }
 
     async findById(id: number): Promise<{ data: Station; message: string }> {
         try {
-            const station = await this.stationRepository.findOne({ where: { id } });
+            const station = await this.stationRepository.findOne({
+                where: { id }
+            });
             if (!station) {
                 throw new NotFoundException('Trạm không tồn tại');
             }
 
-            const { createdAt, updatedAt, ...rest } = station;
+            const { createdAt, updatedAt, status, ...rest } = station;
             return {
                 data: rest as Station,
                 message: 'Lấy thông tin trạm thành công'
             };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy thông tin trạm');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy thông tin trạm'
+            );
         }
     }
 
@@ -136,17 +171,24 @@ export class StationService {
             return result;
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tạo trạm');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi tạo trạm'
+            );
         }
     }
 
     async update(id: number, updateStationDto: UpdateStationDto): Promise<any> {
         try {
-            const station = await this.stationRepository.findOne({ where: { id } });
+            const station = await this.stationRepository.findOne({
+                where: { id }
+            });
             if (!station) {
                 throw new NotFoundException('Trạm không tồn tại');
             }
-            if (updateStationDto.name && updateStationDto.name !== station.name) {
+            if (
+                updateStationDto.name &&
+                updateStationDto.name !== station.name
+            ) {
                 const existingStation = await this.stationRepository.findOne({
                     where: { name: updateStationDto.name }
                 });
@@ -161,16 +203,28 @@ export class StationService {
                 message: 'Cập nhật trạm thành công'
             };
         } catch (error) {
-            if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi cập nhật trạm');
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi cập nhật trạm'
+            );
         }
     }
 
     async softDelete(id: number): Promise<any> {
         try {
-            const station = await this.stationRepository.findOne({ where: { id } });
+            const station = await this.stationRepository.findOne({
+                where: { id }
+            });
             if (!station) {
                 throw new NotFoundException('Trạm không tồn tại');
+            }
+
+            if (!station.status) {
+                throw new BadRequestException('Trạm đã được xóa trước đó');
             }
 
             station.status = false;
@@ -180,15 +234,24 @@ export class StationService {
             };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi xóa trạm');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi xóa trạm'
+            );
         }
     }
 
     async restore(id: number): Promise<any> {
         try {
-            const station = await this.stationRepository.findOne({ where: { id } });
+            const station = await this.stationRepository.findOne({
+                where: { id }
+            });
             if (!station) {
                 throw new NotFoundException('Trạm không tồn tại');
+            }
+            if (station.status) {
+                throw new BadRequestException(
+                    'Trạm đã được khôi phục trước đó'
+                );
             }
             station.status = true;
             await this.stationRepository.save(station);
@@ -197,7 +260,86 @@ export class StationService {
             };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi khôi phục trạm');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi khôi phục trạm'
+            );
+        }
+    }
+
+    async findNearestStations(userLat: number, userLng: number, limit = 5) {
+        try {
+            const stations = await this.stationRepository.find({
+                where: { status: true }
+            });
+
+            const results = await Promise.all(
+                stations.map(async (station) => {
+                    const cabinets = await this.cabinetRepository.find({
+                        where: { stationId: station.id, status: true }
+                    });
+
+                    const cabinetIds = cabinets.map((c) => c.id);
+                    const slots = await this.slotRepository.find({
+                        where: { cabinetId: In(cabinetIds) }
+                    });
+
+                    const slotAvailable = slots.filter(
+                        (s) => s.status === SlotStatus.EMPTY
+                    ).length;
+
+                    const slotFullOrCharging = await Promise.all(
+                        slots
+                            .filter(
+                                (s) =>
+                                    (s.status === SlotStatus.FULL ||
+                                        s.status === SlotStatus.CHARGING) &&
+                                    s.batteryId
+                            )
+                            .map(async (s) => {
+                                const battery = await this.batteryRepository.findOne({
+                                    where: { id: s.batteryId }
+                                });
+                                return battery?.status ===
+                                    BatteryStatus.AVAILABLE
+                                    ? 1
+                                    : 0;
+                            })
+                    ).then((res) => res.reduce((a, b) => a + b, 0));
+
+                    const distance = this.calcDistance(
+                        userLat,
+                        userLng,
+                        station.latitude,
+                        station.longitude
+                    );
+
+                    return {
+                        id: station.id,
+                        name: station.name,
+                        description: station.description,
+                        address: station.address,
+                        latitude: station.latitude,
+                        longitude: station.longitude,
+                        temperature: station.temperature,
+                        totalCabinets: cabinets.length,
+                        slotAvailable,
+                        slotFullOrCharging,
+                        distance: Number(distance.toFixed(2))
+                    };
+                })
+            );
+
+            results.sort((a, b) => a.distance - b.distance);
+            return {
+                success: true,
+                message: 'Danh sách trạm gần nhất',
+                data: results.slice(0, limit)
+            };
+        } catch (error) {
+            console.log(error)
+            throw new InternalServerErrorException(
+                error.message || 'Lỗi khi tìm trạm gần nhất'
+            );
         }
     }
 }

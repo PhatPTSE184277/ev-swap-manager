@@ -18,6 +18,9 @@ export class Membership {
     @Column({ type: 'int' })
     duration: number;
 
+    @Column({ type: 'int', nullable: true })
+    swapLimit: number | null;
+
     @Column({ type: 'boolean', default: true })
     status: boolean;
 

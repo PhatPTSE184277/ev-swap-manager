@@ -29,7 +29,7 @@ import { UpdateStationDto } from './dto/update-station.dto';
 @Controller('station')
 export class StationController {
     constructor(private readonly stationService: StationService) {}
-    
+
     @Get('public')
     @ApiOperation({
         summary: 'Lấy danh sách trạm cho user (chỉ trạm đang hoạt động)',
@@ -56,6 +56,50 @@ export class StationController {
             search,
             order,
             true
+        );
+    }
+
+    @Get('nearest')
+    @ApiOperation({
+        summary: 'Tìm trạm gần nhất theo vị trí người dùng',
+        description:
+            'Trả về danh sách trạm gần nhất, số slot trống, số pin sạc đầy, địa chỉ, khoảng cách'
+    })
+    @ApiQuery({
+        name: 'lat',
+        required: true,
+        type: Number,
+        description: 'Vĩ độ của user'
+    })
+    @ApiQuery({
+        name: 'lng',
+        required: true,
+        type: Number,
+        description: 'Kinh độ của user'
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        type: Number,
+        description: 'Số lượng trạm trả về',
+        example: 5
+    })
+    async findNearestStations(
+        @Query('lat') lat: string,
+        @Query('lng') lng: string,
+        @Query('limit') limit: string = '5'
+    ) {
+        const latNum = Number(lat);
+        const lngNum = Number(lng);
+        const limitNum = Number(limit);
+
+        if (isNaN(latNum) || isNaN(lngNum)) {
+            return { success: false, message: 'lat và lng phải là số hợp lệ' };
+        }
+        return this.stationService.findNearestStations(
+            latNum,
+            lngNum,
+            limitNum
         );
     }
 
@@ -106,25 +150,7 @@ export class StationController {
         @Query('order') order: 'ASC' | 'DESC' = 'ASC',
         @Query('status') status?: boolean
     ) {
-        return this.stationService.findAll(
-            page,
-            limit,
-            search,
-            order,
-            status
-        );
-    }
-
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN, RoleName.STAFF)
-    @Get(':id')
-    @ApiOperation({
-        summary: 'Lấy chi tiết trạm',
-        description: 'Chỉ ADMIN hoặc STAFF'
-    })
-    @ApiParam({ name: 'id', type: Number, description: 'ID trạm' })
-    async findById(@Param('id') id: number) {
-        return this.stationService.findById(id);
+        return this.stationService.findAll(page, limit, search, order, status);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -163,5 +189,15 @@ export class StationController {
     @ApiParam({ name: 'id', type: Number, description: 'ID trạm' })
     async restore(@Param('id') id: number) {
         return this.stationService.restore(id);
+    }
+
+    @Get(':id')
+    @ApiOperation({
+        summary: 'Lấy chi tiết trạm',
+        description: 'Chỉ ADMIN hoặc STAFF'
+    })
+    @ApiParam({ name: 'id', type: Number, description: 'ID trạm' })
+    async findById(@Param('id') id: number) {
+        return this.stationService.findById(id);
     }
 }

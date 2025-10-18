@@ -87,18 +87,6 @@ export class CabinetController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(RoleName.ADMIN)
-    @Get(':id')
-    @ApiOperation({
-        summary: 'Lấy chi tiết tủ',
-        description: 'Chỉ ADMIN'
-    })
-    @ApiParam({ name: 'id', type: Number, description: 'ID tủ' })
-    async findById(@Param('id') id: number) {
-        return this.cabinetService.findById(id);
-    }
-
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
     @Post()
     @ApiOperation({ summary: 'Tạo mới tủ', description: 'Chỉ ADMIN' })
     async create(@Body() createCabinetDto: CreateCabinetDto) {
@@ -133,5 +121,14 @@ export class CabinetController {
     @ApiParam({ name: 'id', type: Number, description: 'ID tủ' })
     async restore(@Param('id') id: number) {
         return this.cabinetService.restore(id);
+    }
+
+    @Get(':id')
+    @ApiOperation({
+        summary: 'Lấy chi tiết tủ',
+    })
+    @ApiParam({ name: 'id', type: Number, description: 'ID tủ' })
+    async findById(@Param('id') id: number) {
+        return this.cabinetService.findById(id);
     }
 }

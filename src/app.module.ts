@@ -17,6 +17,8 @@ import { MembershipModule } from './modules/membership/membership.module';
 import { CabinetModule } from './modules/cabinet/cabinet.module';
 import { StationStaffModule } from './modules/station-staff/station-staff.module';
 import { SlotModule } from './modules/slot/slot.module';
+import { UserMembershipModule } from './modules/user-membership/user-membership.module';
+import { TransactionModule } from './modules/transaction/transaction.module';
 
 @Module({
     imports: [
@@ -42,7 +44,9 @@ import { SlotModule } from './modules/slot/slot.module';
         MembershipModule,
         CabinetModule,
         StationStaffModule,
-        SlotModule
+        SlotModule,
+        UserMembershipModule,
+        TransactionModule
     ],
     controllers: [],
     providers: [

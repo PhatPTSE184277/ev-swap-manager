@@ -69,22 +69,9 @@ export class SlotController {
         return this.slotService.findAll(page, limit, search, order, status, cabinetId);
     }
 
-    @Get('public/by-cabinet/:cabinetId')
-    @ApiOperation({
-        summary: 'Lấy danh sách slot đang hoạt động trong một tủ (cho user)'
-    })
-    @ApiParam({ name: 'cabinetId', type: Number, description: 'ID tủ' })
-    async findActiveByCabinet(@Param('cabinetId') cabinetId: number) {
-        // Bạn cần viết thêm hàm findActiveByCabinet trong SlotService nếu muốn dùng cho user
-        return this.slotService.findAll(1, 100, undefined, 'ASC', 'AVAILABLE', cabinetId);
-    }
-
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
     @Get(':id')
     @ApiOperation({
         summary: 'Lấy chi tiết slot',
-        description: 'Chỉ ADMIN'
     })
     @ApiParam({ name: 'id', type: Number, description: 'ID slot' })
     async findById(@Param('id') id: number) {

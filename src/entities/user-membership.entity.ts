@@ -1,7 +1,15 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    ManyToOne,
+    JoinColumn,
+    OneToMany
+} from 'typeorm';
 import { User } from './user.entity';
 import { Membership } from './membership.entity';
 import { Booking } from './booking.entity';
+import { Transaction } from './transaction.entity';
 import { UserMembershipStatus } from '../enums';
 
 @Entity('user_memberships')
@@ -18,7 +26,11 @@ export class UserMembership {
     @Column({ type: 'timestamp' })
     expiredDate: Date;
 
-    @Column({ type: 'enum', enum: UserMembershipStatus, default: UserMembershipStatus.ACTIVE })
+    @Column({
+        type: 'enum',
+        enum: UserMembershipStatus,
+        default: UserMembershipStatus.ACTIVE
+    })
     status: UserMembershipStatus;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
@@ -39,6 +51,9 @@ export class UserMembership {
     @JoinColumn({ name: 'membershipId' })
     membership: Membership;
 
-    @OneToMany(() => Booking, booking => booking.userMembership)
+    @OneToMany(() => Booking, (booking) => booking.userMembership)
     bookings: Booking[];
+
+    @OneToMany(() => Transaction, (transaction) => transaction.userMembership)
+    transactions: Transaction[];
 }

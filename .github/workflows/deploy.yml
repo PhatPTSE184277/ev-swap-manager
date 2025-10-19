@@ -40,7 +40,7 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
-            echo "${{ secrets.ENV_FILE }}" > ~/ev-swap-manager/.env
+            echo "${{ secrets.ENV_FILE }}" | tr -d '\r' > ~/ev-swap-manager/.env
 
       - name: Run deploy script on server
         uses: appleboy/ssh-action@v0.1.10

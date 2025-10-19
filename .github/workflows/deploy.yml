@@ -33,6 +33,15 @@ jobs:
           source: "."
           target: "~/ev-swap-manager"
 
+      - name: Create .env file on server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            echo "${{ secrets.ENV_FILE }}" > ~/ev-swap-manager/.env
+
       - name: Run deploy script on server
         uses: appleboy/ssh-action@v0.1.10
         with:

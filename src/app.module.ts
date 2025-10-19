@@ -19,6 +19,7 @@ import { StationStaffModule } from './modules/station-staff/station-staff.module
 import { SlotModule } from './modules/slot/slot.module';
 import { UserMembershipModule } from './modules/user-membership/user-membership.module';
 import { TransactionModule } from './modules/transaction/transaction.module';
+import { BatteryGateway } from './gateways/battery.gateway';
 
 @Module({
     imports: [
@@ -49,7 +50,7 @@ import { TransactionModule } from './modules/transaction/transaction.module';
         TransactionModule
     ],
     controllers: [],
-    providers: [
-    ]
+    providers: [BatteryGateway],
+    exports: [BatteryGateway]
 })
 export class AppModule {}

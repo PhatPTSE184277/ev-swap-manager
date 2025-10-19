@@ -1,9 +1,25 @@
-/* eslint-disable prefer-const */
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+    Battery,
+    Booking,
+    Membership,
+    Station,
+    UserMembership,
+    UserVehicle
+} from 'src/entities';
+import { BatteryStatus } from '../../enums/battery.enum';
+import { BookingStatus } from '../../enums/booking.enum';
+import { Slot } from 'src/entities';
+import {
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Booking, Membership, UserMembership } from 'src/entities';
 import { Between, DataSource, Like, Repository } from 'typeorm';
-import { UserMembershipStatus } from '../../enums';
+import { BatteryGateway } from 'src/gateways/battery.gateway';
+import { CreateBookingDto } from './dto/create-booking.dto';
+import { SlotStatus } from 'src/enums';
 
 @Injectable()
 export class BookingService {
@@ -14,6 +30,13 @@ export class BookingService {
         private readonly membershipRepository: Repository<Membership>,
         @InjectRepository(UserMembership)
         private readonly userMembershipRepository: Repository<UserMembership>,
+        @InjectRepository(Battery)
+        private readonly batteryRepository: Repository<Battery>,
+        @InjectRepository(Slot)
+        private readonly slotRepository: Repository<Slot>,
+        @InjectRepository(UserVehicle)
+        private readonly userVehicleRepository: Repository<UserVehicle>,
+        private readonly batteryGateway: BatteryGateway,
         private readonly dataSource: DataSource
     ) {}
 
@@ -31,7 +54,7 @@ export class BookingService {
         limit: number;
         message: string;
     }> {
-        let where: any = { userVehicle: { userId } };
+        const where: any = { userVehicle: { userId } };
 
         if (month && year) {
             const start = new Date(year, month - 1, 1, 0, 0, 0);
@@ -69,8 +92,6 @@ export class BookingService {
             },
             bookingDetails: booking.bookingDetails?.map((detail) => ({
                 id: detail.id,
-                oldBatteryPercent: detail.oldBatteryPercent,
-                quantityBattery: detail.quantityBattery,
                 totalPrice: detail.totalPrice,
                 status: detail.status
             }))
@@ -83,5 +104,79 @@ export class BookingService {
             limit,
             message: 'Bookings retrieved successfully'
         };
+    }
+
+    async createBooking(
+        userId,
+        createBookingDto: CreateBookingDto
+    ): Promise<any> {
+        try {
+            const result = await this.dataSource.transaction(
+                async (manager) => {
+                    const userVehicle = await manager.findOne(UserVehicle, {
+                        where: {
+                            id: createBookingDto.userVehicleId
+                        }
+                    });
+
+                    if (!userVehicle || userVehicle.userId !== userId) {
+                        throw new NotFoundException(
+                            'Phương tiện của người dùng không tồn tại'
+                        );
+                    }
+
+                    const station = await manager.findOne(Station, {
+                        where: { id: createBookingDto.stationId }
+                    });
+
+                    if (!station) {
+                        throw new NotFoundException('Trạm không tồn tại');
+                    }
+
+                    const battery = await manager.findOne(Battery, {
+                        where: { id: createBookingDto.batteryId }
+                    });
+                    if (
+                        !battery ||
+                        battery.status !== BatteryStatus.AVAILABLE
+                    ) {
+                        throw new BadRequestException('Pin không khả dụng');
+                    }
+
+                    const newSlot = await manager.findOne(Slot, {
+                        where: { id: createBookingDto.newBatterySlotId }
+                    });
+                    if (
+                        !newSlot ||
+                        (newSlot.status !== SlotStatus.FULL &&
+                            newSlot.status !== SlotStatus.CHARGING)
+                    ) {
+                        throw new BadRequestException(
+                            'Slot không có pin sẵn sàng'
+                        );
+                    }
+
+                    const oldSlot = await manager.findOne(Slot, {
+                        where: { id: createBookingDto.oldBatterySlotId }
+                    });
+                    if (!oldSlot || oldSlot.status !== SlotStatus.EMPTY) {
+                        throw new BadRequestException(
+                            'Slot không trống để bỏ pin cũ'
+                        );
+                    }
+                }
+            );
+        } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException(
+                'Đã xảy ra lỗi khi tạo đặt lịch'
+            );
+        }
     }
 }

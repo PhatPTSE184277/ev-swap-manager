@@ -1,7 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Slot } from './slot.entity';
 import { Battery } from './battery.entity';
-import { SlotHistoryStatus } from '../enums';
 
 @Entity('slot_histories')
 export class SlotHistory {
@@ -17,8 +16,8 @@ export class SlotHistory {
     @Column({ type: 'timestamp' })
     date: Date;
 
-    @Column({ type: 'enum', enum: SlotHistoryStatus })
-    status: SlotHistoryStatus;
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

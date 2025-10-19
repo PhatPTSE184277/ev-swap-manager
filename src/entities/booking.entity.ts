@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany, OneToOne } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    ManyToOne,
+    JoinColumn,
+    OneToMany,
+    OneToOne
+} from 'typeorm';
 import { UserVehicle } from './user-vehicle.entity';
 import { UserMembership } from './user-membership.entity';
 import { Transaction } from './transaction.entity';
@@ -20,10 +28,14 @@ export class Booking {
     @Column()
     transactionId: number;
 
-    @Column()
-    batteryId: number;
+    @Column({ type: 'timestamp', nullable: true })
+    expectedPickupTime: Date;
 
-    @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
+    @Column({
+        type: 'enum',
+        enum: BookingStatus,
+        default: BookingStatus.PENDING
+    })
     status: BookingStatus;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
@@ -48,9 +60,12 @@ export class Booking {
     @JoinColumn({ name: 'transactionId' })
     transaction: Transaction;
 
-    @OneToMany(() => BookingDetail, bookingDetail => bookingDetail.booking)
+    @OneToMany(() => BookingDetail, (bookingDetail) => bookingDetail.booking)
     bookingDetails: BookingDetail[];
 
-    @OneToMany(() => BatteryUsedHistory, batteryUsedHistory => batteryUsedHistory.booking)
+    @OneToMany(
+        () => BatteryUsedHistory,
+        (batteryUsedHistory) => batteryUsedHistory.booking
+    )
     batteryUsedHistories: BatteryUsedHistory[];
 }

@@ -3,7 +3,7 @@ import { UserStatus } from '../../enums/user.enum';
 import { UserMembershipStatus } from '../../enums/membership.enum';
 import { StaffHistoryShift } from '../../enums/station.enum';
 import { BatteryStatus, BatteryUsedStatus } from '../../enums/battery.enum';
-import { SlotStatus, SlotHistoryStatus } from '../../enums/slot.enum';
+import { SlotStatus } from '../../enums/slot.enum';
 import { BookingStatus, BookingDetailStatus } from '../../enums/booking.enum';
 import { TransactionStatus } from '../../enums/transaction.enum';
 
@@ -390,7 +390,7 @@ export const seedData = {
             id: 4,
             cabinetId: 2,
             batteryId: 3,
-            status: SlotStatus.OCCUPIED,
+            status: SlotStatus.CHARGING,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -410,7 +410,7 @@ export const seedData = {
             slotId: 1,
             batteryId: 1,
             date: new Date('2025-09-30T08:00:00'),
-            status: SlotHistoryStatus.FULL,
+            status: true,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -419,7 +419,7 @@ export const seedData = {
             slotId: 2,
             batteryId: 2,
             date: new Date('2025-09-30T09:00:00'),
-            status: SlotHistoryStatus.CHARGING,
+            status: true,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -428,7 +428,7 @@ export const seedData = {
             slotId: 3,
             batteryId: 5,
             date: new Date('2025-09-30T10:00:00'),
-            status: SlotHistoryStatus.EMPTY,
+            status: true,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -437,7 +437,7 @@ export const seedData = {
             slotId: 4,
             batteryId: 3,
             date: new Date('2025-09-30T11:00:00'),
-            status: SlotHistoryStatus.OCCUPIED,
+            status: true,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -446,7 +446,7 @@ export const seedData = {
             slotId: 5,
             batteryId: 4,
             date: new Date('2025-09-30T12:00:00'),
-            status: SlotHistoryStatus.MAINTENANCE,
+            status: true,
             createdAt: new Date(),
             updatedAt: new Date()
         }
@@ -491,8 +491,7 @@ export const seedData = {
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
-        },
-       
+        }
     ],
 
     transactions: [
@@ -541,8 +540,7 @@ export const seedData = {
             id: 1,
             userVehicleId: 1,
             userMembershipId: 1,
-            transactionId: 1,
-            batteryId: 2,
+            transactionId: null,
             status: BookingStatus.COMPLETED,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -550,9 +548,8 @@ export const seedData = {
         {
             id: 2,
             userVehicleId: 2,
-            userMembershipId: 2,
+            userMembershipId: null,
             transactionId: 2,
-            batteryId: 3,
             status: BookingStatus.PENDING,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -565,7 +562,7 @@ export const seedData = {
             bookingId: 1,
             oldBatteryPercent: 15,
             oldBatterySlotId: 1,
-            quantityBattery: 1,
+            batteryId: 2,
             totalPrice: 50000,
             status: BookingDetailStatus.COMPLETED,
             createdAt: new Date(),

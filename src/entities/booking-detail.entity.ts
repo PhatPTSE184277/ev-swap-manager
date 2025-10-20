@@ -8,6 +8,7 @@ import {
 import { Booking } from './booking.entity';
 import { Slot } from './slot.entity';
 import { BookingDetailStatus } from '../enums';
+import { Battery } from './battery.entity';
 
 @Entity('booking_details')
 export class BookingDetail {
@@ -43,4 +44,8 @@ export class BookingDetail {
     @ManyToOne(() => Booking)
     @JoinColumn({ name: 'bookingId' })
     booking: Booking;
+
+    @ManyToOne(() => Battery)
+    @JoinColumn({ name: 'batteryId' })
+    battery: Battery;
 }

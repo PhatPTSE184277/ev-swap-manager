@@ -11,6 +11,7 @@ import { DataSource, Like, Repository } from 'typeorm';
 import { CreateCabinetDto } from './dto/create-cabinet.dto';
 import { UpdateCabinetDto } from './dto/update-cabinet.dto';
 import { SlotStatus } from 'src/enums';
+import { Slot, Station } from 'src/entities';
 
 @Injectable()
 export class CabinetService {
@@ -100,7 +101,7 @@ export class CabinetService {
             );
         }
     }
-    
+
     async findActiveByStation(stationId: number): Promise<any> {
         try {
             const cabinets = await this.cabinetRepository.find({
@@ -155,20 +156,39 @@ export class CabinetService {
                         );
                     }
 
+                   const station = await manager.findOne(Station, {
+                       where: {
+                           id: createCabinetDto.stationId
+                       }
+                   });
+
+                     if (!station) {
+                            throw new NotFoundException('Trạm không tồn tại');
+                    }
+
                     const newCabinet = manager.create(
                         Cabinet,
                         createCabinetDto
                     );
                     await manager.save(Cabinet, newCabinet);
 
+                    for (let i = 1; i <= createCabinetDto.slotCount; i++) {
+                        const slot = manager.create(Slot, {
+                            cabinetId: newCabinet.id,
+                            name: `Slot ${i}`,
+                            status: SlotStatus.EMPTY
+                        });
+                        await manager.save(Slot, slot);
+                    }
+
                     return {
-                        message: 'Tạo tủ thành công'
+                        message: 'Tạo tủ và slot thành công'
                     };
                 }
             );
             return result;
         } catch (error) {
-            if (error instanceof BadRequestException) throw error;
+            if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
             throw new InternalServerErrorException(
                 error?.message || 'Lỗi hệ thống khi tạo tủ'
             );

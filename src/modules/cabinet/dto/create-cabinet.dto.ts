@@ -9,4 +9,7 @@ export class CreateCabinetDto {
 
     @NumberRequired('Nhiệt độ')
     temperature: number;
+
+    @NumberRequired('Số lượng slot')
+    slotCount: number;
 }

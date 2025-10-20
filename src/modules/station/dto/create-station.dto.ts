@@ -10,6 +10,15 @@ export class CreateStationDto {
     @StringRequired('Địa chỉ', 1, 255)
     address: string;
 
+    @StringRequired('Ảnh đại diện', 1, 255)
+    image: string;
+
+    @StringRequired('Thời gian mở cửa')
+    openTime: string;
+
+    @StringRequired('Thời gian đóng cửa')
+    closeTime: string;
+
     @NumberRequired('Vĩ độ')
     latitude: number;
 

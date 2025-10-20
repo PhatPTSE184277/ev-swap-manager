@@ -350,6 +350,7 @@ export const seedData = {
         {
             id: 1,
             cabinetId: 1,
+            name: 'Slot 1',
             batteryId: 1,
             status: SlotStatus.AVAILABLE,
             createdAt: new Date(),
@@ -358,8 +359,27 @@ export const seedData = {
         {
             id: 2,
             cabinetId: 1,
+            name: 'Slot 2',
             batteryId: 2,
             status: SlotStatus.CHARGING,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 3,
+            cabinetId: 2,
+            name: 'Slot 1',
+            batteryId: null,
+            status: SlotStatus.EMPTY,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 4,
+            cabinetId: 3,
+            name: 'Slot 1',
+            batteryId: 3,
+            status: SlotStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
         }

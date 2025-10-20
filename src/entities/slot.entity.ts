@@ -13,6 +13,9 @@ export class Slot {
     @Column()
     cabinetId: number;
 
+    @Column()
+    name: string;
+
     @Column({ nullable: true })
     batteryId: number;
 

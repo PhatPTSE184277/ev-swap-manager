@@ -23,9 +23,6 @@ export class Battery {
     @Column({ type: 'int' })
     cycleLife: number;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2 })
-    price: number;
-
     @Column({ type: 'enum', enum: BatteryStatus, default: BatteryStatus.AVAILABLE })
     status: BatteryStatus;
 

@@ -3,6 +3,7 @@ export enum BatteryStatus {
     IN_USE = 'IN_USE',
     CHARGING = 'CHARGING',
     MAINTENANCE = 'MAINTENANCE',
+    RESERVED = 'RESERVED',
     DAMAGED = 'DAMAGED'
 }
 

@@ -18,13 +18,10 @@ export class BookingDetail {
     bookingId: number;
 
     @Column()
-    oldBatterySlotId: number;
-
-    @Column()
     batteryId: number;
 
     @Column({ type: 'decimal', precision: 10, scale: 2 })
-    totalPrice: number;
+    price: number;
 
     @Column({
         type: 'enum',
@@ -46,8 +43,4 @@ export class BookingDetail {
     @ManyToOne(() => Booking)
     @JoinColumn({ name: 'bookingId' })
     booking: Booking;
-
-    @ManyToOne(() => Slot)
-    @JoinColumn({ name: 'oldBatterySlotId' })
-    oldBatterySlot: Slot;
 }

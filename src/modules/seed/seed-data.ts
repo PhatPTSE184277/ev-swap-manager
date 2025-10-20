@@ -274,6 +274,8 @@ export const seedData = {
             id: 1,
             name: 'Li-ion 48V Standard',
             description: 'Pin lithium-ion 48V tiêu chuẩn cho xe máy điện',
+            capacityKWh: 2.0,
+            pricePerSwap: 50000,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -282,6 +284,8 @@ export const seedData = {
             id: 2,
             name: 'Li-ion 60V Premium',
             description: 'Pin lithium-ion 60V cao cấp cho xe máy điện',
+            capacityKWh: 3.0,
+            pricePerSwap: 50000,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -316,7 +320,6 @@ export const seedData = {
             model: 'BAT48V001',
             capacity: 2000,
             cycleLife: 1000,
-            price: 2500000,
             status: BatteryStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -327,7 +330,6 @@ export const seedData = {
             model: 'BAT48V002',
             capacity: 2000,
             cycleLife: 1000,
-            price: 2500000,
             status: BatteryStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -338,29 +340,6 @@ export const seedData = {
             model: 'BAT60V001',
             capacity: 3000,
             cycleLife: 1200,
-            price: 3500000,
-            status: BatteryStatus.AVAILABLE,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 4,
-            batteryTypeId: 2,
-            model: 'BAT60V002',
-            capacity: 3000,
-            cycleLife: 1200,
-            price: 3500000,
-            status: BatteryStatus.AVAILABLE,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 5,
-            batteryTypeId: 1,
-            model: 'BAT48V003',
-            capacity: 2000,
-            cycleLife: 1000,
-            price: 2500000,
             status: BatteryStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -383,30 +362,6 @@ export const seedData = {
             status: SlotStatus.CHARGING,
             createdAt: new Date(),
             updatedAt: new Date()
-        },
-        {
-            id: 3,
-            cabinetId: 1,
-            batteryId: 5,
-            status: SlotStatus.EMPTY,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 4,
-            cabinetId: 2,
-            batteryId: 3,
-            status: SlotStatus.CHARGING,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 5,
-            cabinetId: 2,
-            batteryId: 4,
-            status: SlotStatus.MAINTENANCE,
-            createdAt: new Date(),
-            updatedAt: new Date()
         }
     ],
 
@@ -425,33 +380,6 @@ export const seedData = {
             slotId: 2,
             batteryId: 2,
             date: new Date('2025-09-30T09:00:00'),
-            status: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 3,
-            slotId: 3,
-            batteryId: 5,
-            date: new Date('2025-09-30T10:00:00'),
-            status: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 4,
-            slotId: 4,
-            batteryId: 3,
-            date: new Date('2025-09-30T11:00:00'),
-            status: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 5,
-            slotId: 5,
-            batteryId: 4,
-            date: new Date('2025-09-30T12:00:00'),
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -546,7 +474,8 @@ export const seedData = {
             id: 1,
             userVehicleId: 1,
             userMembershipId: 1,
-            transactionId: null,
+            transactionId: 1,
+            expectedPickupTime: new Date('2025-10-20T09:00:00'),
             status: BookingStatus.COMPLETED,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -554,8 +483,9 @@ export const seedData = {
         {
             id: 2,
             userVehicleId: 2,
-            userMembershipId: null,
+            userMembershipId: 2,
             transactionId: 2,
+            expectedPickupTime: new Date('2025-10-21T10:00:00'),
             status: BookingStatus.PENDING,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -566,11 +496,18 @@ export const seedData = {
         {
             id: 1,
             bookingId: 1,
-            oldBatteryPercent: 15,
-            oldBatterySlotId: 1,
             batteryId: 2,
-            totalPrice: 50000,
+            price: 50000,
             status: BookingDetailStatus.COMPLETED,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 2,
+            bookingId: 2,
+            batteryId: 3,
+            price: 50000,
+            status: BookingDetailStatus.PENDING,
             createdAt: new Date(),
             updatedAt: new Date()
         }

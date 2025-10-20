@@ -1,24 +1,28 @@
-import { NumberNotRequired, NumberRequired } from "src/common/decorators";
+import { ApiProperty } from '@nestjs/swagger';
+import { NumberNotRequired, NumberRequired } from 'src/common/decorators';
+
+export class CreateBookingDetailDto {
+    @NumberRequired('Pin mới')
+    batteryId: number;
+}
 
 export class CreateBookingDto {
-    @NumberRequired("Phương tiện của người dùng")
+    @NumberRequired('Phương tiện của người dùng')
     userVehicleId: number;
 
-    @NumberRequired("Trạm đổi pin")
+    @NumberRequired('Trạm đổi pin')
     stationId: number;
 
-    @NumberRequired("Pin mới")
-    batteryId: number;
+    @NumberRequired('Vĩ độ người dùng')
+    userLat: number;
 
-    @NumberRequired("Slot lấy pin mới")
-    newBatterySlotId: number;
+    @NumberRequired('Kinh độ người dùng')
+    userLng: number;
 
-    @NumberRequired("Slot bỏ pin cũ")
-    oldBatterySlotId: number;
-
-    @NumberRequired("Phần trăm pin cũ")
-    oldBatteryPercent: number;
-
-    @NumberNotRequired("ID phương thức thanh toán (nếu trả phí lẻ)")
-    paymentId?: number;
+    @ApiProperty({
+        type: [CreateBookingDetailDto],
+        description: 'Danh sách pin muốn đổi',
+        example: [{ batteryId: 0 }]
+    })
+    bookingDetails: CreateBookingDetailDto[];
 }

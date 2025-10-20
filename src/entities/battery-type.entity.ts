@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    CreateDateColumn,
+    Entity,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
+} from 'typeorm';
 import { Battery } from './battery.entity';
 import { VehicleType } from './vehicle-type.entity';
 
@@ -10,25 +17,27 @@ export class BatteryType {
     @Column({ length: 100 })
     name: string;
 
-    @Column({ length: 255 })
+    @Column({ length: 255, nullable: true })
     description?: string;
+
+    @Column({ type: 'float', nullable: true })
+    capacityKWh?: number;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+    pricePerSwap?: number;
 
     @Column({ type: 'boolean', default: true })
     status: boolean;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @CreateDateColumn({ type: 'timestamp' })
     createdAt: Date;
 
-    @Column({
-        type: 'timestamp',
-        default: () => 'CURRENT_TIMESTAMP',
-        onUpdate: 'CURRENT_TIMESTAMP'
-    })
+    @UpdateDateColumn({ type: 'timestamp' })
     updatedAt: Date;
 
-    @OneToMany(() => Battery, battery => battery.batteryType)
+    @OneToMany(() => Battery, (battery) => battery.batteryType)
     batteries: Battery[];
 
-    @OneToMany(() => VehicleType, vehicleType => vehicleType.batteryType)
+    @OneToMany(() => VehicleType, (vehicleType) => vehicleType.batteryType)
     vehicleTypes: VehicleType[];
 }

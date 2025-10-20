@@ -13,6 +13,7 @@ import { UpdateBatteryDto } from '../battery/dto/update-battery.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
 import { BatteryStatus } from 'src/enums/battery.enum';
 import { SlotStatus } from 'src/enums/slot.enum';
+import Helpers from '../../utils/helpers';
 
 @Injectable()
 export class StationService {
@@ -27,25 +28,6 @@ export class StationService {
         @InjectRepository(Slot)
         private readonly slotRepository: Repository<Slot>
     ) {}
-
-    private calcDistance(
-        lat1: number,
-        lon1: number,
-        lat2: number,
-        lon2: number
-    ): number {
-        const toRad = (x: number) => (x * Math.PI) / 180;
-        const R = 6371;
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-        const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) *
-                Math.cos(toRad(lat2)) *
-                Math.sin(dLon / 2) ** 2;
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }
 
     async findAll(
         page: number = 1,
@@ -306,7 +288,7 @@ export class StationService {
                             })
                     ).then((res) => res.reduce((a, b) => a + b, 0));
 
-                    const distance = this.calcDistance(
+                    const distance = Helpers.calcDistance(
                         userLat,
                         userLng,
                         station.latitude,

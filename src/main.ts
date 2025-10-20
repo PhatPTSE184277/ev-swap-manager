@@ -15,10 +15,7 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
 
     app.enableCors({
-        origin: [
-            configService.get('FRONTEND_URL'),
-            configService.get('MOBILE_APP_URL')
-        ],
+        origin: true,
         credentials: true,
     });
 

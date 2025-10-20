@@ -39,7 +39,4 @@ export class Slot {
 
     @OneToMany(() => SlotHistory, slotHistory => slotHistory.slot)
     slotHistories: SlotHistory[];
-
-    @OneToMany(() => BookingDetail, bookingDetail => bookingDetail.oldBatterySlot)
-    bookingDetails: BookingDetail[];
 }

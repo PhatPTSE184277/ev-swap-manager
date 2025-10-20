@@ -30,6 +30,9 @@ export class QrLoginController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Approve session QR (thiết bị đã login)' })
   async approve(@Body() dto: ApproveQrDto, @Req() req: any) {
+    console.log('🔍 req.user:', req.user);
+    console.log('📦 dto:', dto);
+
     return this.qrLoginService.approve(dto.sessionId, req.user);
   }
 

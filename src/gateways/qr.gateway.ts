@@ -1,6 +1,9 @@
 import {
   WebSocketGateway,
   WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
@@ -16,14 +19,7 @@ export class QrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private clients = new Map<string, Socket>();
 
   handleConnection(client: Socket) {
-    const sessionId = client.handshake.query?.sessionId as string;
-    if (!sessionId) {
-      this.logger.warn(`Client thiếu sessionId -> disconnect`);
-      client.disconnect();
-      return;
-    }
-    this.clients.set(sessionId, client);
-    this.logger.log(`Client connected (sessionId=${sessionId})`);
+    this.logger.log(`🔌 Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
@@ -33,20 +29,38 @@ export class QrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (entry) {
       const [sessionId] = entry;
       this.clients.delete(sessionId);
-      this.logger.log(`Client disconnected (sessionId=${sessionId})`);
     }
   }
 
+  // ✅ Khi client join với sessionId
+  @SubscribeMessage('join')
+  handleJoin(
+    @MessageBody() data: { sessionId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { sessionId } = data;
+    if (!sessionId) {
+      this.logger.warn('⚠️ Client thiếu sessionId khi join');
+      client.disconnect();
+      return;
+    }
+
+    this.clients.set(sessionId, client);
+  }
+
+  // ✅ Gửi sự kiện khi QR được duyệt
   notifyApproved(sessionId: string, token: string) {
     const client = this.clients.get(sessionId);
     if (client) {
       client.emit('qr_approved', { token });
       client.disconnect(true);
       this.clients.delete(sessionId);
-      this.logger.log(`QR approved emitted for ${sessionId}`);
+    } else {
+      this.logger.warn(`⚠️ Không tìm thấy client cho sessionId=${sessionId}`);
     }
   }
 
+  // ✅ Gửi sự kiện khi QR hết hạn
   notifyExpired(sessionId: string) {
     const client = this.clients.get(sessionId);
     if (client) {

@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { ValidateNested } from 'class-validator';
 import { NumberNotRequired, NumberRequired } from 'src/common/decorators';
 
 export class CreateBookingDetailDto {
@@ -24,5 +26,7 @@ export class CreateBookingDto {
         description: 'Danh sách pin muốn đổi',
         example: [{ batteryId: 0 }]
     })
+    @ValidateNested({ each: true })
+    @Type(() => CreateBookingDetailDto)
     bookingDetails: CreateBookingDetailDto[];
 }

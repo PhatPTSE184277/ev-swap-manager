@@ -148,16 +148,12 @@ export class BookingService {
                         slot.status = SlotStatus.RESERVED;
                         await manager.save(Slot, slot);
 
-                        // const price =
-                        //     typeof detail. === 'number'
-                        //         ? detail.price
-                        //         : (battery.batteryType?.pricePerSwap ??
-                        //           battery.price);
+                      const price = battery.batteryType?.pricePerSwap ?? 0;
 
                         const bookingDetail = manager.create('BookingDetail', {
                             bookingId: booking.id,
                             batteryId: detail.batteryId,
-                            // price: price,
+                            price: price,
                             status: BookingDetailStatus.PENDING
                         });
                         await manager.save('BookingDetail', bookingDetail);

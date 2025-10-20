@@ -9,7 +9,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Station, Slot, Battery, Cabinet } from 'src/entities';
 import { DataSource, In, Like, Repository } from 'typeorm';
 import { CreateStationDto } from './dto/create-station.dto';
-import { UpdateBatteryDto } from '../battery/dto/update-battery.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
 import { BatteryStatus } from 'src/enums/battery.enum';
 import { SlotStatus } from 'src/enums/slot.enum';
@@ -86,8 +85,47 @@ export class StationService {
                 take: limit
             });
 
-            const mappedData = data.map(
-                ({ createdAt, updatedAt, status, ...rest }) => rest
+            const mappedData = await Promise.all(
+                data.map(async (station) => {
+                    const cabinets = await this.cabinetRepository.find({
+                        where: { stationId: station.id, status: true }
+                    });
+                    const cabinetIds = cabinets.map((c) => c.id);
+                    const slots = await this.slotRepository.find({
+                        where: { cabinetId: In(cabinetIds) }
+                    });
+
+                    const slotAvailable = slots.filter(
+                        (s) => s.status === SlotStatus.EMPTY
+                    ).length;
+
+                    const slotCharging = await Promise.all(
+                        slots
+                            .filter(
+                                (s) =>
+                                    s.status === SlotStatus.CHARGING &&
+                                    s.batteryId
+                            )
+                            .map(async (s) => {
+                                const battery =
+                                    await this.batteryRepository.findOne({
+                                        where: { id: s.batteryId }
+                                    });
+                                return battery?.status ===
+                                    BatteryStatus.AVAILABLE
+                                    ? 1
+                                    : 0;
+                            })
+                    ).then((res) => res.reduce((a, b) => a + b, 0));
+
+                    const { createdAt, updatedAt, status, ...rest } = station;
+                    return {
+                        ...rest,
+                        totalCabinets: cabinets.length,
+                        slotAvailable,
+                        slotCharging
+                    };
+                })
             );
 
             return {
@@ -269,18 +307,17 @@ export class StationService {
                         (s) => s.status === SlotStatus.EMPTY
                     ).length;
 
-                    const slotFullOrCharging = await Promise.all(
+                    const slotCharging = await Promise.all(
                         slots
                             .filter(
                                 (s) =>
-                                    (s.status === SlotStatus.AVAILABLE ||
-                                        s.status === SlotStatus.CHARGING) &&
-                                    s.batteryId
+                                    s.status === SlotStatus.CHARGING && s.batteryId
                             )
                             .map(async (s) => {
-                                const battery = await this.batteryRepository.findOne({
-                                    where: { id: s.batteryId }
-                                });
+                                const battery =
+                                    await this.batteryRepository.findOne({
+                                        where: { id: s.batteryId }
+                                    });
                                 return battery?.status ===
                                     BatteryStatus.AVAILABLE
                                     ? 1
@@ -300,12 +337,15 @@ export class StationService {
                         name: station.name,
                         description: station.description,
                         address: station.address,
+                        openTime: station.openTime,
+                        closeTime: station.closeTime,
+                        image: station.image,
                         latitude: station.latitude,
                         longitude: station.longitude,
                         temperature: station.temperature,
                         totalCabinets: cabinets.length,
                         slotAvailable,
-                        slotFullOrCharging,
+                        slotCharging,
                         distance: Number(distance.toFixed(2))
                     };
                 })
@@ -318,7 +358,7 @@ export class StationService {
                 data: results.slice(0, limit)
             };
         } catch (error) {
-            console.log(error)
+            console.log(error);
             throw new InternalServerErrorException(
                 error.message || 'Lỗi khi tìm trạm gần nhất'
             );

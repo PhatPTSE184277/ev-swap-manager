@@ -26,6 +26,9 @@ export class UserMembership {
     @Column({ type: 'timestamp' })
     expiredDate: Date;
 
+    @Column({ type: 'int', default: 0 })
+    remainingSwaps: number;
+
     @Column({
         type: 'enum',
         enum: UserMembershipStatus,

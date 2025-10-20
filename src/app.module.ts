@@ -20,6 +20,7 @@ import { SlotModule } from './modules/slot/slot.module';
 import { UserMembershipModule } from './modules/user-membership/user-membership.module';
 import { TransactionModule } from './modules/transaction/transaction.module';
 import { BatteryGateway } from './gateways/battery.gateway';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
     imports: [
@@ -31,6 +32,7 @@ import { BatteryGateway } from './gateways/battery.gateway';
             useFactory: (configService: ConfigService): TypeOrmModuleOptions =>
                 typeOrmConfig(configService)
         }),
+        ScheduleModule.forRoot(),
         UserModule,
         AuthModule,
         MailModule,

@@ -22,10 +22,10 @@ export class Booking {
     @Column()
     userVehicleId: number;
 
-    @Column()
+    @Column({ nullable: true })
     userMembershipId: number;
 
-    @Column()
+    @Column({ nullable: true })
     transactionId: number;
 
     @Column({ type: 'timestamp', nullable: true })

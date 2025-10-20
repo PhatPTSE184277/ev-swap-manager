@@ -148,8 +148,7 @@ export class BookingService {
                     });
                     if (
                         !newSlot ||
-                        (newSlot.status !== SlotStatus.FULL &&
-                            newSlot.status !== SlotStatus.CHARGING)
+                        (newSlot.status !== SlotStatus.AVAILABLE)
                     ) {
                         throw new BadRequestException(
                             'Slot không có pin sẵn sàng'

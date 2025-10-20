@@ -134,7 +134,8 @@ export const seedData = {
             id: 1,
             userId: 2,
             membershipId: 1,
-            expiredDate: new Date('2024-10-01'),
+            expiredDate: new Date('2025-10-01'),
+            remainingSwaps: 10,
             status: UserMembershipStatus.ACTIVE,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -143,7 +144,8 @@ export const seedData = {
             id: 2,
             userId: 3,
             membershipId: 2,
-            expiredDate: new Date('2024-10-15'),
+            expiredDate: new Date('2025-11-15'),
+            remainingSwaps: 30,
             status: UserMembershipStatus.ACTIVE,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -159,6 +161,8 @@ export const seedData = {
             latitude: 10.7769,
             longitude: 106.7009,
             temperature: 26.5,
+            openTime: '06:00:00',
+            closeTime: '22:00:00',
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -171,6 +175,8 @@ export const seedData = {
             latitude: 10.7769,
             longitude: 106.6919,
             temperature: 27.2,
+            openTime: '07:00:00',
+            closeTime: '21:00:00',
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -366,7 +372,7 @@ export const seedData = {
             id: 1,
             cabinetId: 1,
             batteryId: 1,
-            status: SlotStatus.FULL,
+            status: SlotStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
         },

@@ -291,7 +291,7 @@ export class StationService {
                         slots
                             .filter(
                                 (s) =>
-                                    (s.status === SlotStatus.FULL ||
+                                    (s.status === SlotStatus.AVAILABLE ||
                                         s.status === SlotStatus.CHARGING) &&
                                     s.batteryId
                             )

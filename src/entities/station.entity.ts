@@ -18,6 +18,9 @@ export class Station {
     @Column({ length: 255 })
     address: string;
 
+    @Column({ length: 255, nullable: true })
+    image: string;
+
     @Column({ type: 'decimal', precision: 10, scale: 8 })
     latitude: number;
 
@@ -26,6 +29,12 @@ export class Station {
 
     @Column({ type: 'decimal', precision: 5, scale: 2 })
     temperature: number;
+
+    @Column({ type: 'time', nullable: true })
+    openTime: string;
+
+    @Column({ type: 'time', nullable: true })
+    closeTime: string;
 
     @Column({ type: 'boolean', default: true })
     status: boolean;
@@ -40,15 +49,18 @@ export class Station {
     })
     updatedAt: Date;
 
-    @OneToMany(() => StationStaff, stationStaff => stationStaff.station)
+    @OneToMany(() => StationStaff, (stationStaff) => stationStaff.station)
     stationStaffs: StationStaff[];
 
-    @OneToMany(() => Cabinet, cabinet => cabinet.station)
+    @OneToMany(() => Cabinet, (cabinet) => cabinet.station)
     cabinets: Cabinet[];
 
-    @OneToMany(() => StationStaffHistory, stationStaffHistory => stationStaffHistory.station)
+    @OneToMany(
+        () => StationStaffHistory,
+        (stationStaffHistory) => stationStaffHistory.station
+    )
     stationStaffHistories: StationStaffHistory[];
 
-    @OneToMany(() => Feedback, feedback => feedback.station)
+    @OneToMany(() => Feedback, (feedback) => feedback.station)
     feedbacks: Feedback[];
 }

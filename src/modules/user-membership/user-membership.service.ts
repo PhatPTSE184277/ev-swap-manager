@@ -22,12 +22,12 @@ export class UserMembershipService {
         private readonly dataSource: DataSource
     ) {}
 
-    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    @Cron(CronExpression.EVERY_MINUTE)
     async expireUserMemberships() {
         const now = new Date();
         await this.userMembershipRepository
             .createQueryBuilder()
-            .update()
+            .update(UserMembership)
             .set({ status: UserMembershipStatus.EXPIRED })
             .where('expiredDate < :now', { now })
             .andWhere('status = :active', {

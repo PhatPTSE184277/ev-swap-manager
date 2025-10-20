@@ -10,6 +10,7 @@ import { Cabinet } from 'src/entities/cabinet.entity';
 import { DataSource, Like, Repository } from 'typeorm';
 import { CreateCabinetDto } from './dto/create-cabinet.dto';
 import { UpdateCabinetDto } from './dto/update-cabinet.dto';
+import { SlotStatus } from 'src/enums';
 
 @Injectable()
 export class CabinetService {
@@ -99,15 +100,34 @@ export class CabinetService {
             );
         }
     }
-
+    
     async findActiveByStation(stationId: number): Promise<any> {
         try {
             const cabinets = await this.cabinetRepository.find({
-                where: { stationId }
+                where: { stationId, status: true },
+                relations: ['slots']
             });
-            const mappedData = cabinets.map(
-                ({ createdAt, updatedAt, ...rest }) => rest
-            );
+
+            const mappedData = cabinets.map((cabinet) => {
+                let available = 0;
+                let charging = 0;
+                let empty = 0;
+
+                (cabinet.slots || []).forEach((slot) => {
+                    if (slot.status === SlotStatus.AVAILABLE) available++;
+                    else if (slot.status === SlotStatus.CHARGING) charging++;
+                    else if (slot.status === SlotStatus.EMPTY) empty++;
+                });
+
+                const { createdAt, updatedAt, slots, ...rest } = cabinet;
+                return {
+                    ...rest,
+                    availablePins: available,
+                    chargingPins: charging,
+                    emptySlots: empty
+                };
+            });
+
             return {
                 data: mappedData,
                 message: 'Lấy danh sách tủ đang hoạt động tại trạm thành công'

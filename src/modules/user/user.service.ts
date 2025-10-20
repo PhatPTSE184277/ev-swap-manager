@@ -10,7 +10,7 @@ import { Like, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import { UserStatus } from 'src/enums';
+import { UserMembershipStatus, UserStatus } from 'src/enums';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
@@ -25,12 +25,17 @@ export class UserService {
     ): Promise<User | undefined> {
         try {
             const user = await this.userRepository.findOne({
-                where: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
+                where: [
+                    { username: usernameOrEmail },
+                    { email: usernameOrEmail }
+                ],
                 relations: ['role']
             });
             return user ?? undefined;
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tìm kiếm người dùng');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi tìm kiếm người dùng'
+            );
         }
     }
 
@@ -50,9 +55,16 @@ export class UserService {
                 throw new BadRequestException('Email đã tồn tại');
             }
 
-            const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-            const emailVerificationToken = crypto.randomBytes(32).toString('hex');
-            const emailVerificationExpire = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+            const hashedPassword = await bcrypt.hash(
+                createUserDto.password,
+                10
+            );
+            const emailVerificationToken = crypto
+                .randomBytes(32)
+                .toString('hex');
+            const emailVerificationExpire = new Date(
+                Date.now() + 60 * 60 * 1000
+            ); // 1 hour
 
             const user = this.userRepository.create({
                 ...createUserDto,
@@ -66,7 +78,9 @@ export class UserService {
             return await this.userRepository.save(user);
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tạo người dùng');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi tạo người dùng'
+            );
         }
     }
 
@@ -88,7 +102,9 @@ export class UserService {
                 role: user.role?.name || null
             };
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy thông tin người dùng');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy thông tin người dùng'
+            );
         }
     }
 
@@ -96,35 +112,67 @@ export class UserService {
         try {
             const user = await this.userRepository.findOne({
                 where: { id },
-                relations: ['role']
+                relations: [
+                    'role',
+                    'userMemberships',
+                    'userMemberships.membership'
+                ]
             });
+
             if (!user) {
                 throw new NotFoundException('Người dùng không tồn tại');
             }
+
+           const activeMemberships = user.userMemberships
+            .filter(
+                (um) =>
+                    um.status === UserMembershipStatus.ACTIVE &&
+                    new Date(um.expiredDate) > new Date()
+            )
+            .map((um) => ({
+                id: um.id,
+                expiredDate: um.expiredDate,
+                remainingSwaps: um.remainingSwaps,
+                membership: {
+                    id: um.membership.id,
+                    name: um.membership.name,
+                    description: um.membership.description,
+                    duration: um.membership.duration,
+                    swapLimit: um.membership.swapLimit,
+                }
+            }));
+
+
             const {
                 password,
-                resetPasswordToken,
-                resetPasswordExpire,
-                emailVerificationToken,
-                emailVerificationExpire,
                 otp,
                 expireOtp,
-                roleId,
+                emailVerificationToken,
+                emailVerificationExpire,
+                resetPasswordToken,
+                resetPasswordExpire,
                 status,
+                roleId,
+                role,
                 createdAt,
                 updatedAt,
-                ...result
+                userMemberships,
+                ...rest
             } = user;
+
             return {
                 data: {
-                    ...result,
-                    role: user.role?.name || null
+                    ...rest,
+                    role: role?.name || null,
+                    memberships: activeMemberships
                 },
                 message: 'Lấy thông tin người dùng thành công'
             };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy thông tin người dùng');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy thông tin người dùng'
+            );
         }
     }
 
@@ -139,7 +187,10 @@ export class UserService {
             });
             return user ?? undefined;
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tìm kiếm token xác thực email');
+            throw new InternalServerErrorException(
+                error?.message ||
+                    'Lỗi hệ thống khi tìm kiếm token xác thực email'
+            );
         }
     }
 
@@ -152,7 +203,10 @@ export class UserService {
             });
             return user ?? undefined;
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tìm kiếm token reset mật khẩu');
+            throw new InternalServerErrorException(
+                error?.message ||
+                    'Lỗi hệ thống khi tìm kiếm token reset mật khẩu'
+            );
         }
     }
 
@@ -165,7 +219,9 @@ export class UserService {
                 !user.emailVerificationExpire ||
                 user.emailVerificationExpire < new Date()
             ) {
-                throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+                throw new BadRequestException(
+                    'Token không hợp lệ hoặc đã hết hạn'
+                );
             }
 
             user.status = UserStatus.VERIFIED;
@@ -176,7 +232,9 @@ export class UserService {
             return true;
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi xác thực email');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi xác thực email'
+            );
         }
     }
 
@@ -208,7 +266,9 @@ export class UserService {
             return user;
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi gửi lại mã xác thực');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi gửi lại mã xác thực'
+            );
         }
     }
 
@@ -228,7 +288,9 @@ export class UserService {
             return await this.userRepository.save(user);
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tạo token reset mật khẩu');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi tạo token reset mật khẩu'
+            );
         }
     }
 
@@ -241,7 +303,9 @@ export class UserService {
                 !user.resetPasswordExpire ||
                 user.resetPasswordExpire < new Date()
             ) {
-                throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+                throw new BadRequestException(
+                    'Token không hợp lệ hoặc đã hết hạn'
+                );
             }
 
             const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -253,7 +317,9 @@ export class UserService {
             return true;
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi đặt lại mật khẩu');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi đặt lại mật khẩu'
+            );
         }
     }
 
@@ -272,7 +338,9 @@ export class UserService {
             return { message: 'Cập nhật thông tin thành công' };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi cập nhật thông tin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi cập nhật thông tin'
+            );
         }
     }
 
@@ -290,10 +358,17 @@ export class UserService {
                 user.password
             );
             if (!isMatch) {
-                throw new BadRequestException('Mật khẩu hiện tại không chính xác');
+                throw new BadRequestException(
+                    'Mật khẩu hiện tại không chính xác'
+                );
             }
-            if (changePasswordDto.currentPassword === changePasswordDto.newPassword) {
-                throw new BadRequestException('Mật khẩu mới phải khác mật khẩu hiện tại');
+            if (
+                changePasswordDto.currentPassword ===
+                changePasswordDto.newPassword
+            ) {
+                throw new BadRequestException(
+                    'Mật khẩu mới phải khác mật khẩu hiện tại'
+                );
             }
             const hashedPassword = await bcrypt.hash(
                 changePasswordDto.newPassword,
@@ -303,8 +378,14 @@ export class UserService {
             await this.userRepository.save(user);
             return { message: 'Đổi mật khẩu thành công' };
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi đổi mật khẩu');
+            if (
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi đổi mật khẩu'
+            );
         }
     }
 
@@ -373,7 +454,9 @@ export class UserService {
                 message: 'Lấy danh sách người dùng thành công'
             };
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách người dùng');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách người dùng'
+            );
         }
     }
 
@@ -390,8 +473,14 @@ export class UserService {
             await this.userRepository.save(user);
             return { message: 'Xóa người dùng thành công' };
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi xóa người dùng');
+            if (
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi xóa người dùng'
+            );
         }
     }
 
@@ -402,14 +491,22 @@ export class UserService {
                 throw new NotFoundException('Không tìm thấy người dùng');
             }
             if (user.status !== UserStatus.INACTIVE) {
-                throw new BadRequestException('Người dùng không ở trạng thái bị xóa');
+                throw new BadRequestException(
+                    'Người dùng không ở trạng thái bị xóa'
+                );
             }
             user.status = UserStatus.VERIFIED;
             await this.userRepository.save(user);
             return { message: 'Khôi phục người dùng thành công' };
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi khôi phục người dùng');
+            if (
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi khôi phục người dùng'
+            );
         }
     }
 }

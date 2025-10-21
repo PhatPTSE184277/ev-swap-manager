@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Membership, User, UserMembership } from 'src/entities';
-import { DataSource, MoreThan, Repository } from 'typeorm';
+import { DataSource, LessThan, MoreThan, Repository } from 'typeorm';
 import { CreateUserMembershipDto } from './dto/create-user-membership.dto';
 import { UserMembershipStatus } from '../../enums';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -25,15 +25,17 @@ export class UserMembershipService {
     @Cron(CronExpression.EVERY_MINUTE)
     async expireUserMemberships() {
         const now = new Date();
-        await this.userMembershipRepository
-            .createQueryBuilder()
-            .update(UserMembership)
-            .set({ status: UserMembershipStatus.EXPIRED })
-            .where('expiredDate < :now', { now })
-            .andWhere('status = :active', {
-                active: UserMembershipStatus.ACTIVE
-            })
-            .execute();
+        const expiredMemberships = await this.userMembershipRepository.find({
+            where: {
+                status: UserMembershipStatus.ACTIVE,
+                expiredDate: LessThan(now)
+            }
+        });
+
+        for (const membership of expiredMemberships) {
+            membership.status = UserMembershipStatus.EXPIRED;
+            await this.userMembershipRepository.save(membership);
+        }
     }
 
     async create(
@@ -105,5 +107,5 @@ export class UserMembershipService {
         }
     }
 
-    c
+    c;
 }

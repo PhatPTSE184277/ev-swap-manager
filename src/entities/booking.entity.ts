@@ -5,7 +5,9 @@ import {
     ManyToOne,
     JoinColumn,
     OneToMany,
-    OneToOne
+    OneToOne,
+    BeforeInsert,
+    BeforeUpdate
 } from 'typeorm';
 import { UserVehicle } from './user-vehicle.entity';
 import { UserMembership } from './user-membership.entity';
@@ -68,4 +70,15 @@ export class Booking {
         (batteryUsedHistory) => batteryUsedHistory.booking
     )
     batteryUsedHistories: BatteryUsedHistory[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

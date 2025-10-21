@@ -1,4 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    ManyToOne,
+    JoinColumn,
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate
+} from 'typeorm';
 import { BatteryType } from './battery-type.entity';
 import { UserVehicle } from './user-vehicle.entity';
 
@@ -33,6 +42,17 @@ export class VehicleType {
     @JoinColumn({ name: 'batteryTypeId' })
     batteryType: BatteryType;
 
-    @OneToMany(() => UserVehicle, userVehicle => userVehicle.vehicleType)
+    @OneToMany(() => UserVehicle, (userVehicle) => userVehicle.vehicleType)
     userVehicles: UserVehicle[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

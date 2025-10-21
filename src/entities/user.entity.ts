@@ -4,7 +4,9 @@ import {
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
-    OneToMany
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate
 } from 'typeorm';
 import { Role } from './role.entity';
 import { UserMembership } from './user-membership.entity';
@@ -51,7 +53,11 @@ export class User {
     @Column({ nullable: true, type: 'datetime' })
     resetPasswordExpire: Date | null;
 
-    @Column({ type: 'enum', enum: UserStatus, default: UserStatus.PENDING_VERIFICATION })
+    @Column({
+        type: 'enum',
+        enum: UserStatus,
+        default: UserStatus.PENDING_VERIFICATION
+    })
     status: UserStatus;
 
     @Column()
@@ -82,4 +88,15 @@ export class User {
 
     @OneToMany(() => Feedback, (feedback) => feedback.user)
     feedbacks: Feedback[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

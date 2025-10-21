@@ -4,7 +4,9 @@ import {
     PrimaryGeneratedColumn,
     ManyToOne,
     JoinColumn,
-    OneToMany
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate
 } from 'typeorm';
 import { User } from './user.entity';
 import { VehicleType } from './vehicle-type.entity';
@@ -55,4 +57,15 @@ export class UserVehicle {
 
     @OneToMany(() => Booking, (booking) => booking.userVehicle)
     bookings: Booking[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

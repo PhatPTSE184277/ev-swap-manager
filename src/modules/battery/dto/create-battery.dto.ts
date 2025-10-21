@@ -1,6 +1,9 @@
-import { NumberRequired, StringRequired } from "src/common/decorators";
+import { NumberRequired, StringRequired } from 'src/common/decorators';
 
 export class CreateBatteryDto {
+    @NumberRequired('Loại pin')
+    batteryTypeId: number;
+
     @StringRequired('Tên pin')
     model: string;
 

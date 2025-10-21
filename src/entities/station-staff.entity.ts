@@ -1,4 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    ManyToOne,
+    JoinColumn,
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate
+} from 'typeorm';
 import { User } from './user.entity';
 import { Station } from './station.entity';
 import { StationStaffHistory } from './station-staff-history.entity';
@@ -38,6 +47,20 @@ export class StationStaff {
     @JoinColumn({ name: 'stationId' })
     station: Station;
 
-    @OneToMany(() => StationStaffHistory, stationStaffHistory => stationStaffHistory.stationStaff)
+    @OneToMany(
+        () => StationStaffHistory,
+        (stationStaffHistory) => stationStaffHistory.stationStaff
+    )
     stationStaffHistories: StationStaffHistory[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

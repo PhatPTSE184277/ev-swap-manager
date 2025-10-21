@@ -55,6 +55,7 @@ export class MailService {
                 html
             });
         } catch (error) {
+            console.error('MAIL ERROR:', error);
             throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi gửi email xác thực');
         }
     }

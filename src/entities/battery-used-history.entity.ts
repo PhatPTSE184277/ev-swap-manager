@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, BeforeInsert, BeforeUpdate } from 'typeorm';
 import { Battery } from './battery.entity';
 import { Booking } from './booking.entity';
 import { BatteryUsedStatus } from '../enums';
@@ -49,4 +49,15 @@ export class BatteryUsedHistory {
     @ManyToOne(() => Booking)
     @JoinColumn({ name: 'bookingId' })
     booking: Booking;
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

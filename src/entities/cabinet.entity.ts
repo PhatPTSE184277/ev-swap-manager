@@ -4,7 +4,9 @@ import {
     PrimaryGeneratedColumn,
     ManyToOne,
     JoinColumn,
-    OneToMany
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate
 } from 'typeorm';
 import { Station } from './station.entity';
 import { Slot } from './slot.entity';
@@ -46,4 +48,15 @@ export class Cabinet {
 
     @OneToMany(() => CabinetHistory, (cabinetHistory) => cabinetHistory.cabinet)
     cabinetHistories: CabinetHistory[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate
+} from 'typeorm';
 import { Transaction } from './transaction.entity';
 
 @Entity('payments')
@@ -25,6 +32,17 @@ export class Payment {
     })
     updatedAt: Date;
 
-    @OneToMany(() => Transaction, transaction => transaction.payment)
+    @OneToMany(() => Transaction, (transaction) => transaction.payment)
     transactions: Transaction[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

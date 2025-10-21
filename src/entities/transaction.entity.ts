@@ -4,7 +4,9 @@ import {
     PrimaryGeneratedColumn,
     ManyToOne,
     JoinColumn,
-    OneToOne
+    OneToOne,
+    BeforeInsert,
+    BeforeUpdate
 } from 'typeorm';
 import { Payment } from './payment.entity';
 import { Booking } from './booking.entity';
@@ -59,4 +61,15 @@ export class Transaction {
 
     @OneToOne(() => Booking, (booking) => booking.transaction)
     booking: Booking;
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

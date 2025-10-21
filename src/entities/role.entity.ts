@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate
+} from 'typeorm';
 import { User } from './user.entity';
 import { RoleName } from '../enums';
 
@@ -7,7 +14,12 @@ export class Role {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: 'enum', enum: RoleName, default: RoleName.USER, unique: true })
+    @Column({
+        type: 'enum',
+        enum: RoleName,
+        default: RoleName.USER,
+        unique: true
+    })
     name: RoleName;
 
     @Column({ length: 255 })
@@ -26,6 +38,17 @@ export class Role {
     })
     updatedAt: Date;
 
-    @OneToMany(() => User, user => user.role)
+    @OneToMany(() => User, (user) => user.role)
     users: User[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

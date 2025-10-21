@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    ManyToOne,
+    JoinColumn,
+    BeforeInsert,
+    BeforeUpdate
+} from 'typeorm';
 import { StationStaff } from './station-staff.entity';
 import { Station } from './station.entity';
 import { StaffHistoryShift } from '../enums';
@@ -40,4 +48,15 @@ export class StationStaffHistory {
     @ManyToOne(() => Station)
     @JoinColumn({ name: 'stationId' })
     station: Station;
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

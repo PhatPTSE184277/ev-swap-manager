@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate
+} from 'typeorm';
 import { StationStaff } from './station-staff.entity';
 import { Cabinet } from './cabinet.entity';
 import { StationStaffHistory } from './station-staff-history.entity';
@@ -63,4 +70,15 @@ export class Station {
 
     @OneToMany(() => Feedback, (feedback) => feedback.station)
     feedbacks: Feedback[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

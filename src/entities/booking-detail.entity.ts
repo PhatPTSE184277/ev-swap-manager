@@ -3,7 +3,9 @@ import {
     Entity,
     PrimaryGeneratedColumn,
     ManyToOne,
-    JoinColumn
+    JoinColumn,
+    BeforeInsert,
+    BeforeUpdate
 } from 'typeorm';
 import { Booking } from './booking.entity';
 import { Slot } from './slot.entity';
@@ -48,4 +50,15 @@ export class BookingDetail {
     @ManyToOne(() => Battery)
     @JoinColumn({ name: 'batteryId' })
     battery: Battery;
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

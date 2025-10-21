@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    OneToMany,
+    BeforeInsert,
+    BeforeUpdate,
+} from 'typeorm';
 import { UserMembership } from './user-membership.entity';
 
 @Entity('memberships')
@@ -34,6 +41,20 @@ export class Membership {
     })
     updatedAt: Date;
 
-    @OneToMany(() => UserMembership, userMembership => userMembership.membership)
+    @OneToMany(
+        () => UserMembership,
+        (userMembership) => userMembership.membership
+    )
     userMemberships: UserMembership[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    ManyToOne,
+    JoinColumn,
+    BeforeInsert,
+    BeforeUpdate
+} from 'typeorm';
 import { Slot } from './slot.entity';
 import { Battery } from './battery.entity';
 
@@ -36,4 +44,15 @@ export class SlotHistory {
     @ManyToOne(() => Battery)
     @JoinColumn({ name: 'batteryId' })
     battery: Battery;
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

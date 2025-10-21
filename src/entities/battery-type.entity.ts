@@ -1,10 +1,12 @@
 import {
+    BeforeInsert,
+    BeforeUpdate,
     Column,
     CreateDateColumn,
     Entity,
     OneToMany,
     PrimaryGeneratedColumn,
-    UpdateDateColumn,
+    UpdateDateColumn
 } from 'typeorm';
 import { Battery } from './battery.entity';
 import { VehicleType } from './vehicle-type.entity';
@@ -40,4 +42,15 @@ export class BatteryType {
 
     @OneToMany(() => VehicleType, (vehicleType) => vehicleType.batteryType)
     vehicleTypes: VehicleType[];
+
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

@@ -10,6 +10,7 @@ import { CreateUserMembershipDto } from './dto/create-user-membership.dto';
 import { UserMembershipStatus } from '../../enums';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
+
 @Injectable()
 export class UserMembershipService {
     constructor(

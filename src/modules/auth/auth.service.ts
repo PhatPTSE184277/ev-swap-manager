@@ -68,12 +68,10 @@ export class AuthService {
         try {
             const user = await this.userService.createUser(createUserDto);
 
-            // Kiểm tra token trước khi gửi email
             if (!user.emailVerificationToken) {
                 throw new BadRequestException('Lỗi tạo token xác thực email');
             }
 
-            // Gửi email xác thực
             await this.mailService.sendEmailVerification(
                 user.email,
                 user.emailVerificationToken,
@@ -107,7 +105,6 @@ export class AuthService {
         try {
             const user = await this.userService.generateResetPasswordToken(email);
 
-            // Kiểm tra token trước khi gửi email
             if (!user.resetPasswordToken) {
                 throw new BadRequestException('Lỗi tạo token đặt lại mật khẩu');
             }

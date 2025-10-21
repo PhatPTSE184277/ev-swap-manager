@@ -1,26 +1,23 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
 import { readFile } from 'fs/promises';
 import * as path from 'path';
+import sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class MailService {
-    private transporter;
-
     constructor(private configService: ConfigService) {
-        this.transporter = nodemailer.createTransport({
-            host: this.configService.get<string>('MAIL_HOST'),
-            port: this.configService.get<number>('MAIL_PORT'),
-            secure: false,
-            auth: {
-                user: this.configService.get<string>('MAIL_USER'),
-                pass: this.configService.get<string>('MAIL_PASS')
-            }
-        });
+        const sendGridApiKey =
+            this.configService.get<string>('SENDGRID_API_KEY');
+        if (!sendGridApiKey) {
+            throw new InternalServerErrorException(
+                'SENDGRID_API_KEY is not set'
+            );
+        }
+        sgMail.setApiKey(sendGridApiKey);
     }
 
-   async sendEmailVerification(
+    async sendEmailVerification(
         email: string,
         token: string,
         userName: string
@@ -48,15 +45,21 @@ export class MailService {
                     new Date().getFullYear().toString()
                 );
 
-            await this.transporter.sendMail({
-                from: this.configService.get<string>('MAIL_FROM'),
+            const fromEmail = this.configService.get<string>('MAIL_FROM');
+            if (!fromEmail)
+                throw new InternalServerErrorException('MAIL_FROM is not set');
+            
+            await sgMail.send({
                 to: email,
+                from: fromEmail,
                 subject: 'Xác thực email tài khoản',
-                html
+                html: html
             });
         } catch (error) {
             console.error('MAIL ERROR:', error);
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi gửi email xác thực');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi gửi email xác thực'
+            );
         }
     }
 
@@ -84,14 +87,21 @@ export class MailService {
                     new Date().getFullYear().toString()
                 );
 
-            await this.transporter.sendMail({
-                from: this.configService.get<string>('MAIL_FROM'),
+            const fromEmail = this.configService.get<string>('MAIL_FROM');
+            if (!fromEmail)
+                throw new InternalServerErrorException('MAIL_FROM is not set');
+            
+            await sgMail.send({
                 to: email,
+                from: fromEmail,
                 subject: 'Đặt lại mật khẩu',
-                html
+                html: html
             });
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi gửi email đặt lại mật khẩu');
+            console.error('MAIL ERROR:', error);
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi gửi email đặt lại mật khẩu'
+            );
         }
     }
 }

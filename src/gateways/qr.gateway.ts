@@ -19,7 +19,7 @@ export class QrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private clients = new Map<string, Socket>();
 
   handleConnection(client: Socket) {
-    this.logger.log(`🔌 Client connected: ${client.id}`);
+    this.logger.log(` Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
@@ -32,7 +32,7 @@ export class QrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  // ✅ Khi client join với sessionId
+
   @SubscribeMessage('join')
   handleJoin(
     @MessageBody() data: { sessionId: string },
@@ -40,7 +40,7 @@ export class QrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const { sessionId } = data;
     if (!sessionId) {
-      this.logger.warn('⚠️ Client thiếu sessionId khi join');
+      this.logger.warn('Client thiếu sessionId khi join');
       client.disconnect();
       return;
     }
@@ -48,7 +48,7 @@ export class QrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.clients.set(sessionId, client);
   }
 
-  // ✅ Gửi sự kiện khi QR được duyệt
+  // Gửi sự kiện khi QR được duyệt
   notifyApproved(sessionId: string, token: string) {
     const client = this.clients.get(sessionId);
     if (client) {
@@ -56,11 +56,11 @@ export class QrGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.disconnect(true);
       this.clients.delete(sessionId);
     } else {
-      this.logger.warn(`⚠️ Không tìm thấy client cho sessionId=${sessionId}`);
+      this.logger.warn(`Không tìm thấy client cho sessionId=${sessionId}`);
     }
   }
 
-  // ✅ Gửi sự kiện khi QR hết hạn
+  // Gửi sự kiện khi QR hết hạn
   notifyExpired(sessionId: string) {
     const client = this.clients.get(sessionId);
     if (client) {

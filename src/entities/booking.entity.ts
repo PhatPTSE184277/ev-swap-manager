@@ -32,6 +32,7 @@ export class Booking {
 
     @Column({ type: 'timestamp', nullable: true })
     expectedPickupTime: Date;
+    
 
     @Column({
         type: 'enum',

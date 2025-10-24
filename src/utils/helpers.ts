@@ -1,3 +1,5 @@
+import * as crypto from 'crypto';
+
 export default class Helpers {
     static calcDistance(
         lat1: number,
@@ -39,5 +41,18 @@ export default class Helpers {
         return (
             expectedPickupTime >= openDate && expectedPickupTime <= closeDate
         );
+    }
+
+    static generateEmailVerification(): { token: string; expire: Date } {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expire = new Date(Date.now() + 60 * 60 * 1000);
+        return { token, expire };
+    }
+
+    
+    static generateResetPasswordToken(): { token: string; expire: Date } {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expire = new Date(Date.now() + 60 * 60 * 1000);
+        return { token, expire };
     }
 }

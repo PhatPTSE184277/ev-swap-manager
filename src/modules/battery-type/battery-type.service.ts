@@ -147,7 +147,7 @@ export class BatteryTypeService {
         }
     }
 
-    async create(createBatteryTypeDto: CreateBatteryTypeDto): Promise<any> {
+    async create(createBatteryTypeDto: CreateBatteryTypeDto): Promise<{ message: string }> {
         try {
             const result = await this.dataSource.transaction(
                 async (manager) => {
@@ -168,7 +168,6 @@ export class BatteryTypeService {
                     const saved = await manager.save(batteryType);
                     const { createdAt, updatedAt, status, ...rest } = saved;
                     return {
-                        data: rest,
                         message: 'Tạo loại pin thành công'
                     };
                 }

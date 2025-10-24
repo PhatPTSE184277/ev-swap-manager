@@ -29,6 +29,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { SlotStatus, UserMembershipStatus } from 'src/enums';
 import Helpers from '../../utils/helpers';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { CreateOnsiteBookingDto } from './dto/create-onsite-booking.dto';
 
 @Injectable()
 export class BookingService {
@@ -415,6 +416,164 @@ export class BookingService {
             throw new InternalServerErrorException(
                 error.message ||
                     'Lỗi hệ thống xảy ra khi lấy danh sách booking của người dùng'
+            );
+        }
+    }
+
+    async createOnsiteBooking(
+        userId: number,
+        dto: CreateOnsiteBookingDto
+    ): Promise<any> {
+        try {
+            const result = await this.dataSource.transaction(
+                    async (manager) => {
+                    const userVehicle = await manager.findOne(UserVehicle, {
+                        where: {
+                            id: dto.userVehicleId,
+                            userId: userId
+                        }
+                    });
+                    if (!userVehicle) {
+                        throw new NotFoundException(
+                            'Xe của người dùng không tồn tại'
+                        );
+                    }
+
+                    const station = await manager.findOne(Station, {
+                        where: { id: dto.stationId }
+                    });
+
+                    if (!station) {
+                        throw new NotFoundException(
+                            'Trạm đổi pin không tồn tại'
+                        );
+                    }
+
+                    const now = new Date();
+                    const userMembership = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: {
+                                userId: userId,
+                                status: UserMembershipStatus.ACTIVE,
+                                expiredDate: MoreThan(now)
+                            },
+                            relations: ['membership']
+                        }
+                    );
+
+                    if (userMembership) {
+                        if (
+                            userMembership.remainingSwaps <
+                            dto.bookingDetails.length
+                        ) {
+                            throw new BadRequestException(
+                                `Bạn chỉ còn ${userMembership.remainingSwaps} lượt đổi pin`
+                            );
+                        }
+                        userMembership.remainingSwaps -=
+                            dto.bookingDetails.length;
+                        await manager.save(UserMembership, userMembership);
+                    }
+
+                    const bookingData: any = {
+                        userVehicleId: dto.userVehicleId,
+                        stationId: dto.stationId,
+                        expectedPickupTime: now,
+                        status: userMembership
+                            ? BookingStatus.IN_PROGRESS
+                            : BookingStatus.PENDING
+                    };
+                    if (userMembership) {
+                        bookingData.userMembershipId = userMembership.id;
+                    }
+
+                    const booking = manager.create(Booking, bookingData);
+                    await manager.save(Booking, booking);
+
+                    let totalPrice = 0;
+
+                    for (const d of dto.bookingDetails) {
+                        const battery = await manager.findOne(Battery, {
+                            where: {
+                                id: d.batteryId,
+                                status: BatteryStatus.AVAILABLE
+                            },
+                            relations: ['batteryType']
+                        });
+                        if (!battery) {
+                            throw new BadRequestException(
+                                `Pin ${d.batteryId} không khả dụng`
+                            );
+                        }
+
+                        const slot = await manager.findOne(Slot, {
+                            where: {
+                                batteryId: d.batteryId,
+                                status: SlotStatus.AVAILABLE
+                            }
+                        });
+                        if (!slot) {
+                            throw new BadRequestException(
+                                `Slot cho pin ${d.batteryId} không khả dụng`
+                            );
+                        }
+
+                        const price = battery.batteryType?.pricePerSwap ?? 0;
+                        totalPrice += price;
+
+                        const bookingDetail = manager.create('BookingDetail', {
+                            bookingId: booking.id,
+                            batteryId: d.batteryId,
+                            price,
+                            status: userMembership
+                                ? BookingDetailStatus.IN_PROGRESS
+                                : BookingDetailStatus.PENDING
+                        });
+                        await manager.save('BookingDetail', bookingDetail);
+
+                        battery.status = BatteryStatus.RESERVED;
+                        await manager.save(Battery, battery);
+
+                        slot.status = SlotStatus.RESERVED;
+                        await manager.save(Slot, slot);
+
+                        this.batteryGateway.emitBatteryReserved({
+                            batteryId: battery.id,
+                            stationId: station.id
+                        });
+
+                        this.slotGateway.emitSlotReserved({
+                            slotId: slot.id,
+                            stationId: station.id
+                        });
+                    }
+
+                    return {
+                        message: userMembership
+                            ? 'Đặt lịch đổi pin tại chỗ thành công (sử dụng gói thành viên)'
+                            : `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán ${totalPrice} VND để hoàn tất`,
+                        bookingId: booking.id,
+                        expectedPickupTime: now,
+                        totalPrice: userMembership ? 0 : totalPrice,
+                        usedMembership: !!userMembership,
+                        status: userMembership
+                            ? BookingStatus.IN_PROGRESS
+                            : BookingStatus.PENDING
+                    };
+                }
+            );
+
+            return result;
+        } catch (error) {
+            if (
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException
+            ) {
+                throw error;
+            }
+            throw new InternalServerErrorException(
+                error.message || 'Lỗi hệ thống xảy ra khi tạo booking on-site'
             );
         }
     }

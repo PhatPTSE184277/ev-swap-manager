@@ -138,7 +138,8 @@ export const seedData = {
             remainingSwaps: 10,
             status: UserMembershipStatus.ACTIVE,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            paymentExpireAt: null // ACTIVE thì để null
         },
         {
             id: 2,
@@ -148,7 +149,19 @@ export const seedData = {
             remainingSwaps: 30,
             status: UserMembershipStatus.ACTIVE,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            paymentExpireAt: null
+        },
+        {
+            id: 3,
+            userId: 2,
+            membershipId: 2,
+            expiredDate: new Date('2025-12-01'),
+            remainingSwaps: 30,
+            status: UserMembershipStatus.ACTIVE,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            paymentExpireAt: null
         }
     ],
 
@@ -275,6 +288,8 @@ export const seedData = {
             name: 'Li-ion 48V Standard',
             description: 'Pin lithium-ion 48V tiêu chuẩn cho xe máy điện',
             capacityKWh: 2.0,
+            cycleLife: 1000,
+            chargeRate: 2.5,
             pricePerSwap: 50000,
             status: true,
             createdAt: new Date(),
@@ -285,6 +300,8 @@ export const seedData = {
             name: 'Li-ion 60V Premium',
             description: 'Pin lithium-ion 60V cao cấp cho xe máy điện',
             capacityKWh: 3.0,
+            cycleLife: 1200,
+            chargeRate: 3.0,
             pricePerSwap: 50000,
             status: true,
             createdAt: new Date(),
@@ -318,8 +335,11 @@ export const seedData = {
             id: 1,
             batteryTypeId: 1,
             model: 'BAT48V001',
-            capacity: 2000,
-            cycleLife: 1000,
+            currentCycle: 150,
+            currentCapacity: 90,
+            healthScore: 90,
+            lastChargeTime: new Date('2025-10-24T08:00:00'),
+            estimatedFullChargeTime: new Date('2025-10-24T10:30:00'),
             status: BatteryStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -328,9 +348,12 @@ export const seedData = {
             id: 2,
             batteryTypeId: 1,
             model: 'BAT48V002',
-            capacity: 2000,
-            cycleLife: 1000,
-            status: BatteryStatus.AVAILABLE,
+            currentCycle: 50,
+            currentCapacity: 100,
+            healthScore: 95,
+            lastChargeTime: new Date('2025-10-24T09:00:00'),
+            estimatedFullChargeTime: new Date('2025-10-24T11:00:00'),
+            status: BatteryStatus.CHARGING,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -338,14 +361,16 @@ export const seedData = {
             id: 3,
             batteryTypeId: 2,
             model: 'BAT60V001',
-            capacity: 3000,
-            cycleLife: 1200,
+            currentCycle: 900,
+            currentCapacity: 50,
+            healthScore: 25,
+            lastChargeTime: new Date('2025-10-24T10:00:00'),
+            estimatedFullChargeTime: new Date('2025-10-24T13:00:00'),
             status: BatteryStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
         }
     ],
-
     slots: [
         {
             id: 1,

@@ -5,19 +5,21 @@ import {
     InternalServerErrorException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/entities';
+import { StationStaff, User } from 'src/entities';
 import { Like, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
-import { UserMembershipStatus, UserStatus } from 'src/enums';
+import { RoleName, UserMembershipStatus, UserStatus } from 'src/enums';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import Helpers from 'src/utils/helpers';
 
 @Injectable()
 export class UserService {
     constructor(
-        @InjectRepository(User) private userRepository: Repository<User>
+        @InjectRepository(User) private userRepository: Repository<User>,
+        @InjectRepository(StationStaff)
+        private stationStaffRepository: Repository<StationStaff>
     ) {}
 
     async findUserByUserNameOrEmail(
@@ -59,12 +61,10 @@ export class UserService {
                 createUserDto.password,
                 10
             );
-            const emailVerificationToken = crypto
-                .randomBytes(32)
-                .toString('hex');
-            const emailVerificationExpire = new Date(
-                Date.now() + 60 * 60 * 1000
-            ); // 1 hour
+            const {
+                token: emailVerificationToken,
+                expire: emailVerificationExpire
+            } = Helpers.generateEmailVerification();
 
             const user = this.userRepository.create({
                 ...createUserDto,
@@ -123,25 +123,32 @@ export class UserService {
                 throw new NotFoundException('Người dùng không tồn tại');
             }
 
-           const activeMemberships = user.userMemberships
-            .filter(
-                (um) =>
-                    um.status === UserMembershipStatus.ACTIVE &&
-                    new Date(um.expiredDate) > new Date()
-            )
-            .map((um) => ({
-                id: um.id,
-                expiredDate: um.expiredDate,
-                remainingSwaps: um.remainingSwaps,
-                membership: {
-                    id: um.membership.id,
-                    name: um.membership.name,
-                    description: um.membership.description,
-                    duration: um.membership.duration,
-                    swapLimit: um.membership.swapLimit,
-                }
-            }));
+            let isHead: boolean = false;
+            if (user.role?.name === RoleName.STAFF) {
+                const staff = await this.stationStaffRepository.findOne({
+                    where: { userId: user.id }
+                });
+                isHead = staff?.isHead ?? false;
+            }
 
+            const activeMemberships = user.userMemberships
+                .filter(
+                    (um) =>
+                        um.status === UserMembershipStatus.ACTIVE &&
+                        new Date(um.expiredDate) > new Date()
+                )
+                .map((um) => ({
+                    id: um.id,
+                    expiredDate: um.expiredDate,
+                    remainingSwaps: um.remainingSwaps,
+                    membership: {
+                        id: um.membership.id,
+                        name: um.membership.name,
+                        description: um.membership.description,
+                        duration: um.membership.duration,
+                        swapLimit: um.membership.swapLimit
+                    }
+                }));
 
             const {
                 password,
@@ -164,7 +171,10 @@ export class UserService {
                 data: {
                     ...rest,
                     role: role?.name || null,
-                    memberships: activeMemberships
+                    ...(role?.name === RoleName.USER
+                        ? { memberships: activeMemberships }
+                        : {}),
+                    ...(role?.name === RoleName.STAFF ? { isHead } : {})
                 },
                 message: 'Lấy thông tin người dùng thành công'
             };
@@ -214,14 +224,17 @@ export class UserService {
         try {
             const user = await this.findByEmailVerificationToken(token);
 
-            if (
-                !user ||
-                !user.emailVerificationExpire ||
-                user.emailVerificationExpire < new Date()
-            ) {
+            if (!user || !user.emailVerificationToken) {
+                throw new BadRequestException('Token không hợp lệ');
+            }
+
+            if (!user.emailVerificationExpire) {
                 throw new BadRequestException(
-                    'Token không hợp lệ hoặc đã hết hạn'
+                    'Tài khoản đã được xác thực trước đó'
                 );
+            }
+            if (user.emailVerificationExpire < new Date()) {
+                throw new BadRequestException('Token đã hết hạn');
             }
 
             user.status = UserStatus.VERIFIED;
@@ -238,7 +251,7 @@ export class UserService {
         }
     }
 
-    async resendVerification(email: string): Promise<User> {
+    async resendVerification(email: string): Promise<{ message: string }> {
         try {
             const user = await this.findUserByUserNameOrEmail(email);
             if (!user) {
@@ -246,24 +259,23 @@ export class UserService {
             }
 
             if (user.status === UserStatus.VERIFIED) {
-                throw new BadRequestException('Email đã được xác thực');
-            }
-
-            if (
-                !user.emailVerificationToken ||
-                !user.emailVerificationExpire ||
-                user.emailVerificationExpire < new Date()
-            ) {
-                user.emailVerificationToken = crypto
-                    .randomBytes(32)
-                    .toString('hex');
-                user.emailVerificationExpire = new Date(
-                    Date.now() + 60 * 60 * 1000
+                throw new BadRequestException(
+                    'Email đã được xác thực trước đó'
                 );
-                await this.userRepository.save(user);
             }
 
-            return user;
+            const { token, expire } = Helpers.generateEmailVerification();
+            user.emailVerificationToken = token;
+            user.emailVerificationExpire = expire;
+
+            await this.userRepository.update(
+                { id: user.id },
+                {
+                    emailVerificationToken: token,
+                    emailVerificationExpire: expire
+                }
+            );
+            return { message: 'Gửi lại mã xác thực thành công' };
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
             throw new InternalServerErrorException(
@@ -279,11 +291,15 @@ export class UserService {
                 throw new BadRequestException('Email không tồn tại');
             }
 
-            const resetToken = crypto.randomBytes(32).toString('hex');
-            const resetExpire = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+            if (user.status !== UserStatus.VERIFIED) {
+                throw new BadRequestException(
+                    'Chỉ người dùng đã xác thực mới có thể đặt lại mật khẩu'
+                );
+            }
 
-            user.resetPasswordToken = resetToken;
-            user.resetPasswordExpire = resetExpire;
+            const { token, expire } = Helpers.generateResetPasswordToken();
+            user.resetPasswordToken = token;
+            user.resetPasswordExpire = expire;
 
             return await this.userRepository.save(user);
         } catch (error) {

@@ -1,7 +1,8 @@
 import {
     BadRequestException,
     Injectable,
-    InternalServerErrorException
+    InternalServerErrorException,
+    NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Membership, User, UserMembership } from 'src/entities';
@@ -9,7 +10,6 @@ import { DataSource, LessThan, MoreThan, Repository } from 'typeorm';
 import { CreateUserMembershipDto } from './dto/create-user-membership.dto';
 import { UserMembershipStatus } from '../../enums';
 import { Cron, CronExpression } from '@nestjs/schedule';
-
 
 @Injectable()
 export class UserMembershipService {
@@ -24,8 +24,9 @@ export class UserMembershipService {
     ) {}
 
     @Cron(CronExpression.EVERY_MINUTE)
-    async expireUserMemberships() {
+    async expireUserMembershipsAndPayments() {
         const now = new Date();
+
         const expiredMemberships = await this.userMembershipRepository.find({
             where: {
                 status: UserMembershipStatus.ACTIVE,
@@ -35,6 +36,18 @@ export class UserMembershipService {
 
         for (const membership of expiredMemberships) {
             membership.status = UserMembershipStatus.EXPIRED;
+            await this.userMembershipRepository.save(membership);
+        }
+
+        const expiredPayments = await this.userMembershipRepository.find({
+            where: {
+                status: UserMembershipStatus.PENDING,
+                paymentExpireAt: LessThan(now)
+            }
+        });
+
+        for (const membership of expiredPayments) {
+            membership.status = UserMembershipStatus.CANCELLED;
             await this.userMembershipRepository.save(membership);
         }
     }
@@ -76,10 +89,26 @@ export class UserMembershipService {
                             }
                         }
                     );
-
                     if (existingUserMembership) {
                         throw new BadRequestException(
                             'Người dùng đã có gói thành viên đang hoạt động'
+                        );
+                    }
+
+                    const existingPending = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: {
+                                userId,
+                                status: UserMembershipStatus.PENDING,
+                                paymentExpireAt: MoreThan(now)
+                            }
+                        }
+                    );
+
+                    if (existingPending) {
+                        throw new BadRequestException(
+                            'Bạn đã có gói thành viên đang chờ thanh toán'
                         );
                     }
 
@@ -91,6 +120,13 @@ export class UserMembershipService {
                     const userMembership = manager.create(UserMembership, {
                         userId: user.id,
                         membershipId: membership.id,
+                        remainingSwaps:
+                            typeof membership.swapLimit === 'number'
+                                ? membership.swapLimit
+                                : 0,
+                        paymentExpireAt: new Date(
+                            now.getTime() + 20 * 60 * 1000
+                        ),
                         status: UserMembershipStatus.PENDING,
                         expiredDate
                     });
@@ -108,5 +144,72 @@ export class UserMembershipService {
         }
     }
 
-    c;
+    async getAllByUser(
+        userId: number,
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        status?: UserMembershipStatus
+    ): Promise<{
+        data: any[];
+        total: number;
+        page: number;
+        limit: number;
+        message: string;
+    }> {
+        try {
+            const where: any = { userId };
+            if (status) where.status = status;
+
+            if (search) {
+                where.membership = {
+                    name: () => `LIKE '%${search}%'`
+                };
+            }
+
+            const [data, total] =
+                await this.userMembershipRepository.findAndCount({
+                    where,
+                    relations: ['membership'],
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    order: { createdAt: 'DESC' }
+                });
+
+            const mappedData = data.map(
+                ({ membership, membershipId, updatedAt, ...rest }) => {
+                    if (!membership) return { ...rest, membership: null };
+                    const {
+                        createdAt: _createdAt,
+                        updatedAt: _updatedAt,
+                        status: _status,
+                        ...membershipData
+                    } = membership;
+                    return {
+                        ...rest,
+                        membership: membershipData
+                    };
+                }
+            );
+
+            return {
+                data: mappedData,
+                total,
+                page,
+                limit,
+                message:
+                    'Lấy danh sách gói thành viên của người dùng thành công'
+            };
+        } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+            throw new InternalServerErrorException(
+                'Lỗi hệ thống khi lấy danh sách User Membership'
+            );
+        }
+    }
 }

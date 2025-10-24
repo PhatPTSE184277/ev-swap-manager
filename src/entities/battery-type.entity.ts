@@ -25,6 +25,12 @@ export class BatteryType {
     @Column({ type: 'float', nullable: true })
     capacityKWh?: number;
 
+    @Column({ type: 'int', nullable: true })
+    cycleLife?: number;
+
+    @Column({ type: 'float', default: 2.5 })
+    chargeRate?: number;
+
     @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
     pricePerSwap?: number;
 

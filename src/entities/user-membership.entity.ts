@@ -28,6 +28,9 @@ export class UserMembership {
     @Column({ type: 'timestamp' })
     expiredDate: Date;
 
+    @Column({ type: 'timestamp', nullable: true })
+    paymentExpireAt: Date;
+
     @Column({ type: 'int', default: 0 })
     remainingSwaps: number;
 
@@ -62,14 +65,14 @@ export class UserMembership {
     @OneToMany(() => Transaction, (transaction) => transaction.userMembership)
     transactions: Transaction[];
 
-     @BeforeInsert()
-        setCreatedAtVN() {
-            this.createdAt = new Date();
-            this.updatedAt = new Date();
-        }
-    
-        @BeforeUpdate()
-        setUpdatedAtVN() {
-            this.updatedAt = new Date();
-        }
+    @BeforeInsert()
+    setCreatedAtVN() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdatedAtVN() {
+        this.updatedAt = new Date();
+    }
 }

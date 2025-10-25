@@ -21,38 +21,42 @@ import { UserMembershipModule } from './modules/user-membership/user-membership.
 import { TransactionModule } from './modules/transaction/transaction.module';
 import { BatteryGateway } from './gateways/battery.gateway';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ChatRoomModule } from './modules/chat-room/chat-room.module';
+import { ChatMessageModule } from './modules/chat-message/chat-message.module';
 
 @Module({
-    imports: [
-        ConfigModule.forRoot({
-            isGlobal: true
-        }),
-        TypeOrmModule.forRootAsync({
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService): TypeOrmModuleOptions =>
-                typeOrmConfig(configService)
-        }),
-        ScheduleModule.forRoot(),
-        UserModule,
-        AuthModule,
-        MailModule,
-        SeedModule,
-        BatteryModule,
-        BatteryTypeModule,
-        StationModule,
-        BatteryUsedHistoryModule,
-        VehicleTypeModule,
-        UserVehicleModule,
-        BookingModule,
-        MembershipModule,
-        CabinetModule,
-        StationStaffModule,
-        SlotModule,
-        UserMembershipModule,
-        TransactionModule
-    ],
-    controllers: [],
-    providers: [BatteryGateway],
-    exports: [BatteryGateway]
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): TypeOrmModuleOptions =>
+        typeOrmConfig(configService),
+    }),
+    ScheduleModule.forRoot(),
+    UserModule,
+    AuthModule,
+    MailModule,
+    SeedModule,
+    BatteryModule,
+    BatteryTypeModule,
+    StationModule,
+    BatteryUsedHistoryModule,
+    VehicleTypeModule,
+    UserVehicleModule,
+    BookingModule,
+    MembershipModule,
+    CabinetModule,
+    StationStaffModule,
+    SlotModule,
+    UserMembershipModule,
+    TransactionModule,
+    ChatRoomModule,
+    ChatMessageModule,
+  ],
+  controllers: [],
+  providers: [BatteryGateway],
+  exports: [BatteryGateway],
 })
 export class AppModule {}

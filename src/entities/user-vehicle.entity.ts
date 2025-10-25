@@ -24,9 +24,6 @@ export class UserVehicle {
     @Column()
     vehicleTypeId: number;
 
-    @Column()
-    batteryId: number;
-
     @Column({ type: 'varchar', length: 100, nullable: true })
     name: string;
 
@@ -51,9 +48,8 @@ export class UserVehicle {
     @JoinColumn({ name: 'vehicleTypeId' })
     vehicleType: VehicleType;
 
-    @ManyToOne(() => Battery)
-    @JoinColumn({ name: 'batteryId' })
-    battery: Battery;
+    @OneToMany(() => Battery, (battery) => battery.userVehicle)
+    batteries: Battery[];
 
     @OneToMany(() => Booking, (booking) => booking.userVehicle)
     bookings: Booking[];

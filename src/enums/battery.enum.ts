@@ -6,9 +6,3 @@ export enum BatteryStatus {
     RESERVED = 'RESERVED',
     DAMAGED = 'DAMAGED'
 }
-
-export enum BatteryUsedStatus {
-    ACTIVE = 'ACTIVE',
-    COMPLETED = 'COMPLETED',
-    CANCELLED = 'CANCELLED'
-}

@@ -1,8 +1,11 @@
-import { PartialType } from '@nestjs/swagger';
+import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { CreateBatteryDto } from './create-battery.dto';
-import { EnumNotRequired } from 'src/common/decorators';
+import { BatteryStatus } from '../../../enums';
+import { IsEnum, IsOptional } from 'class-validator';
 
 export class UpdateBatteryDto extends PartialType(CreateBatteryDto) {
-    @EnumNotRequired('Trạng thái', ['AVAILABLE', 'IN_USE', 'CHARGING', 'MAINTENANCE', 'DAMAGED'])
-    status?: 'AVAILABLE' | 'IN_USE' | 'CHARGING' | 'MAINTENANCE' | 'DAMAGED';
+    @ApiPropertyOptional({ enum: BatteryStatus, description: 'Trạng thái pin' })
+    @IsEnum(BatteryStatus, { message: 'Trạng thái pin không hợp lệ' })
+    @IsOptional()
+    status?: BatteryStatus;
 }

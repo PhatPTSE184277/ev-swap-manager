@@ -29,8 +29,11 @@ export class Battery {
     @Column({ type: 'int', default: 0 })
     currentCycle: number;
 
+    @Column({ nullable: true })
+    userVehicleId: number | null;
+
     @Column({ type: 'int', default: 100 })
-    currentCapacity: number;
+    currentCapacity: number; // Đây là % pin hiện tại (0-100)
 
     @Column({ type: 'int', default: 100 })
     healthScore: number;
@@ -64,48 +67,15 @@ export class Battery {
     )
     batteryUsedHistories: BatteryUsedHistory[];
 
+    @ManyToOne(() => UserVehicle, (vehicle) => vehicle.batteries)
+    @JoinColumn({ name: 'userVehicleId' })
+    userVehicle: UserVehicle;
+
     @OneToMany(() => SlotHistory, (slotHistory) => slotHistory.battery)
     slotHistories: SlotHistory[];
 
-    @OneToMany(() => UserVehicle, (userVehicle) => userVehicle.battery)
-    userVehicles: UserVehicle[];
-
     @OneToMany(() => Slot, (slot) => slot.battery)
     slots: Slot[];
-
-    /**
-     * Tính thời gian sạc còn lại (phút)
-     */
-    getRemainingChargeTime(): number {
-        if (!this.estimatedFullChargeTime) return 0;
-        const now = new Date();
-        const diff = this.estimatedFullChargeTime.getTime() - now.getTime();
-        return Math.max(0, Math.ceil(diff / 60000)); // Trả về phút
-    }
-
-    /**
-     * Tính số chu kỳ còn lại trước khi chai
-     */
-    getRemainingCycles(): number {
-        if (!this.batteryType?.cycleLife) return 0;
-        return Math.max(0, this.batteryType.cycleLife - this.currentCycle);
-    }
-
-    /**
-     * Kiểm tra pin có cần thay thế không
-     */
-    needsReplacement(): boolean {
-        if (!this.batteryType?.cycleLife) return false;
-        return this.healthScore < 20 || this.currentCycle >= this.batteryType.cycleLife * 0.9;
-    }
-
-    /**
-     * Tính % tuổi thọ còn lại
-     */
-    getLifespanPercentage(): number {
-        if (!this.batteryType?.cycleLife) return 100;
-        return Math.max(0, Math.round((1 - this.currentCycle / this.batteryType.cycleLife) * 100));
-    }
 
     @BeforeInsert()
     setCreatedAtVN() {
@@ -116,5 +86,32 @@ export class Battery {
     @BeforeUpdate()
     setUpdatedAtVN() {
         this.updatedAt = new Date();
+    }
+
+    /**
+     * Tính healthScore dựa trên số chu kỳ đã dùng và cycleLife của BatteryType
+     * (Giả sử: healthScore giảm tuyến tính theo số chu kỳ)
+     */
+    calcHealthScore(): number {
+        if (!this.batteryType?.cycleLife || this.batteryType.cycleLife === 0)
+            return 100;
+        const percent =
+            100 -
+            Math.round((this.currentCycle / this.batteryType.cycleLife) * 100);
+        return Math.max(0, percent);
+    }
+
+    /**
+     * Tính % pin tăng lên sau một lần sạc (dựa vào thời gian sạc và tốc độ sạc)
+     * @param minutesSạc: số phút đã sạc
+     * @returns số % pin tăng thêm
+     */
+    calcChargePercentIncrease(minutesSac: number): number {
+        // Giả sử chargeRate là số giờ để sạc đầy từ 0-100%
+        if (!this.batteryType?.chargeRate || this.batteryType.chargeRate === 0)
+            return 0;
+        const totalMinutesToFull = this.batteryType.chargeRate * 60;
+        const percentIncrease = (minutesSac / totalMinutesToFull) * 100;
+        return Math.min(100, Math.max(0, Math.round(percentIncrease)));
     }
 }

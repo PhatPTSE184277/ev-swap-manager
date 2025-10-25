@@ -213,14 +213,14 @@ export class SeedService {
                 await this.seedStations(manager);
                 await this.seedStationStaffs(manager);
                 await this.seedStationStaffHistories(manager);
-                await this.seedCabinets(manager);
-                await this.seedCabinetHistories(manager);
-                await this.seedBatteryTypes(manager); // di chuyển lên trước
-                await this.seedBatteries(manager); // di chuyển lên trước
-                await this.seedSlots(manager); // sau batteries
-                await this.seedSlotHistories(manager);
+                await this.seedBatteryTypes(manager);
                 await this.seedVehicleTypes(manager);
                 await this.seedUserVehicles(manager);
+                await this.seedCabinets(manager);
+                await this.seedCabinetHistories(manager);
+                await this.seedBatteries(manager);
+                await this.seedSlots(manager);
+                await this.seedSlotHistories(manager);
                 await this.seedPayments(manager);
                 await this.seedTransactions(manager);
                 await this.seedBookings(manager);

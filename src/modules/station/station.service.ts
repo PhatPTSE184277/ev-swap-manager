@@ -107,6 +107,7 @@ export class StationService {
                                     s.batteryId
                             )
                             .map(async (s) => {
+                                if (!s.batteryId) return 0;
                                 const battery =
                                     await this.batteryRepository.findOne({
                                         where: { id: s.batteryId }
@@ -311,9 +312,10 @@ export class StationService {
                         slots
                             .filter(
                                 (s) =>
-                                    s.status === SlotStatus.CHARGING && s.batteryId
+                                    s.status === SlotStatus.CHARGING && s.batteryId !== null
                             )
                             .map(async (s) => {
+                                if (!s.batteryId) return 0;
                                 const battery =
                                     await this.batteryRepository.findOne({
                                         where: { id: s.batteryId }

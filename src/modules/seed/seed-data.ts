@@ -2,7 +2,7 @@ import { RoleName } from '../../enums/role.enum';
 import { UserStatus } from '../../enums/user.enum';
 import { UserMembershipStatus } from '../../enums/membership.enum';
 import { StaffHistoryShift } from '../../enums/station.enum';
-import { BatteryStatus, BatteryUsedStatus } from '../../enums/battery.enum';
+import { BatteryStatus } from '../../enums/battery.enum';
 import { SlotStatus } from '../../enums/slot.enum';
 import { BookingStatus, BookingDetailStatus } from '../../enums/booking.enum';
 import { TransactionStatus } from '../../enums/transaction.enum';
@@ -139,7 +139,7 @@ export const seedData = {
             status: UserMembershipStatus.ACTIVE,
             createdAt: new Date(),
             updatedAt: new Date(),
-            paymentExpireAt: null // ACTIVE thì để null
+            paymentExpireAt: null
         },
         {
             id: 2,
@@ -245,7 +245,7 @@ export const seedData = {
             id: 1,
             name: 'Tủ 1',
             stationId: 1,
-            temperature: 25.5,
+            batteryTypeId: 1,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -254,7 +254,7 @@ export const seedData = {
             id: 2,
             name: 'Tủ 2',
             stationId: 1,
-            temperature: 26.0,
+            batteryTypeId: 1,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -263,7 +263,7 @@ export const seedData = {
             id: 3,
             name: 'Tủ 1',
             stationId: 2,
-            temperature: 27.5,
+            batteryTypeId: 2,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -330,6 +330,27 @@ export const seedData = {
         }
     ],
 
+    userVehicles: [
+        {
+            id: 1,
+            userId: 2,
+            vehicleTypeId: 1,
+            name: 'Vinfast Evo 200 - Nguyễn Văn A',
+            status: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            id: 2,
+            userId: 3,
+            vehicleTypeId: 2,
+            name: 'Yadea G5 - Trần Thị B',
+            status: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        }
+    ],
+
     batteries: [
         {
             id: 1,
@@ -341,6 +362,7 @@ export const seedData = {
             lastChargeTime: new Date('2025-10-24T08:00:00'),
             estimatedFullChargeTime: new Date('2025-10-24T10:30:00'),
             status: BatteryStatus.AVAILABLE,
+            userVehicleId: 1,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -354,6 +376,7 @@ export const seedData = {
             lastChargeTime: new Date('2025-10-24T09:00:00'),
             estimatedFullChargeTime: new Date('2025-10-24T11:00:00'),
             status: BatteryStatus.CHARGING,
+            userVehicleId: 1,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -367,17 +390,19 @@ export const seedData = {
             lastChargeTime: new Date('2025-10-24T10:00:00'),
             estimatedFullChargeTime: new Date('2025-10-24T13:00:00'),
             status: BatteryStatus.AVAILABLE,
+            userVehicleId: null,
             createdAt: new Date(),
             updatedAt: new Date()
         }
     ],
+
     slots: [
         {
             id: 1,
             cabinetId: 1,
             name: 'Slot 1',
-            batteryId: 1,
-            status: SlotStatus.AVAILABLE,
+            batteryId: null,
+            status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -385,8 +410,8 @@ export const seedData = {
             id: 2,
             cabinetId: 1,
             name: 'Slot 2',
-            batteryId: 2,
-            status: SlotStatus.CHARGING,
+            batteryId: null,
+            status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -415,7 +440,6 @@ export const seedData = {
             id: 1,
             slotId: 1,
             batteryId: 1,
-            date: new Date('2025-09-30T08:00:00'),
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -424,30 +448,6 @@ export const seedData = {
             id: 2,
             slotId: 2,
             batteryId: 2,
-            date: new Date('2025-09-30T09:00:00'),
-            status: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-    ],
-
-    userVehicles: [
-        {
-            id: 1,
-            userId: 2,
-            vehicleTypeId: 1,
-            batteryId: 1,
-            name: 'Vinfast Evo 200 - Nguyễn Văn A',
-            status: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 2,
-            userId: 3,
-            vehicleTypeId: 2,
-            batteryId: 3,
-            name: 'Yadea G5 - Trần Thị B',
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -568,7 +568,7 @@ export const seedData = {
             healthScore: 90,
             percent: 15,
             recentPrice: 50000,
-            status: BatteryUsedStatus.COMPLETED,
+            status: true,
             createdAt: new Date(),
             updatedAt: new Date()
         }

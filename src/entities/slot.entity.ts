@@ -26,7 +26,7 @@ export class Slot {
     name: string;
 
     @Column({ nullable: true })
-    batteryId: number;
+    batteryId: number | null;
 
     @Column({ type: 'enum', enum: SlotStatus, default: SlotStatus.EMPTY })
     status: SlotStatus;

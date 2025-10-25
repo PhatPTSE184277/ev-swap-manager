@@ -1,4 +1,11 @@
-import { NumberRequired, StringRequired } from 'src/common/decorators';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
+import {
+    NumberRequired,
+    StringNotRequired,
+    StringRequired
+} from 'src/common/decorators';
+import { BatteryStatus } from 'src/enums/battery.enum';
 
 export class CreateBatteryDto {
     @NumberRequired('Loại pin')
@@ -7,21 +14,12 @@ export class CreateBatteryDto {
     @StringRequired('Tên pin')
     model: string;
 
-    @NumberRequired('Chu kỳ hiện tại')
-    currentCycle: number;
-
-    @NumberRequired('Dung lượng hiện tại (kWh)')
-    currentCapacity: number;
-
-    @NumberRequired('Điểm sức khỏe pin')
-    healthScore: number;
-
-    @NumberRequired('Thời gian sạc đầy (giờ)')
-    lastChargeTime: Date;
-
-    @NumberRequired('Thời gian dự kiến sạc xong (giờ)')
-    estimatedFullChargeTime: Date;
-
-    @NumberRequired('Giá')
-    price: number;
+    @ApiProperty({
+        enum: BatteryStatus,
+        required: false,
+        description: 'Trạng thái pin'
+    })
+    @IsEnum(BatteryStatus, { message: 'Trạng thái pin không hợp lệ' })
+    @IsOptional()
+    status?: BatteryStatus;
 }

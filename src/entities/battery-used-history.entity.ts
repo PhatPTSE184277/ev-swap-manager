@@ -1,7 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, BeforeInsert, BeforeUpdate } from 'typeorm';
 import { Battery } from './battery.entity';
 import { Booking } from './booking.entity';
-import { BatteryUsedStatus } from '../enums';
 
 @Entity('battery_used_histories')
 export class BatteryUsedHistory {
@@ -29,8 +28,8 @@ export class BatteryUsedHistory {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     recentPrice: number;
 
-    @Column({ type: 'enum', enum: BatteryUsedStatus, default: BatteryUsedStatus.ACTIVE })
-    status: BatteryUsedStatus;
+    @Column({ type: 'boolean', default: true })
+    status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

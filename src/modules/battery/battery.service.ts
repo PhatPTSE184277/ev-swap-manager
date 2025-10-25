@@ -6,10 +6,11 @@ import {
     NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Battery } from 'src/entities';
+import { Battery, BatteryType } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
 import { CreateBatteryDto } from './dto/create-battery.dto';
+import { BatteryStatus, BookingStatus } from 'src/enums';
 
 @Injectable()
 export class BatteryService {
@@ -59,7 +60,9 @@ export class BatteryService {
                 limit
             };
         } catch (error) {
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy danh sách pin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách pin'
+            );
         }
     }
 
@@ -74,7 +77,8 @@ export class BatteryService {
             }
             const { createdAt, updatedAt, batteryTypeId, ...rest } = battery;
             if (battery.batteryType) {
-                const { createdAt, updatedAt, ...batteryTypeRest } = battery.batteryType;
+                const { createdAt, updatedAt, ...batteryTypeRest } =
+                    battery.batteryType;
                 return {
                     data: { ...rest, batteryType: batteryTypeRest },
                     message: 'Lấy thông tin pin thành công'
@@ -86,7 +90,9 @@ export class BatteryService {
             };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy thông tin pin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy thông tin pin'
+            );
         }
     }
 
@@ -101,14 +107,29 @@ export class BatteryService {
                         throw new BadRequestException('Pin đã tồn tại');
                     }
 
+                    const batteryType = await manager.findOne(BatteryType, {
+                        where: { id: createBatteryDto.batteryTypeId }
+                    });
+
+                    if (!batteryType) {
+                        throw new BadRequestException('Loại pin không tồn tại');
+                    }
+                    
+
                     const newBattery = manager.create(
                         Battery,
-                        createBatteryDto
+                        {
+                            ...createBatteryDto,
+                            currentCycle: 0,
+                            currentCapacity: 100,
+                            healthScore: 100,
+                            status: createBatteryDto.status ?? BatteryStatus.AVAILABLE
+                        }
                     );
                     await manager.save(Battery, newBattery);
-                    const { createdAt, updatedAt, batteryTypeId, ...rest } = newBattery;
+                    const { createdAt, updatedAt, batteryTypeId, ...rest } =
+                        newBattery;
                     return {
-                        data: rest,
                         message: 'Tạo pin thành công'
                     };
                 }
@@ -116,13 +137,17 @@ export class BatteryService {
             return result;
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi tạo pin');
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi tạo pin'
+            );
         }
     }
 
     async update(id: number, updateBatteryDto: UpdateBatteryDto): Promise<any> {
         try {
-            const battery = await this.batteryRepository.findOne({ where: { id } });
+            const battery = await this.batteryRepository.findOne({
+                where: { id }
+            });
             if (!battery) {
                 throw new NotFoundException('Pin không tồn tại');
             }
@@ -144,8 +169,16 @@ export class BatteryService {
                 message: 'Cập nhật pin thành công'
             };
         } catch (error) {
-            if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi cập nhật pin');
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi cập nhật pin'
+            );
         }
     }
+
+  
 }

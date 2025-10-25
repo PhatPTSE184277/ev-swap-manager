@@ -7,9 +7,9 @@ export class CreateCabinetDto {
     @NumberRequired('Trạm')
     stationId: number;
 
-    @NumberRequired('Nhiệt độ')
-    temperature: number;
-
     @NumberRequired('Số lượng slot')
     slotCount: number;
+
+    @NumberRequired('Loại pin')
+    batteryTypeId: number;
 }

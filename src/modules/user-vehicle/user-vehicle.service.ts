@@ -1,5 +1,9 @@
 /* eslint-disable prefer-const */
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    ConflictException,
+    Injectable,
+    NotFoundException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserVehicle } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
@@ -14,49 +18,59 @@ export class UserVehicleService {
         private readonly dataSource: DataSource
     ) {}
 
-    async findAll(
-        page: number = 1,
-        limit: number = 10,
-        search?: string,
-        order: 'ASC' | 'DESC' = 'ASC',
-        status?: boolean
-    ): Promise<any> {
-        let where: any = {};
-        if (typeof status === 'boolean') where.status = status;
-        if (search) where.name = Like(`%${search}%`);
+    // async findAll(
+    //     page: number = 1,
+    //     limit: number = 10,
+    //     search?: string,
+    //     order: 'ASC' | 'DESC' = 'ASC',
+    //     status?: boolean
+    // ): Promise<any> {
+    //     let where: any = {};
+    //     if (typeof status === 'boolean') where.status = status;
+    //     if (search) where.name = Like(`%${search}%`);
 
-        const [data, total] = await this.userVehicleRepository.findAndCount({
-            where,
-            skip: (page - 1) * limit,
-            take: limit,
-            order: { id: order },
-            relations: ['battery', 'vehicleType']
-        });
+    //     const [data, total] = await this.userVehicleRepository.findAndCount({
+    //         where,
+    //         skip: (page - 1) * limit,
+    //         take: limit,
+    //         order: { id: order },
+    //         relations: ['batteries', 'batteries.batteryType', 'vehicleType']
+    //     });
 
-        const mappedData = data.map(
-            ({
-                createdAt,
-                updatedAt,
-                vehicleTypeId,
-                batteryId,
-                battery,
-                vehicleType,
-                ...rest
-            }) => ({
-                ...rest,
-                battery: battery?.model || null,
-                vehicleType: vehicleType?.model || null
-            })
-        );
+    //     const mappedData = data.map(
+    //         ({
+    //             createdAt,
+    //             updatedAt,
+    //             vehicleTypeId,
+    //             batteries,
+    //             vehicleType,
+    //             ...rest
+    //         }) => ({
+    //             ...rest,
+    //             batteries:
+    //                 batteries?.map((b) => ({
+    //                     id: b.id,
+    //                     model: b.model,
+    //                     currentCapacity: b.currentCapacity,
+    //                     healthScore: b.healthScore,
+    //                     status: b.status
+    //                 })) || [],
+    //             vehicleType: {
+    //                 id: vehicleType.id,
+    //                 model: vehicleType.model,
+    //                 description: vehicleType.description
+    //             }
+    //         })
+    //     );
 
-        return {
-            data: mappedData,
-            total,
-            page,
-            limit,
-            message: 'Lấy danh sách xe của người dùng thành công'
-        };
-    }
+    //     return {
+    //         data: mappedData,
+    //         total,
+    //         page,
+    //         limit,
+    //         message: 'Lấy danh sách xe của người dùng thành công'
+    //     };
+    // }
 
     async findAllByUser(
         userId: number,
@@ -80,24 +94,39 @@ export class UserVehicleService {
             skip: (page - 1) * limit,
             take: limit,
             order: { createdAt: order },
-            relations: ['battery', 'vehicleType']
+            relations: ['batteries', 'batteries.batteryType', 'vehicleType']
         });
 
         const mappedData = data.map(
             ({
                 createdAt,
                 updatedAt,
-                batteryId,
                 vehicleTypeId,
-                battery,
                 vehicleType,
                 status,
                 userId,
+                batteries,
                 ...rest
             }) => ({
                 ...rest,
-                batteryName: battery?.model || null,
-                vehicleTypeName: vehicleType?.model || null
+                batteries:
+                    batteries?.map((b) => ({
+                        id: b.id,
+                        model: b.model,
+                        currentCapacity: b.currentCapacity,
+                        healthScore: b.healthScore,
+                        status: b.status,
+                        batteryType: {
+                            id: b.batteryType.id,
+                            name: b.batteryType.name
+                        }
+                    })) || [],
+                vehicleType: {
+                    id: vehicleType.id,
+                    model: vehicleType.model,
+                    description: vehicleType.description,
+                    batteryTypeId: vehicleType.batteryTypeId
+                }
             })
         );
 
@@ -124,7 +153,9 @@ export class UserVehicleService {
                 }
             });
             if (existed) {
-                throw new ConflictException('Bạn đã đăng ký phương tiện này rồi');
+                throw new ConflictException(
+                    'Bạn đã đăng ký phương tiện này rồi'
+                );
             }
 
             const newUserVehicle = manager.create(UserVehicle, {
@@ -147,7 +178,8 @@ export class UserVehicleService {
             const vehicle = await manager.findOne(UserVehicle, {
                 where: { id, userId, status: true }
             });
-            if (!vehicle) throw new NotFoundException('Không tìm thấy phương tiện');
+            if (!vehicle)
+                throw new NotFoundException('Không tìm thấy phương tiện');
             Object.assign(vehicle, updateUserVehicleDto);
             await manager.save(UserVehicle, vehicle);
             return { message: 'Cập nhật phương tiện thành công' };
@@ -159,7 +191,8 @@ export class UserVehicleService {
             const vehicle = await manager.findOne(UserVehicle, {
                 where: { id, userId, status: true }
             });
-            if (!vehicle) throw new NotFoundException('Không tìm thấy phương tiện');
+            if (!vehicle)
+                throw new NotFoundException('Không tìm thấy phương tiện');
             vehicle.status = false;
             await manager.save(UserVehicle, vehicle);
             return { message: 'Xóa phương tiện thành công' };

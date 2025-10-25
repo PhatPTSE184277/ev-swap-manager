@@ -34,8 +34,7 @@ export class CabinetController {
     @Roles(RoleName.ADMIN)
     @Get()
     @ApiOperation({
-        summary: 'Lấy danh sách tủ (phân trang, filter, search)',
-        description: 'ADMIN'
+        summary: 'Lấy danh sách tủ (phân trang, filter, search) - ADMIN'
     })
     @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
     @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
@@ -78,11 +77,70 @@ export class CabinetController {
 
     @Get('public/by-station/:stationId')
     @ApiOperation({
-        summary: 'Lấy danh sách tủ đang hoạt động tại một trạm (cho user)'
+        summary: 'Lấy danh sách tủ đang hoạt động tại một trạm (cho user, có phân trang)'
     })
     @ApiParam({ name: 'stationId', type: Number, description: 'ID trạm' })
-    async findActiveByStation(@Param('stationId') stationId: number) {
-        return this.cabinetService.findActiveByStation(stationId);
+    @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+    @ApiQuery({ name: 'search', required: false, type: String })
+    @ApiQuery({
+        name: 'order',
+        required: false,
+        enum: ['ASC', 'DESC'],
+        example: 'ASC'
+    })
+    async findActiveByStation(
+        @Param('stationId') stationId: number,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('search') search?: string,
+        @Query('order') order: 'ASC' | 'DESC' = 'ASC'
+    ) {
+        return this.cabinetService.findActiveByStation(
+            stationId,
+            page,
+            limit,
+            search,
+            order
+        );
+    }
+
+    @Get('public/by-station-and-type/:stationId')
+    @ApiOperation({
+        summary: 'Lấy danh sách tủ và slot theo loại pin tại một trạm (cho user, có phân trang)'
+    })
+    @ApiParam({ name: 'stationId', type: Number, description: 'ID trạm' })
+    @ApiQuery({
+        name: 'batteryTypeId',
+        type: Number,
+        required: true,
+        description: 'ID loại pin'
+    })
+    @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+    @ApiQuery({ name: 'search', required: false, type: String })
+    @ApiQuery({
+        name: 'order',
+        required: false,
+        enum: ['ASC', 'DESC'],
+        example: 'ASC'
+    })
+    async findByStationAndBatteryType(
+        @Param('stationId') stationId: number,
+        @Query('batteryTypeId') batteryTypeId: number,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('search') search?: string,
+        @Query('order') order: 'ASC' | 'DESC' = 'ASC'
+    ) {
+        return this.cabinetService.findByStationAndBatteryType(
+            stationId,
+            batteryTypeId,
+            page,
+            limit,
+            search,
+            order
+        );
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -125,7 +183,7 @@ export class CabinetController {
 
     @Get(':id')
     @ApiOperation({
-        summary: 'Lấy chi tiết tủ',
+        summary: 'Lấy chi tiết tủ'
     })
     @ApiParam({ name: 'id', type: Number, description: 'ID tủ' })
     async findById(@Param('id') id: number) {

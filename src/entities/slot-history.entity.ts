@@ -21,9 +21,6 @@ export class SlotHistory {
     @Column()
     batteryId: number;
 
-    @Column({ type: 'timestamp' })
-    date: Date;
-
     @Column({ type: 'boolean', default: true })
     status: boolean;
 

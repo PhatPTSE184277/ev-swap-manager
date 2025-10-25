@@ -102,12 +102,27 @@ export class CabinetService {
         }
     }
 
-    async findActiveByStation(stationId: number): Promise<any> {
+    async findActiveByStation(
+        stationId: number,
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        order: 'ASC' | 'DESC' = 'ASC'
+    ): Promise<any> {
         try {
-            const cabinets = await this.cabinetRepository.find({
-                where: { stationId, status: true },
-                relations: ['slots']
-            });
+            let where: any = { stationId, status: true };
+            if (search) {
+                where.name = Like(`%${search}%`);
+            }
+            const [cabinets, total] = await this.cabinetRepository.findAndCount(
+                {
+                    where,
+                    relations: ['slots'],
+                    order: { id: order },
+                    skip: (page - 1) * limit,
+                    take: limit
+                }
+            );
 
             const mappedData = cabinets.map((cabinet) => {
                 let available = 0;
@@ -120,7 +135,7 @@ export class CabinetService {
                     else if (slot.status === SlotStatus.EMPTY) empty++;
                 });
 
-                const { createdAt, updatedAt, slots, ...rest } = cabinet;
+                const { createdAt, updatedAt, slots, status, ...rest } = cabinet;
                 return {
                     ...rest,
                     availablePins: available,
@@ -131,11 +146,71 @@ export class CabinetService {
 
             return {
                 data: mappedData,
+                total,
+                page,
+                limit,
                 message: 'Lấy danh sách tủ đang hoạt động tại trạm thành công'
             };
         } catch (error) {
             throw new InternalServerErrorException(
                 error?.message || 'Lỗi hệ thống khi lấy danh sách tủ theo trạm'
+            );
+        }
+    }
+
+    async findByStationAndBatteryType(
+        stationId: number,
+        batteryTypeId: number,
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        order: 'ASC' | 'DESC' = 'ASC'
+    ): Promise<any> {
+         try {
+            let where: any = { stationId, status: true, batteryTypeId };
+            if (search) {
+                where.name = Like(`%${search}%`);
+            }
+            const [cabinets, total] = await this.cabinetRepository.findAndCount(
+                {
+                    where,
+                    relations: ['slots'],
+                    order: { id: order },
+                    skip: (page - 1) * limit,
+                    take: limit
+                }
+            );
+
+            const mappedData = cabinets.map((cabinet) => {
+                let available = 0;
+                let charging = 0;
+                let empty = 0;
+
+                (cabinet.slots || []).forEach((slot) => {
+                    if (slot.status === SlotStatus.AVAILABLE) available++;
+                    else if (slot.status === SlotStatus.CHARGING) charging++;
+                    else if (slot.status === SlotStatus.EMPTY) empty++;
+                });
+
+                const { createdAt, updatedAt, slots, status, ...rest } = cabinet;
+                return {
+                    ...rest,
+                    availablePins: available,
+                    chargingPins: charging,
+                    emptySlots: empty
+                };
+            });
+
+            return {
+                data: mappedData,
+                total,
+                page,
+                limit,
+                message: 'Lấy danh sách tủ đang hoạt động theo loại pin tại trạm thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách tủ theo trạm và loại pin'
             );
         }
     }
@@ -156,14 +231,14 @@ export class CabinetService {
                         );
                     }
 
-                   const station = await manager.findOne(Station, {
-                       where: {
-                           id: createCabinetDto.stationId
-                       }
-                   });
+                    const station = await manager.findOne(Station, {
+                        where: {
+                            id: createCabinetDto.stationId
+                        }
+                    });
 
-                     if (!station) {
-                            throw new NotFoundException('Trạm không tồn tại');
+                    if (!station) {
+                        throw new NotFoundException('Trạm không tồn tại');
                     }
 
                     const newCabinet = manager.create(
@@ -188,7 +263,11 @@ export class CabinetService {
             );
             return result;
         } catch (error) {
-            if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            )
+                throw error;
             throw new InternalServerErrorException(
                 error?.message || 'Lỗi hệ thống khi tạo tủ'
             );

@@ -21,6 +21,7 @@ import { UserMembershipModule } from './modules/user-membership/user-membership.
 import { TransactionModule } from './modules/transaction/transaction.module';
 import { BatteryGateway } from './gateways/battery.gateway';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SimulationModule } from './modules/simulation/simulation.module';
 
 @Module({
     imports: [
@@ -49,7 +50,8 @@ import { ScheduleModule } from '@nestjs/schedule';
         StationStaffModule,
         SlotModule,
         UserMembershipModule,
-        TransactionModule
+        TransactionModule,
+        SimulationModule
     ],
     controllers: [],
     providers: [BatteryGateway],

@@ -11,6 +11,7 @@ import {
 import { Station } from './station.entity';
 import { Slot } from './slot.entity';
 import { CabinetHistory } from './cabinet-history.entity';
+import { BatteryType } from './battery-type.entity';
 
 @Entity('cabinets')
 export class Cabinet {
@@ -23,8 +24,8 @@ export class Cabinet {
     @Column()
     stationId: number;
 
-    @Column({ type: 'decimal', precision: 5, scale: 2 })
-    temperature: number;
+    @Column()
+    batteryTypeId: number;
 
     @Column({ type: 'boolean', default: true })
     status: boolean;
@@ -38,6 +39,10 @@ export class Cabinet {
         onUpdate: 'CURRENT_TIMESTAMP'
     })
     updatedAt: Date;
+
+    @ManyToOne(() => BatteryType)
+    @JoinColumn({ name: 'batteryTypeId' })
+    batteryType: BatteryType;
 
     @ManyToOne(() => Station)
     @JoinColumn({ name: 'stationId' })

@@ -4,9 +4,6 @@ export class CreateUserVehicleDto {
     @NumberRequired('Loại xe')
     vehicleTypeId: number;
 
-    @NumberRequired('Pin')
-    batteryId: number;
-
     @StringRequired('Tên xe')
     name: string;
 }

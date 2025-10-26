@@ -29,7 +29,7 @@ export class BookingDetail {
     @Column({
         type: 'enum',
         enum: BookingDetailStatus,
-        default: BookingDetailStatus.PENDING
+        default: BookingDetailStatus.RESERVED
     })
     status: BookingDetailStatus;
 

@@ -531,7 +531,7 @@ export const seedData = {
             userMembershipId: 2,
             transactionId: 2,
             expectedPickupTime: new Date('2025-10-21T10:00:00'),
-            status: BookingStatus.PENDING,
+            status: BookingStatus.RESERVED,
             createdAt: new Date(),
             updatedAt: new Date()
         }
@@ -552,7 +552,7 @@ export const seedData = {
             bookingId: 2,
             batteryId: 3,
             price: 50000,
-            status: BookingDetailStatus.PENDING,
+            status: BookingDetailStatus.RESERVED,
             createdAt: new Date(),
             updatedAt: new Date()
         }

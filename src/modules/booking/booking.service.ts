@@ -48,17 +48,17 @@ export class BookingService {
         const expiredBookings = await this.bookingRepository.find({
             where: {
                 expectedPickupTime: LessThan(now),
-                status: BookingStatus.PENDING
+                status: BookingStatus.RESERVED
             },
             relations: ['bookingDetails']
         });
 
         for (const booking of expiredBookings) {
-            booking.status = BookingStatus.CANCELLED;
+            booking.status = BookingStatus.EXPIRED;
             await this.bookingRepository.save(booking);
 
             for (const detail of booking.bookingDetails) {
-                detail.status = BookingDetailStatus.CANCELLED;
+                detail.status = BookingDetailStatus.EXPIRED;
                 await this.dataSource
                     .getRepository('BookingDetail')
                     .save(detail);
@@ -176,7 +176,7 @@ export class BookingService {
                         userVehicleId: createBookingDto.userVehicleId,
                         stationId: createBookingDto.stationId,
                         expectedPickupTime,
-                        status: BookingStatus.PENDING
+                        status: BookingStatus.RESERVED
                     };
                     if (userMembership) {
                         bookingData.userMembershipId = userMembership.id;
@@ -224,7 +224,7 @@ export class BookingService {
                             bookingId: booking.id,
                             batteryId: detail.batteryId,
                             price: price,
-                            status: BookingDetailStatus.PENDING
+                            status: BookingDetailStatus.RESERVED
                         });
                         await manager.save('BookingDetail', bookingDetail);
 
@@ -482,7 +482,7 @@ export class BookingService {
                         expectedPickupTime: now,
                         status: userMembership
                             ? BookingStatus.IN_PROGRESS
-                            : BookingStatus.PENDING
+                            : BookingStatus.PENDING_PAYMENT
                     };
                     if (userMembership) {
                         bookingData.userMembershipId = userMembership.id;
@@ -528,7 +528,7 @@ export class BookingService {
                             price,
                             status: userMembership
                                 ? BookingDetailStatus.IN_PROGRESS
-                                : BookingDetailStatus.PENDING
+                                : BookingDetailStatus.PENDING_PAYMENT
                         });
                         await manager.save('BookingDetail', bookingDetail);
 
@@ -559,7 +559,7 @@ export class BookingService {
                         usedMembership: !!userMembership,
                         status: userMembership
                             ? BookingStatus.IN_PROGRESS
-                            : BookingStatus.PENDING
+                            : BookingStatus.PENDING_PAYMENT
                     };
                 }
             );

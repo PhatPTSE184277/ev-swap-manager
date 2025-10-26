@@ -426,7 +426,7 @@ export class BookingService {
     ): Promise<any> {
         try {
             const result = await this.dataSource.transaction(
-                    async (manager) => {
+                async (manager) => {
                     const userVehicle = await manager.findOne(UserVehicle, {
                         where: {
                             id: dto.userVehicleId,
@@ -574,6 +574,59 @@ export class BookingService {
             }
             throw new InternalServerErrorException(
                 error.message || 'Lỗi hệ thống xảy ra khi tạo booking on-site'
+            );
+        }
+    }
+
+    async checkinBooking(userId: number, stationId: number): Promise<any> {
+        try {
+            const result = await this.dataSource.transaction(
+                async (manager) => {
+                    const booking = await manager.findOne(Booking, {
+                        where: {
+                            userVehicle: { userId },
+                            stationId,
+                            status: BookingStatus.RESERVED
+                        },
+                        relations: [
+                            'bookingDetails',
+                            'userVehicle',
+                            'userVehicle.user'
+                        ],
+                        order: { expectedPickupTime: 'DESC' }
+                    });
+
+                    if (!booking) {
+                        throw new NotFoundException(
+                            'Không tìm thấy booking đặt trước hợp lệ tại trạm này'
+                        );
+                    }
+                    const now = new Date();
+
+                    booking.expectedPickupTime = now;
+                    booking.status = BookingStatus.IN_PROGRESS;
+                    await manager.save(Booking, booking);
+
+                    for (const detail of booking.bookingDetails) {
+                        detail.status = BookingDetailStatus.IN_PROGRESS;
+                        await manager.save('BookingDetail', detail);
+                    }
+
+                    return {
+                        message: 'Check-in booking thành công'
+                    };
+                }
+            );
+            return result;
+        } catch (error) {
+            if (
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException
+            ) {
+                throw error;
+            }
+            throw new BadRequestException(
+                error?.message || 'Lỗi hệ thống khi check-in booking'
             );
         }
     }

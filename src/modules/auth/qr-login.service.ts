@@ -7,14 +7,17 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { QrGateway } from 'src/gateways/qr.gateway';
+import { BookingService } from '../booking/booking.service';
 
 interface QrSession {
     id: string;
+    stationId: number;
     status: 'PENDING' | 'APPROVED' | 'EXPIRED';
     createdAt: Date;
     expiredAt: Date;
     userId?: number;
     token?: string;
+    bookingId?: number;
 }
 
 @Injectable()
@@ -24,23 +27,25 @@ export class QrLoginService {
 
     constructor(
         private readonly jwtService: JwtService,
-        private readonly qrGateway: QrGateway
+        private readonly qrGateway: QrGateway,
+        private readonly bookingService: BookingService
     ) {}
 
-    createSession(ttlSeconds = 60) {
+    createSession(stationId: number, ttlSeconds = 60) {
         const id = randomUUID();
         const session: QrSession = {
             id,
+            stationId,
             status: 'PENDING',
             createdAt: new Date(),
             expiredAt: new Date(Date.now() + ttlSeconds * 1000)
         };
         this.sessions.set(id, session);
-        this.logger.log(`Tạo QR session ${id}`);
-        return { sessionId: id, expiredAt: session.expiredAt };
+        this.logger.log(`Tạo QR session ${id} cho trạm ${stationId}`);
+        return { sessionId: id, expiredAt: session.expiredAt, stationId };
     }
 
-    approve(sessionId: string, user: any) {
+    async approve(sessionId: string, user: any) {
         const session = this.sessions.get(sessionId);
         if (!session) throw new NotFoundException('QR session không tồn tại');
         if (session.status !== 'PENDING')
@@ -50,6 +55,11 @@ export class QrLoginService {
             this.qrGateway.notifyExpired(sessionId);
             throw new UnauthorizedException('QR session đã hết hạn');
         }
+
+        const checkinResult = await this.bookingService.checkinBooking(
+            user.id,
+            session.stationId
+        );
 
         const payload = {
             sub: user.id,
@@ -61,25 +71,52 @@ export class QrLoginService {
         session.status = 'APPROVED';
         session.userId = user.id;
         session.token = token;
+        session.bookingId = checkinResult.bookingId;
         this.sessions.set(sessionId, session);
 
         this.qrGateway.notifyApproved(sessionId, token);
         this.logger.log(`QR session ${sessionId} approved bởi user ${user.id}`);
 
-        return { sessionId, token };
+        return {
+            sessionId,
+            token,
+            ...checkinResult
+        };
     }
 
     getStatus(sessionId: string) {
         const session = this.sessions.get(sessionId);
-        if (!session) throw new NotFoundException('Không tìm thấy QR session');
+        if (!session) {
+            throw new NotFoundException('Không tìm thấy QR session');
+        }
+
         if (session.expiredAt < new Date() && session.status === 'PENDING') {
             session.status = 'EXPIRED';
             this.qrGateway.notifyExpired(sessionId);
         }
+
         return {
             id: session.id,
+            stationId: session.stationId,
             status: session.status,
-            token: session.status === 'APPROVED' ? session.token : null
+            token: session.status === 'APPROVED' ? session.token : null,
+            bookingId: session.status === 'APPROVED' ? session.bookingId : null
         };
+    }
+
+    cleanupExpiredSessions() {
+        const now = new Date();
+        let cleaned = 0;
+
+        for (const [id, session] of this.sessions.entries()) {
+            if (session.expiredAt < now) {
+                this.sessions.delete(id);
+                cleaned++;
+            }
+        }
+
+        if (cleaned > 0) {
+            this.logger.log(`Đã xóa ${cleaned} expired QR sessions`);
+        }
     }
 }

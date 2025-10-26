@@ -15,6 +15,7 @@ import { Transaction } from './transaction.entity';
 import { BookingDetail } from './booking-detail.entity';
 import { BatteryUsedHistory } from './battery-used-history.entity';
 import { BookingStatus } from '../enums';
+import { Station } from './station.entity';
 
 @Entity('bookings')
 export class Booking {
@@ -30,9 +31,14 @@ export class Booking {
     @Column({ nullable: true })
     transactionId: number;
 
+    @Column()
+    stationId: number;
+
     @Column({ type: 'timestamp', nullable: true })
     expectedPickupTime: Date;
     
+    @Column({ type: 'timestamp', nullable: true })
+    checkinTime: Date;
 
     @Column({
         type: 'enum',
@@ -50,6 +56,11 @@ export class Booking {
         onUpdate: 'CURRENT_TIMESTAMP'
     })
     updatedAt: Date;
+
+    
+    @ManyToOne(() => Station)
+    @JoinColumn({ name: 'stationId' })
+    station: Station;
 
     @ManyToOne(() => UserVehicle)
     @JoinColumn({ name: 'userVehicleId' })

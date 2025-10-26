@@ -11,6 +11,7 @@ import { JwtStrategy } from './strategies/jwt.stategy';
 import { QrLoginController } from './qr-login.controller';
 import { QrLoginService } from './qr-login.service';
 import { QrGateway } from 'src/gateways/qr.gateway';
+
 @Module({
   imports: [
     UserModule,

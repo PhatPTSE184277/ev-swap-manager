@@ -9,6 +9,9 @@ import { randomUUID } from 'crypto';
 import { QrGateway } from 'src/gateways/qr.gateway';
 import { BookingService } from '../booking/booking.service';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Station } from 'src/entities';
+import { Repository } from 'typeorm';
 
 interface QrSession {
     id: string;
@@ -29,11 +32,19 @@ export class QrLoginService {
     constructor(
         private readonly jwtService: JwtService,
         private readonly qrGateway: QrGateway,
-        private readonly bookingService: BookingService
+        private readonly bookingService: BookingService,
+        @InjectRepository(Station)
+        private readonly stationRepository: Repository<Station>
     ) {}
 
-    createSession(createSessionDto: CreateSessionDto, ttlSeconds = 60) {
+    async createSession(createSessionDto: CreateSessionDto, ttlSeconds = 60) {
         const id = randomUUID();
+        const station = await this.stationRepository.findOne({
+            where: { id: createSessionDto.stationId }
+        });
+        if (!station) {
+            throw new NotFoundException('Trạm không tồn tại');
+        }
         const session: QrSession = {
             id,
             stationId: createSessionDto.stationId,
@@ -42,8 +53,14 @@ export class QrLoginService {
             expiredAt: new Date(Date.now() + ttlSeconds * 1000)
         };
         this.sessions.set(id, session);
-        this.logger.log(`Tạo QR session ${id} cho trạm ${createSessionDto.stationId}`);
-        return { sessionId: id, expiredAt: session.expiredAt, stationId: createSessionDto.stationId };
+        this.logger.log(
+            `Tạo QR session ${id} cho trạm ${createSessionDto.stationId}`
+        );
+        return {
+            sessionId: id,
+            expiredAt: session.expiredAt,
+            stationId: createSessionDto.stationId
+        };
     }
 
     async approve(sessionId: string, user: any) {

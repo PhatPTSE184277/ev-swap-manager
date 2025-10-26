@@ -25,7 +25,7 @@ export class UserMembership {
     @Column()
     membershipId: number;
 
-    @Column({ type: 'timestamp' })
+    @Column({ type: 'timestamp', nullable: true })
     expiredDate: Date;
 
     @Column({ type: 'timestamp', nullable: true })

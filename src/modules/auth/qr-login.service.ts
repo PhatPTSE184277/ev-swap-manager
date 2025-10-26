@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { QrGateway } from 'src/gateways/qr.gateway';
 import { BookingService } from '../booking/booking.service';
+import { CreateSessionDto } from './dto/create-session.dto';
 
 interface QrSession {
     id: string;
@@ -31,18 +32,18 @@ export class QrLoginService {
         private readonly bookingService: BookingService
     ) {}
 
-    createSession(stationId: number, ttlSeconds = 60) {
+    createSession(createSessionDto: CreateSessionDto, ttlSeconds = 60) {
         const id = randomUUID();
         const session: QrSession = {
             id,
-            stationId,
+            stationId: createSessionDto.stationId,
             status: 'PENDING',
             createdAt: new Date(),
             expiredAt: new Date(Date.now() + ttlSeconds * 1000)
         };
         this.sessions.set(id, session);
-        this.logger.log(`Tạo QR session ${id} cho trạm ${stationId}`);
-        return { sessionId: id, expiredAt: session.expiredAt, stationId };
+        this.logger.log(`Tạo QR session ${id} cho trạm ${createSessionDto.stationId}`);
+        return { sessionId: id, expiredAt: session.expiredAt, stationId: createSessionDto.stationId };
     }
 
     async approve(sessionId: string, user: any) {

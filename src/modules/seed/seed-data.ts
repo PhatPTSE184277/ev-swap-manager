@@ -479,7 +479,7 @@ export const seedData = {
             paymentId: 2,
             totalPrice: 50000,
             dateTime: new Date('2025-09-30T08:00:00'),
-            status: TransactionStatus.COMPLETED,
+            status: TransactionStatus.SUCCESS,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -488,7 +488,7 @@ export const seedData = {
             paymentId: 1,
             totalPrice: 75000,
             dateTime: new Date('2025-09-30T10:00:00'),
-            status: TransactionStatus.COMPLETED,
+            status: TransactionStatus.SUCCESS,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -498,7 +498,7 @@ export const seedData = {
             userMembershipId: 1,
             totalPrice: 150000,
             dateTime: new Date('2025-09-28T09:00:00'),
-            status: TransactionStatus.COMPLETED,
+            status: TransactionStatus.SUCCESS,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -508,7 +508,7 @@ export const seedData = {
             userMembershipId: 2,
             totalPrice: 350000,
             dateTime: new Date('2025-09-29T11:00:00'),
-            status: TransactionStatus.COMPLETED,
+            status: TransactionStatus.SUCCESS,
             createdAt: new Date(),
             updatedAt: new Date()
         }

@@ -24,6 +24,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SimulationModule } from './modules/simulation/simulation.module';
 import { ChatRoomModule } from './modules/chat-room/chat-room.module';
 import { ChatMessageModule } from './modules/chat-message/chat-message.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { PayOSModule } from './modules/pay-os/pay-os.module';
 
 @Module({
   imports: [
@@ -56,6 +58,8 @@ import { ChatMessageModule } from './modules/chat-message/chat-message.module';
     SimulationModule,
     ChatRoomModule,
     ChatMessageModule,
+    PayOSModule,
+    PaymentModule,
   ],
   controllers: [],
   providers: [BatteryGateway],

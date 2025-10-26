@@ -11,12 +11,14 @@ import { JwtStrategy } from './strategies/jwt.stategy';
 import { QrLoginController } from './qr-login.controller';
 import { QrLoginService } from './qr-login.service';
 import { QrGateway } from 'src/gateways/qr.gateway';
+import { BookingModule } from '../booking/booking.module';
 
 @Module({
   imports: [
     UserModule,
     MailModule,
     PassportModule,
+    BookingModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

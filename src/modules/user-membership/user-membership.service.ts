@@ -10,6 +10,7 @@ import { DataSource, LessThan, MoreThan, Repository } from 'typeorm';
 import { CreateUserMembershipDto } from './dto/create-user-membership.dto';
 import { UserMembershipStatus } from '../../enums';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { TransactionService } from '../transaction/transaction.service';
 
 @Injectable()
 export class UserMembershipService {
@@ -20,7 +21,8 @@ export class UserMembershipService {
         private readonly userRepository: Repository<User>,
         @InjectRepository(Membership)
         private readonly membershipRepository: Repository<Membership>,
-        private readonly dataSource: DataSource
+        private readonly dataSource: DataSource,
+        private readonly transactionService: TransactionService
     ) {}
 
     @Cron(CronExpression.EVERY_MINUTE)
@@ -128,9 +130,16 @@ export class UserMembershipService {
                             now.getTime() + 20 * 60 * 1000
                         ),
                         status: UserMembershipStatus.PENDING,
-                        expiredDate
+
                     });
                     await manager.save(userMembership);
+
+                    await this.transactionService.createMembershipTransaction({
+                        paymentId: createUserMembershipDto.paymentId,
+                        userMembershipId: userMembership.id,
+                        totalPrice: membership.price
+                    });
+
                     return { message: 'Tạo User Membership thành công' };
                 }
             );

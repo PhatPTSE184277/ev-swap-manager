@@ -12,13 +12,11 @@ export class PaymentController {
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
   @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiQuery({ name: 'status', required: false, type: Boolean, example: true })
   async getActivePayments(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('search') search?: string,
-    @Query('status') status: boolean = true
   ) {
-    return this.paymentService.getActivePayments(page, limit, search, status);
+    return this.paymentService.getActivePayments(page, limit, search);
   }
 }

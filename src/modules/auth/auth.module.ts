@@ -12,6 +12,8 @@ import { QrLoginController } from './qr-login.controller';
 import { QrLoginService } from './qr-login.service';
 import { QrGateway } from 'src/gateways/qr.gateway';
 import { BookingModule } from '../booking/booking.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Station } from 'src/entities';
 
 @Module({
   imports: [
@@ -19,6 +21,7 @@ import { BookingModule } from '../booking/booking.module';
     MailModule,
     PassportModule,
     BookingModule,
+    TypeOrmModule.forFeature([Station]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

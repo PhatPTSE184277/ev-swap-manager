@@ -73,11 +73,19 @@ export class QrLoginService {
             this.qrGateway.notifyExpired(sessionId);
             throw new UnauthorizedException('QR session đã hết hạn');
         }
-
-        const checkinResult = await this.bookingService.checkinBooking(
-            user.id,
-            session.stationId
-        );
+        let checkinResult: any = null;
+        let hasBooking = false;
+        try {
+            checkinResult = await this.bookingService.checkinBooking(
+                user.id,
+                session.stationId
+            );
+            hasBooking = true;
+        } catch (error) {
+            this.logger.log(
+                `User ${user.id} không có booking đặt trước tại trạm ${session.stationId}, cho phép đăng nhập để đặt tại chỗ`
+            );
+        }
 
         const payload = {
             sub: user.id,
@@ -89,7 +97,7 @@ export class QrLoginService {
         session.status = 'APPROVED';
         session.userId = user.id;
         session.token = token;
-        session.bookingId = checkinResult.bookingId;
+        session.bookingId = checkinResult?.bookingId || null;
         this.sessions.set(sessionId, session);
 
         this.qrGateway.notifyApproved(sessionId, token);
@@ -98,7 +106,11 @@ export class QrLoginService {
         return {
             sessionId,
             token,
-            ...checkinResult
+            hasBooking,
+            message: hasBooking
+                ? 'Check-in booking thành công'
+                : 'Đăng nhập thành công. Vui lòng đặt booking tại trạm',
+            ...(checkinResult || {})
         };
     }
 

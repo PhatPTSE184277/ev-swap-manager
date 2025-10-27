@@ -63,20 +63,18 @@ export class UserVehicleController {
             order
         );
     }
-
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.USER, RoleName.ADMIN)
-    @Post()
+    @Roles(RoleName.STAFF, RoleName.ADMIN)
+    @Post('staff')
     @ApiOperation({
-        summary: 'User tạo phương tiện mới',
-        description: 'User tự tạo phương tiện cho chính mình'
+        summary: 'Staff tạo phương tiện cho user',
+        description:
+            'Nhân viên tạo phương tiện cho user khác (bằng email hoặc username)'
     })
-    async create(
-        @Req() req,
-        @Body() createUserVehicleDto: CreateUserVehicleDto
-    ) {
-        const userId = req.user.id;
-        return this.userVehicleService.create(userId, createUserVehicleDto);
+    async staffCreate(@Body() createUserVehicleDto: CreateUserVehicleDto) {
+        return this.userVehicleService.staffCreateUserVehicle(
+            createUserVehicleDto
+        );
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)

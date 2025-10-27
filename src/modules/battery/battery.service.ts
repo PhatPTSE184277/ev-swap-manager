@@ -6,11 +6,12 @@ import {
     NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Battery, BatteryType } from 'src/entities';
+import { Battery, BatteryType, UserVehicle } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
 import { CreateBatteryDto } from './dto/create-battery.dto';
 import { BatteryStatus, BookingStatus } from 'src/enums';
+import { CreateUserBatteryDto } from './dto/create-user-battery.dto';
 
 @Injectable()
 export class BatteryService {
@@ -114,18 +115,15 @@ export class BatteryService {
                     if (!batteryType) {
                         throw new BadRequestException('Loại pin không tồn tại');
                     }
-                    
 
-                    const newBattery = manager.create(
-                        Battery,
-                        {
-                            ...createBatteryDto,
-                            currentCycle: 0,
-                            currentCapacity: 100,
-                            healthScore: 100,
-                            status: createBatteryDto.status ?? BatteryStatus.AVAILABLE
-                        }
-                    );
+                    const newBattery = manager.create(Battery, {
+                        ...createBatteryDto,
+                        currentCycle: 0,
+                        currentCapacity: 100,
+                        healthScore: 100,
+                        status:
+                            createBatteryDto.status ?? BatteryStatus.AVAILABLE
+                    });
                     await manager.save(Battery, newBattery);
                     const { createdAt, updatedAt, batteryTypeId, ...rest } =
                         newBattery;
@@ -180,5 +178,67 @@ export class BatteryService {
         }
     }
 
-  
+    async staffCreateBatteryForUserVehicle(
+        dto: CreateUserBatteryDto
+    ): Promise<any> {
+        try {
+            const result = await this.dataSource.transaction(
+                async (manager) => {
+                    const userVehicle = await manager.findOne(UserVehicle, {
+                        where: { id: dto.userVehicleId, status: true },
+                        relations: ['vehicleType']
+                    });
+
+                    if (!userVehicle) {
+                        throw new NotFoundException(
+                            'Phương tiện người dùng không tồn tại hoặc không hoạt động'
+                        );
+                    }
+
+                    const batteryTypeId =
+                        userVehicle.vehicleType?.batteryTypeId;
+                    if (!batteryTypeId) {
+                        throw new BadRequestException(
+                            'Loại pin cho phương tiện này không xác định'
+                        );
+                    }
+
+                    const existingBattery = await manager.findOne(Battery, {
+                        where: { model: dto.model }
+                    });
+                    if (existingBattery) {
+                        throw new BadRequestException('Pin đã tồn tại');
+                    }
+
+                    const newBattery = manager.create(Battery, {
+                        batteryTypeId: batteryTypeId,
+                        model: dto.model,
+                        currentCapacity: dto.currentCapacity ?? 100,
+                        currentCycle: dto.currentCycle ?? 0,
+                        healthScore: dto.healthScore ?? 100,
+                        status: BatteryStatus.IN_USE,
+                        userVehicleId: dto.userVehicleId
+                    });
+                    await manager.save(Battery, newBattery);
+
+                    return {
+                        message: 'Tạo pin cho phương tiện người dùng thành công'
+                    };
+                }
+            );
+            return result;
+        } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException(
+                error?.message ||
+                    'Lỗi hệ thống khi tạo pin cho phương tiện người dùng'
+            );
+        }
+    }
 }

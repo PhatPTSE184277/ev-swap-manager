@@ -26,6 +26,7 @@ import { ChatRoomModule } from './modules/chat-room/chat-room.module';
 import { ChatMessageModule } from './modules/chat-message/chat-message.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { PayOSModule } from './modules/pay-os/pay-os.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { PayOSModule } from './modules/pay-os/pay-os.module';
     ChatMessageModule,
     PayOSModule,
     PaymentModule,
+    FeedbackModule,
   ],
   controllers: [],
   providers: [BatteryGateway],

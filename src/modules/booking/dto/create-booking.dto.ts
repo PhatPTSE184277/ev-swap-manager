@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
-import { NumberNotRequired, NumberRequired } from 'src/common/decorators';
+import { NumberRequired } from 'src/common/decorators';
 
 export class CreateBookingDetailDto {
     @NumberRequired('Pin mới')

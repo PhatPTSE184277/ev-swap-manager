@@ -23,6 +23,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { RoleName } from 'src/enums';
 import { CreateBatteryDto } from './dto/create-battery.dto';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
+import { CreateUserBatteryDto } from './dto/create-user-battery.dto';
 
 @ApiTags('Battery')
 @ApiBearerAuth()
@@ -118,5 +119,17 @@ export class BatteryController {
         @Body() updateBatteryDto: UpdateBatteryDto
     ) {
         return this.batteryService.update(id, updateBatteryDto);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.STAFF, RoleName.ADMIN)
+    @Post('staff-create')
+    @ApiOperation({
+        summary: 'Staff tạo pin và gắn vào xe của user',
+        description:
+            'Nhân viên ghi nhận tình trạng pin thực tế và gắn vào xe người dùng'
+    })
+    async staffCreateBatteryForUserVehicle(@Body() dto: CreateUserBatteryDto) {
+        return this.batteryService.staffCreateBatteryForUserVehicle(dto);
     }
 }

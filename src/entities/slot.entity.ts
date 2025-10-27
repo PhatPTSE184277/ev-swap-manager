@@ -11,7 +11,6 @@ import {
 import { Cabinet } from './cabinet.entity';
 import { Battery } from './battery.entity';
 import { SlotHistory } from './slot-history.entity';
-import { BookingDetail } from './booking-detail.entity';
 import { SlotStatus } from '../enums';
 
 @Entity('slots')

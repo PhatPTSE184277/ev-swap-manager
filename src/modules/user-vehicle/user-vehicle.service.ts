@@ -1,11 +1,13 @@
 /* eslint-disable prefer-const */
 import {
+    BadRequestException,
     ConflictException,
     Injectable,
+    InternalServerErrorException,
     NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserVehicle } from 'src/entities';
+import { User, UserVehicle } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { CreateUserVehicleDto } from './dto/create-user-vehicle.dto';
 import { UpdateUserVehicleDto } from './dto/update-user-vehicle.dto';
@@ -139,36 +141,57 @@ export class UserVehicleService {
         };
     }
 
-    async create(
-        userId: number,
-        createUserVehicleDto: CreateUserVehicleDto
+    async staffCreateUserVehicle(
+        dto: CreateUserVehicleDto
     ): Promise<{ message: string }> {
-        return await this.dataSource.transaction(async (manager) => {
-            const existed = await manager.findOne(UserVehicle, {
-                where: {
-                    userId,
-                    vehicleTypeId: createUserVehicleDto.vehicleTypeId,
-                    name: createUserVehicleDto.name,
-                    status: true
+        try {
+            const result = await this.dataSource.transaction(
+                async (manager) => {
+                    const user = await manager.findOne(User, {
+                        where: [
+                            { email: dto.userNameOrEmail },
+                            { username: dto.userNameOrEmail }
+                        ]
+                    });
+                    if (!user)
+                        throw new NotFoundException('Người dùng không tồn tại');
+
+                    const existingVehicle = await manager.findOne(UserVehicle, {
+                        where: {
+                            userId: user.id,
+                            name: dto.name,
+                            status: true
+                        }
+                    });
+                    
+                    if (existingVehicle)
+                        throw new BadRequestException('Phương tiện đã tồn tại');
+
+                    const newVehicle = manager.create(UserVehicle, {
+                        ...dto,
+                        userId: user.id
+                    });
+                    await manager.save(UserVehicle, newVehicle);
+
+                    return {
+                        message:
+                            'Nhân viên đã tạo phương tiện cho user thành công'
+                    };
                 }
-            });
-            if (existed) {
-                throw new ConflictException(
-                    'Bạn đã đăng ký phương tiện này rồi'
-                );
-            }
-
-            const newUserVehicle = manager.create(UserVehicle, {
-                userId,
-                ...createUserVehicleDto,
-                status: true
-            });
-            await manager.save(UserVehicle, newUserVehicle);
-
-            return { message: 'Tạo phương tiện thành công' };
-        });
+            );
+            return result;
+        } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            )
+                throw error;
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi nhân viên tạo phương tiện'
+            );
+        }
     }
-
+    
     async update(
         userId: number,
         id: number,

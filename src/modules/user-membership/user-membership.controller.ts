@@ -26,7 +26,9 @@ import { UserMembershipStatus } from '../../enums';
 @ApiBearerAuth()
 @Controller('user-membership')
 export class UserMembershipController {
-    constructor(private readonly userMembershipService: UserMembershipService) {}
+    constructor(
+        private readonly userMembershipService: UserMembershipService
+    ) {}
 
     @UseGuards(JwtAuthGuard)
     @Get('by-user')
@@ -71,6 +73,32 @@ export class UserMembershipController {
         @Body() createUserMembershipDto: CreateUserMembershipDto
     ) {
         const userId = req.user.id;
-        return this.userMembershipService.create(userId, createUserMembershipDto);
+        return this.userMembershipService.create(
+            userId,
+            createUserMembershipDto
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch(':id/cancel')
+    @ApiOperation({
+        summary: 'User hủy gói thành viên đang hoạt động',
+        description: 'User có thể hủy gói thành viên đang hoạt động của mình'
+    })
+    @ApiParam({
+        name: 'id',
+        required: true,
+        type: Number,
+        description: 'ID của UserMembership'
+    })
+    async cancelActiveMembership(
+        @Req() req,
+        @Param('id') userMembershipId: number
+    ) {
+        const userId = req.user.id;
+        return this.userMembershipService.cancelActiveMemberships(
+            userId,
+            Number(userMembershipId)
+        );
     }
 }

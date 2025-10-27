@@ -2,101 +2,179 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-<p align="center">EV Swap Manager - A NestJS-based system for managing EV battery swap stations.</p>
+<p align="center"><b>EV Swap Manager</b> - A NestJS-based system for managing EV battery swap stations.</p>
 <p align="center">
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
 <a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
 <a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-<a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-<a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
 </p>
+
+---
 
 ## Description
 
-EV Swap Manager is a NestJS-based system designed to manage electric vehicle (EV) battery swap stations efficiently. It provides functionalities for EV drivers, station staff, and administrators to streamline operations, enhance user experience, and optimize system performance.
+**EV Swap Manager** is a powerful backend system built with [NestJS](https://nestjs.com/) for managing electric vehicle (EV) battery swap stations. It provides features for EV drivers, station staff, and administrators to streamline operations, enhance user experience, and optimize performance.
+
+---
 
 ## Features
 
-### For EV Drivers:
-- **QR Code Login:** Scan QR codes at swap stations to retrieve new batteries.
-- **Vehicle Management:** Manage multiple vehicles, track specifications (device name, max speed, battery type, max load, mileage), locate vehicles, and view travel history.
-- **Battery Swap Stations:** Search for nearby stations, view station details (address, battery availability, charging status, empty slots), reserve batteries, and get navigation to stations.
-- **Payment & Subscription:** Pay per use or subscribe to battery rental plans (monthly/yearly). Manage transaction history and view usage statistics.
-- **Battery Usage History:** Track current battery details (ID, charge %, temperature, timestamp) and usage history.
-- **Support Requests:** Send support requests for issues during swaps or at stations. Chat with staff for assistance.
-- **Service Feedback:** Rate and review station services.
+### For EV Drivers
+- **QR Code Login:** Scan QR codes at stations to log in and swap batteries.
+- **Vehicle Management:** Manage multiple vehicles, view specs, location, and travel history.
+- **Station Search & Booking:** Find nearby stations, check battery/slot status, reserve batteries, and get directions.
+- **Payment & Subscription:** Pay per swap or subscribe to rental plans. View transaction and usage history.
+- **Battery Usage Tracking:** Monitor current battery info and swap history.
+- **Support & Feedback:** Request support, chat with staff, and rate station services.
 
-### For Staff:
-- **Station Management:** Monitor battery statuses (charged, charging, empty, faulty, maintenance due).
-- **Battery Maintenance:** Track battery details (ID, type, capacity, charge %, cycles, temperature, status). Receive system alerts for faulty batteries or station issues. Lock batteries or disable slots if needed.
-- **Transaction Management:** View station transaction history, process payments, and generate transaction reports.
-- **Customer Support:** Respond to user support requests via the app. Record and resolve complaints.
-- **Reporting & Operations:** Generate daily/monthly transaction reports, track battery swap statistics, and monitor station performance.
+### For Station Staff
+- **Station Monitoring:** Track battery and slot status, receive alerts for faults or maintenance.
+- **Transaction Management:** View and process payments, generate reports.
+- **Customer Support:** Respond to user requests and complaints.
+- **Reporting:** Daily/monthly transaction and swap statistics.
 
-### For Admin:
-- **System Management:** Monitor all stations in the network (status, errors, usage load). Manage battery distribution across stations to balance supply-demand. Track battery health (SoH - State of Health) across the system.
-- **User & Service Management:** Manage user profiles (accounts, vehicles, transaction history). Create, update, and delete battery rental plans. Monitor rental statuses (active, expiring, expired). Manage staff accounts and permissions.
-- **Monitoring & Support:** Oversee staff support activities and handle critical issues (battery/station failures).
-- **Reporting & Analytics:** Generate comprehensive reports on revenue, transactions, battery usage rates, and station performance. Analyze trends and forecast demand using AI to recommend infrastructure upgrades.
+### For Admin
+- **System Management:** Monitor all stations, battery health, and load balancing.
+- **User & Service Management:** Manage users, vehicles, rental plans, and staff permissions.
+- **Analytics & Reporting:** Revenue, transaction, and usage analytics. AI-based demand forecasting.
+
+---
 
 ## Installation
 
 ```bash
-$ npm install
+npm install
 ```
+
+---
 
 ## Running the Application
 
 ```bash
-# Development mode
-$ npm run start
+# Development
+npm run start
 
 # Watch mode
-$ npm run start:dev
+npm run start:dev
 
-# Production mode
-$ npm run start:prod
+# Production
+npm run build
+npm run start:prod
 ```
+
+---
 
 ## Testing
 
 ```bash
 # Unit tests
-$ npm run test
+npm run test
 
 # End-to-end tests
-$ npm run test:e2e
+npm run test:e2e
 
 # Test coverage
-$ npm run test:cov
+npm run test:cov
 ```
 
-## Deployment
+---
 
-To deploy the application, follow the [NestJS deployment guide](https://docs.nestjs.com/deployment). For cloud-based deployment, consider using [NestJS Mau](https://mau.nestjs.com) for AWS integration.
+## Deployment (DigitalOcean)
+
+This project is ready for CI/CD deployment on DigitalOcean Droplets.
+
+### 1. Prerequisites
+- DigitalOcean account and a Droplet (Ubuntu recommended)
+- Node.js, npm, and pm2 installed on the server
+- SSH key configured for GitHub Actions
+
+### 2. CI/CD Pipeline
+
+Deployment is automated via GitHub Actions (`.github/workflows/deploy.yml`):
+- On push to `phatpt` branch, code is built and securely copied to the server.
+- The `.env` file is created from GitHub secrets.
+- The app is installed and started/restarted with pm2.
+
+### 3. Manual Deployment (if needed)
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# On your server
+git pull
+npm install --production
+npm run build
+pm2 restart main || pm2 start dist/main.js --name main
 ```
+
+---
+
+## Environment Variables
+
+Example `.env`:
+
+```env
+PORT=8080
+
+# Database
+DB_HOST=...
+DB_USERNAME=...
+DB_PASSWORD=...
+DB_PORT=...
+DB_NAME=ev_swap_manager
+DB_DIALECT=mysql
+DB_SSL=true
+
+# Mail
+MAIL_HOST=...
+MAIL_PORT=...
+MAIL_FROM=...
+MAIL_USER=...
+MAIL_PASS=...
+
+# JWT
+JWT_SECRET=...
+
+# Frontend
+FRONTEND_URL=http://localhost:3000
+MOBILE_APP_URL=http://localhost:8081
+
+# PayOS
+PAYOS_CLIENT_ID=...
+PAYOS_API_KEY=...
+PAYOS_CHECKSUM_KEY=...
+```
+
+---
+
+## Useful Commands
+
+```bash
+# Run migrations
+npx typeorm migration:run -d src/data-source.ts
+
+# Build for production
+npm run build
+
+# Start with pm2
+pm2 start dist/main.js --name main
+```
+
+---
 
 ## Resources
 
 - [NestJS Documentation](https://docs.nestjs.com)
-- [Discord Channel](https://discord.gg/G7Qnnhy)
-- [Official Courses](https://courses.nestjs.com)
-- [NestJS Devtools](https://devtools.nestjs.com)
-- [Enterprise Support](https://enterprise.nestjs.com)
-- [Jobs Board](https://jobs.nestjs.com)
+- [DigitalOcean Docs](https://docs.digitalocean.com/)
+- [PayOS Docs](https://docs.payos.vn/)
+- [TypeORM Docs](https://typeorm.io/)
+
+---
 
 ## License
 
-This project is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is [MIT licensed](LICENSE).
+
+---
+
+> **EV Swap Manager** – Modern backend for EV battery swap stations, ready for real-world deployment and scaling.

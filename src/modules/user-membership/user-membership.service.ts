@@ -88,9 +88,11 @@ export class UserMembershipService {
                                 userId,
                                 status: UserMembershipStatus.ACTIVE,
                                 expiredDate: MoreThan(now)
-                            }
+                            },
+                            relations: ['membership']
                         }
                     );
+
                     if (existingUserMembership) {
                         throw new BadRequestException(
                             'Người dùng đã có gói thành viên đang hoạt động'
@@ -114,24 +116,38 @@ export class UserMembershipService {
                         );
                     }
 
-                    const expiredDate = new Date();
-                    expiredDate.setDate(
-                        expiredDate.getDate() + membership.duration
+                    const cancelledMembership = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: {
+                                userId,
+                                status: UserMembershipStatus.CANCELLED,
+                                expiredDate: MoreThan(now)
+                            }
+                        }
                     );
+
+                    let bonusSwaps: number = 0;
+                    if (
+                        cancelledMembership &&
+                        cancelledMembership.remainingSwaps === 1
+                    ) {
+                        bonusSwaps = 1;
+                    }
 
                     const userMembership = manager.create(UserMembership, {
                         userId: user.id,
                         membershipId: membership.id,
                         remainingSwaps:
                             typeof membership.swapLimit === 'number'
-                                ? membership.swapLimit
-                                : 0,
+                                ? membership.swapLimit + bonusSwaps
+                                : 1,
                         paymentExpireAt: new Date(
                             now.getTime() + 20 * 60 * 1000
                         ),
-                        status: UserMembershipStatus.PENDING,
-
+                        status: UserMembershipStatus.PENDING
                     });
+                    
                     await manager.save(userMembership);
 
                     await this.transactionService.createMembershipTransaction({
@@ -219,6 +235,32 @@ export class UserMembershipService {
             throw new InternalServerErrorException(
                 'Lỗi hệ thống khi lấy danh sách User Membership'
             );
+        }
+    }
+
+    async cancelActiveMemberships(userId: number, userMembershipId: number): Promise<any> {
+        try {
+            const userMembership = await this.userMembershipRepository.findOne({
+                where: {
+                    id: userMembershipId,
+                    userId,
+                    status: UserMembershipStatus.ACTIVE
+                }
+            });
+            if (!userMembership) {
+                throw new NotFoundException('Gói thành viên không tồn tại hoặc không thể hủy');
+            }
+
+            userMembership.status = UserMembershipStatus.CANCELLED;
+            await this.userMembershipRepository.save(userMembership);
+
+            return { message: 'Hủy gói thành viên thành công' };
+        } catch (error) {
+            if (error instanceof BadRequestException || error instanceof NotFoundException) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException('Lỗi hệ thống khi hủy gói thành viên');
         }
     }
 }

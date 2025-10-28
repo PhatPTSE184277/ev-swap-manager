@@ -60,6 +60,27 @@ export class SlotService {
         }
     }
 
+    // async findSlotByCabinetId(cabinetId: number): Promise<any> {
+    //     try {
+    //         const slots = await this.slotRepository.find({
+    //             where: { cabinetId },
+    //             relations: ['battery']
+    //         });
+    //         if (slots.length === 0) {
+    //             throw new NotFoundException('Không tìm thấy slot nào cho cabinetId đã cho');
+    //         }
+    //         return {
+    //             data: slots,
+    //             message: 'Lấy danh sách slot theo cabinetId thành công'
+    //         };
+    //     } catch (error) {
+    //         if (error instanceof NotFoundException || error instanceof BadRequestException) {
+    //             throw error;
+    //         }
+    //         throw new InternalServerErrorException(error?.message || 'Lỗi hệ thống khi lấy slot theo cabinetId');
+    //     }
+    // }
+
    async findById(id: number): Promise<any> {
     try {
         const slot = await this.slotRepository.findOne({

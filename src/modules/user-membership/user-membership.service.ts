@@ -147,16 +147,29 @@ export class UserMembershipService {
                         ),
                         status: UserMembershipStatus.PENDING
                     });
-                    
+
+                    const totalPrice =
+                        typeof membership.price === 'string'
+                            ? parseFloat(membership.price)
+                            : Number(membership.price);
+
+
                     await manager.save(userMembership);
 
-                    await this.transactionService.createMembershipTransaction({
-                        paymentId: createUserMembershipDto.paymentId,
-                        userMembershipId: userMembership.id,
-                        totalPrice: membership.price
-                    });
+                    const transactionResult =
+                        await this.transactionService.createMembershipTransaction(
+                            {
+                                paymentId: createUserMembershipDto.paymentId,
+                                userMembershipId: userMembership.id,
+                                totalPrice: totalPrice
+                            },
+                            manager
+                        );
 
-                    return { message: 'Tạo User Membership thành công' };
+                    return {
+                        message: 'Tạo User Membership thành công',
+                        paymentUrl: transactionResult.paymentUrl
+                    };
                 }
             );
 
@@ -164,7 +177,7 @@ export class UserMembershipService {
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
             throw new InternalServerErrorException(
-                'Lỗi hệ thống khi tạo User Membership'
+                error?.message || 'Lỗi hệ thống khi tạo User Membership'
             );
         }
     }
@@ -238,7 +251,10 @@ export class UserMembershipService {
         }
     }
 
-    async cancelActiveMemberships(userId: number, userMembershipId: number): Promise<any> {
+    async cancelActiveMemberships(
+        userId: number,
+        userMembershipId: number
+    ): Promise<any> {
         try {
             const userMembership = await this.userMembershipRepository.findOne({
                 where: {
@@ -248,7 +264,9 @@ export class UserMembershipService {
                 }
             });
             if (!userMembership) {
-                throw new NotFoundException('Gói thành viên không tồn tại hoặc không thể hủy');
+                throw new NotFoundException(
+                    'Gói thành viên không tồn tại hoặc không thể hủy'
+                );
             }
 
             userMembership.status = UserMembershipStatus.CANCELLED;
@@ -256,11 +274,16 @@ export class UserMembershipService {
 
             return { message: 'Hủy gói thành viên thành công' };
         } catch (error) {
-            if (error instanceof BadRequestException || error instanceof NotFoundException) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
                 throw error;
             }
 
-            throw new InternalServerErrorException('Lỗi hệ thống khi hủy gói thành viên');
+            throw new InternalServerErrorException(
+                'Lỗi hệ thống khi hủy gói thành viên'
+            );
         }
     }
 }

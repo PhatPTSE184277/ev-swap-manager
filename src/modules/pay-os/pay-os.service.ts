@@ -5,16 +5,14 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class PayOSService {
     private readonly logger = new Logger(PayOSService.name);
-    private payos;
+    private payos: PayOS;
 
     constructor(private configService: ConfigService) {
-        this.payos = new PayOS(
-          {
+        this.payos = new PayOS({
             clientId: this.configService.get<string>('PAYOS_CLIENT_ID'),
             apiKey: this.configService.get<string>('PAYOS_API_KEY'),
-            checksumKey: this.configService.get<string>('PAYOS_CHECKSUM_KEY'),
-          }
-        );
+            checksumKey: this.configService.get<string>('PAYOS_CHECKSUM_KEY')
+        });
     }
 
     async createPaymentLink(data: {
@@ -25,16 +23,17 @@ export class PayOSService {
         cancelUrl: string;
     }) {
         try {
-            const paymentData = {
+            const paymentLinkRes = await this.payos.paymentRequests.create({
                 orderCode: data.orderCode,
                 amount: data.amount,
                 description: data.description,
                 returnUrl: data.returnUrl,
                 cancelUrl: data.cancelUrl
-            };
+            });
 
-            const paymentLinkRes = await this.payos.createPaymentLink(paymentData);
-            this.logger.log(`Created PayOS payment link for order ${data.orderCode}`);
+            this.logger.log(
+                `Created PayOS payment link for order ${data.orderCode}`
+            );
             return paymentLinkRes;
         } catch (error) {
             this.logger.error('Error creating PayOS payment link:', error);
@@ -44,16 +43,16 @@ export class PayOSService {
 
     async getPaymentInfo(orderCode: number) {
         try {
-            return await this.payos.getPaymentLinkInformation(orderCode);
+            return await this.payos.paymentRequests.get(orderCode);
         } catch (error) {
             this.logger.error('Error getting payment info:', error);
             throw error;
         }
     }
 
-    verifyPaymentWebhookData(webhookData: any) {
+    async verifyPaymentWebhookData(webhookData: any) {
         try {
-            return this.payos.verifyPaymentWebhookData(webhookData);
+            return await this.payos.webhooks.verify(webhookData);
         } catch (error) {
             this.logger.error('Error verifying webhook:', error);
             return null;

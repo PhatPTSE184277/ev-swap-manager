@@ -23,41 +23,62 @@ export class TransactionService {
     ) {}
 
     async createMembershipTransaction(
-        dto: CreateMembershipTransactionDto
+        dto: CreateMembershipTransactionDto,
+        manager?: any
     ): Promise<any> {
         try {
-            const result = await this.datasource.transaction(
-                async (manager) => {
-                    const transaction = manager.create(Transaction, {
-                        paymentId: dto.paymentId,
-                        userMembershipId: dto.userMembershipId,
-                        totalPrice: dto.totalPrice,
-                        dateTime: new Date(),
-                        status: TransactionStatus.PENDING
-                    });
-                    const savedTransaction = await manager.save(
-                        Transaction,
-                        transaction
-                    );
-
-                    // Tạo link thanh toán PayOS
-                    const paymentLink =
-                        await this.payosService.createPaymentLink({
-                            orderCode: savedTransaction.id,
-                            amount: dto.totalPrice,
-                            description: `Thanh toán gói thành viên #${dto.userMembershipId}`,
-                            returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
-                            cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`
-                        });
-
-                    return {
-                        transaction: savedTransaction,
-                        paymentUrl: paymentLink.checkoutUrl
-                    };
+            const executeTransaction = async (mgr: any) => {
+                  if (!dto.totalPrice || dto.totalPrice <= 0) {
+                    throw new BadRequestException('Số tiền phải lớn hơn 0');
                 }
-            );
-            return result;
+
+                const transaction = mgr.create(Transaction, {
+                    paymentId: dto.paymentId,
+                    userMembershipId: dto.userMembershipId,
+                    totalPrice: dto.totalPrice,
+                    dateTime: new Date(),
+                    status: TransactionStatus.PENDING
+                });
+                const savedTransaction = await mgr.save(
+                    Transaction,
+                    transaction
+                );
+
+                if (!dto.totalPrice || dto.totalPrice <= 0) {
+                    throw new BadRequestException('Số tiền phải lớn hơn 0');
+                }
+
+                const shortDescription = `Membership #${dto.userMembershipId}`;
+
+
+                const paymentLinkRes =
+                    await this.payosService.createPaymentLink({
+                        orderCode: savedTransaction.id,
+                        amount: dto.totalPrice,
+                        description: shortDescription,
+                        returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
+                        cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`
+                    });
+
+                return {
+                    transaction: savedTransaction,
+                    paymentUrl:
+                        paymentLinkRes?.checkoutUrl ||
+                        paymentLinkRes.checkoutUrl
+                };
+            };
+
+            if (manager) {
+                return await executeTransaction(manager);
+            }
+
+            return await this.datasource.transaction(executeTransaction);
         } catch (error) {
+            console.error(
+                '[TransactionService][createMembershipTransaction] error:',
+                error
+            );
+
             if (error instanceof BadRequestException) {
                 throw error;
             }
@@ -71,7 +92,7 @@ export class TransactionService {
     async handlePayOSWebhook(webhookData: any): Promise<any> {
         try {
             const verifiedData =
-                this.payosService.verifyPaymentWebhookData(webhookData);
+                await this.payosService.verifyPaymentWebhookData(webhookData);
 
             if (!verifiedData) {
                 throw new BadRequestException('Invalid webhook signature');

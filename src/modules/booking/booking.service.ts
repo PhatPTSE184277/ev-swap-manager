@@ -287,6 +287,7 @@ export class BookingService {
                 relations: [
                     'userVehicle',
                     'userVehicle.user',
+                    'userVehicle.batteries',
                     'bookingDetails',
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
@@ -309,7 +310,16 @@ export class BookingService {
                 },
                 userVehicle: {
                     id: booking.userVehicle?.id,
-                    name: booking.userVehicle?.name
+                    name: booking.userVehicle?.name,
+                    batteries: booking.userVehicle?.batteries.map(
+                        (battery) => ({
+                            id: battery.id,
+                            model: battery.model,
+                            currentCycle: battery.currentCycle,
+                            healthScore: battery.healthScore,
+                            status: battery.status
+                        })
+                    )
                 },
                 bookingDetails: booking.bookingDetails?.map((detail) => ({
                     id: detail.id,
@@ -375,6 +385,7 @@ export class BookingService {
                 relations: [
                     'userVehicle',
                     'userVehicle.user',
+                    'userVehicle.batteries',
                     'bookingDetails',
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
@@ -397,7 +408,16 @@ export class BookingService {
                 },
                 userVehicle: {
                     id: booking.userVehicle?.id,
-                    name: booking.userVehicle?.name
+                    name: booking.userVehicle?.name,
+                    batteries: booking.userVehicle?.batteries.map(
+                        (battery) => ({
+                            id: battery.id,
+                            model: battery.model,
+                            currentCycle: battery.currentCycle,
+                            healthScore: battery.healthScore,
+                            status: battery.status
+                        })
+                    )
                 },
                 bookingDetails: booking.bookingDetails?.map((detail) => ({
                     id: detail.id,
@@ -551,7 +571,7 @@ export class BookingService {
                         });
                     }
 
-                 let transactionResult: any = null;
+                    let transactionResult: any = null;
                     if (!userMembership) {
                         // Kiểm tra paymentId có được truyền không
                         if (!dto.paymentId) {

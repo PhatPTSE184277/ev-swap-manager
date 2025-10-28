@@ -5,10 +5,15 @@ import {
     NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Membership, User, UserMembership } from 'src/entities';
-import { DataSource, LessThan, MoreThan, Repository } from 'typeorm';
+import { Membership, Transaction, User, UserMembership } from 'src/entities';
+import {
+    DataSource,
+    LessThan,
+    MoreThan,
+    Repository,
+} from 'typeorm';
 import { CreateUserMembershipDto } from './dto/create-user-membership.dto';
-import { UserMembershipStatus } from '../../enums';
+import { TransactionStatus, UserMembershipStatus } from '../../enums';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TransactionService } from '../transaction/transaction.service';
 
@@ -17,10 +22,8 @@ export class UserMembershipService {
     constructor(
         @InjectRepository(UserMembership)
         private readonly userMembershipRepository: Repository<UserMembership>,
-        @InjectRepository(User)
-        private readonly userRepository: Repository<User>,
-        @InjectRepository(Membership)
-        private readonly membershipRepository: Repository<Membership>,
+        @InjectRepository(Transaction)
+        private readonly transactionRepository: Repository<Transaction>,
         private readonly dataSource: DataSource,
         private readonly transactionService: TransactionService
     ) {}
@@ -153,7 +156,6 @@ export class UserMembershipService {
                             ? parseFloat(membership.price)
                             : Number(membership.price);
 
-
                     await manager.save(userMembership);
 
                     const transactionResult =
@@ -214,20 +216,48 @@ export class UserMembershipService {
                     order: { createdAt: 'DESC' }
                 });
 
-            const mappedData = data.map(
-                ({ membership, membershipId, updatedAt, ...rest }) => {
-                    if (!membership) return { ...rest, membership: null };
-                    const {
-                        createdAt: _createdAt,
-                        updatedAt: _updatedAt,
-                        status: _status,
-                        ...membershipData
-                    } = membership;
-                    return {
-                        ...rest,
-                        membership: membershipData
-                    };
-                }
+            const mappedData = await Promise.all(
+                data.map(
+                    async ({
+                        membership,
+                        membershipId,
+                        updatedAt,
+                        ...rest
+                    }) => {
+                        if (!membership) return { ...rest, membership: null };
+
+                        const {
+                            createdAt: _createdAt,
+                            updatedAt: _updatedAt,
+                            status: _status,
+                            ...membershipData
+                        } = membership;
+
+                        let paymentUrl: string | null = null;
+
+                        if (rest.status === UserMembershipStatus.PENDING) {
+                            const transaction =
+                                await this.transactionRepository.findOne({
+                                    where: {
+                                        userMembership: { id: rest.id },
+                                        status: TransactionStatus.PENDING
+                                    },
+                                    order: { createdAt: 'DESC' },
+                                    relations: ['userMembership']
+                                });
+
+                            if (transaction?.paymentUrl) {
+                                paymentUrl = transaction.paymentUrl;
+                            }
+                        }
+
+                        return {
+                            ...rest,
+                            membership: membershipData,
+                            paymentUrl
+                        };
+                    }
+                )
             );
 
             return {

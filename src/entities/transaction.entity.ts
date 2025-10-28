@@ -30,6 +30,9 @@ export class Transaction {
     @Column({ type: 'timestamp' })
     dateTime: Date;
 
+    @Column({ type: 'varchar', length: 512, nullable: true })
+    paymentUrl?: string;
+
     @Column({
         type: 'enum',
         enum: TransactionStatus,
@@ -50,12 +53,8 @@ export class Transaction {
     @ManyToOne(() => Payment)
     @JoinColumn({ name: 'paymentId' })
     payment: Payment;
-
-    @ManyToOne(
-        () => UserMembership,
-        (userMembership) => userMembership.transactions,
-        { nullable: true }
-    )
+    
+    @ManyToOne(() => UserMembership, { nullable: true })
     @JoinColumn({ name: 'userMembershipId' })
     userMembership: UserMembership;
 

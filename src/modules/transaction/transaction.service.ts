@@ -57,10 +57,6 @@ export class TransactionService {
                     transaction
                 );
 
-                if (!dto.totalPrice || dto.totalPrice <= 0) {
-                    throw new BadRequestException('Số tiền phải lớn hơn 0');
-                }
-
                 const shortDescription = `Membership #${dto.userMembershipId}`;
 
                 const paymentLinkRes =
@@ -72,11 +68,15 @@ export class TransactionService {
                         cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`
                     });
 
+                const paymentUrl =
+                    paymentLinkRes?.checkoutUrl || paymentLinkRes.checkoutUrl;
+
+                savedTransaction.paymentUrl = paymentUrl;
+                await mgr.save(Transaction, savedTransaction);
+
                 return {
                     transaction: savedTransaction,
-                    paymentUrl:
-                        paymentLinkRes?.checkoutUrl ||
-                        paymentLinkRes.checkoutUrl
+                    paymentUrl: paymentUrl
                 };
             };
 
@@ -264,12 +264,15 @@ export class TransactionService {
                             cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`
                         });
 
+                    const paymentUrl = paymentLinkRes?.checkoutUrl || paymentLinkRes.checkoutUrl;
+
+                    savedTransaction.paymentUrl = paymentUrl;
+                    await mgr.save(Transaction, savedTransaction);
+
                     return {
                         transaction: savedTransaction,
                         paymentMethod: 'ONLINE',
-                        paymentUrl:
-                            paymentLinkRes?.checkoutUrl ||
-                            paymentLinkRes.checkoutUrl
+                        paymentUrl: paymentUrl
                     };
                 }
             };

@@ -18,4 +18,10 @@ export class TransactionController {
     async checkStatus(@Param('id') id: number) {
         return this.transactionService.checkPaymentStatus(id);
     }
+
+    @Post('confirm-cash-payment')
+    @ApiOperation({ summary: 'Staff xác nhận thanh toán tiền mặt cho booking onsite' })
+    async confirmCashPayment(@Body() dto: { transactionId: number }) {
+        return this.transactionService.confirmCashPayment(dto);
+    }
 }

@@ -30,6 +30,7 @@ import { SlotStatus, UserMembershipStatus } from 'src/enums';
 import Helpers from '../../utils/helpers';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CreateOnsiteBookingDto } from './dto/create-onsite-booking.dto';
+import { TransactionService } from '../transaction/transaction.service';
 
 @Injectable()
 export class BookingService {
@@ -38,7 +39,8 @@ export class BookingService {
         private readonly bookingRepository: Repository<Booking>,
         private readonly batteryGateway: BatteryGateway,
         private readonly slotGateway: SlotGateway,
-        private readonly dataSource: DataSource
+        private readonly dataSource: DataSource,
+        private readonly transactionService: TransactionService
     ) {}
 
     @Cron(CronExpression.EVERY_MINUTE)
@@ -549,17 +551,41 @@ export class BookingService {
                         });
                     }
 
+                 let transactionResult: any = null;
+                    if (!userMembership) {
+                        // Kiểm tra paymentId có được truyền không
+                        if (!dto.paymentId) {
+                            throw new BadRequestException(
+                                'Phương thức thanh toán là bắt buộc khi không có gói thành viên'
+                            );
+                        }
+
+                        transactionResult =
+                            await this.transactionService.createBookingTransaction(
+                                {
+                                    paymentId: dto.paymentId,
+                                    bookingId: booking.id,
+                                    totalPrice
+                                },
+                                manager
+                            );
+                    }
+
                     return {
                         message: userMembership
                             ? 'Đặt lịch đổi pin tại chỗ thành công (sử dụng gói thành viên)'
-                            : `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán ${totalPrice} VND để hoàn tất`,
+                            : transactionResult?.paymentMethod === 'CASH'
+                              ? `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán ${totalPrice} VND tiền mặt tại quầy`
+                              : `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán qua link dưới đây`,
                         bookingId: booking.id,
                         expectedPickupTime: now,
                         totalPrice: userMembership ? 0 : totalPrice,
                         usedMembership: !!userMembership,
                         status: userMembership
                             ? BookingStatus.IN_PROGRESS
-                            : BookingStatus.PENDING_PAYMENT
+                            : BookingStatus.PENDING_PAYMENT,
+                        paymentUrl: transactionResult?.paymentUrl || null,
+                        paymentMethod: transactionResult?.paymentMethod || null
                     };
                 }
             );

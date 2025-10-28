@@ -10,6 +10,7 @@ import { BookingService } from './booking.service';
 import { BookingController } from './booking.controller';
 import { BatteryGateway } from 'src/gateways/battery.gateway';
 import { SlotGateway } from 'src/gateways/slot.gateway';
+import { TransactionModule } from '../transaction/transaction.module';
 
 @Module({
     imports: [
@@ -20,7 +21,8 @@ import { SlotGateway } from 'src/gateways/slot.gateway';
             Battery,
             Slot,
             UserVehicle
-        ])
+        ]),
+        TransactionModule
     ],
     providers: [BookingService, BatteryGateway, SlotGateway],
     controllers: [BookingController],

@@ -5,11 +5,24 @@ import {
     NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Transaction, UserMembership } from 'src/entities';
 import { DataSource, Repository } from 'typeorm';
 import { CreateMembershipTransactionDto } from './dto/create-membership-transaction.dto';
-import { TransactionStatus, UserMembershipStatus } from 'src/enums';
+import {
+    TransactionStatus,
+    UserMembershipStatus,
+    BookingStatus
+} from 'src/enums';
 import { PayOSService } from '../pay-os/pay-os.service';
+import { CreateBookingTransactionDto } from './dto/create-booking-transaction.dto';
+import { ConfirmCashPaymentDto } from './dto/confirm-cash-payment.dto';
+import {
+    Booking,
+    Payment,
+    Transaction,
+    UserMembership,
+    BookingDetail
+} from 'src/entities';
+import { BookingDetailStatus } from 'src/enums';
 
 @Injectable()
 export class TransactionService {
@@ -28,7 +41,7 @@ export class TransactionService {
     ): Promise<any> {
         try {
             const executeTransaction = async (mgr: any) => {
-                  if (!dto.totalPrice || dto.totalPrice <= 0) {
+                if (!dto.totalPrice || dto.totalPrice <= 0) {
                     throw new BadRequestException('Số tiền phải lớn hơn 0');
                 }
 
@@ -49,7 +62,6 @@ export class TransactionService {
                 }
 
                 const shortDescription = `Membership #${dto.userMembershipId}`;
-
 
                 const paymentLinkRes =
                     await this.payosService.createPaymentLink({
@@ -186,6 +198,218 @@ export class TransactionService {
         } catch (error) {
             throw new InternalServerErrorException(
                 error.message || 'Lỗi kiểm tra trạng thái thanh toán'
+            );
+        }
+    }
+
+    async createBookingTransaction(
+        dto: CreateBookingTransactionDto,
+        manager?: any
+    ): Promise<any> {
+        try {
+            const executeTransaction = async (mgr: any) => {
+                if (!dto.totalPrice || dto.totalPrice <= 0) {
+                    throw new BadRequestException('Số tiền phải lớn hơn 0');
+                }
+
+                const payment = await mgr.findOne(Payment, {
+                    where: { id: dto.paymentId }
+                });
+
+                if (!payment) {
+                    throw new BadRequestException(
+                        'Phương thức thanh toán không hợp lệ'
+                    );
+                }
+
+                const transaction = mgr.create(Transaction, {
+                    paymentId: dto.paymentId,
+                    totalPrice: dto.totalPrice,
+                    dateTime: new Date(),
+                    status: TransactionStatus.PENDING
+                });
+                const savedTransaction = await mgr.save(
+                    Transaction,
+                    transaction
+                );
+
+                const booking = await mgr.findOne(Booking, {
+                    where: { id: dto.bookingId }
+                });
+                if (booking) {
+                    booking.transactionId = savedTransaction.id;
+                    await mgr.save(Booking, booking);
+                }
+
+                const isCashPayment =
+                    payment.name.toLowerCase().includes('tiền mặt') ||
+                    payment.name.toLowerCase().includes('cash');
+
+                if (isCashPayment) {
+                    return {
+                        transaction: savedTransaction,
+                        paymentMethod: 'CASH',
+                        message:
+                            'Vui lòng thanh toán tiền mặt tại quầy để hoàn tất đặt chỗ'
+                    };
+                } else {
+                    const shortDescription = `Booking #${dto.bookingId}`;
+
+                    const paymentLinkRes =
+                        await this.payosService.createPaymentLink({
+                            orderCode: savedTransaction.id,
+                            amount: dto.totalPrice,
+                            description: shortDescription,
+                            returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
+                            cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`
+                        });
+
+                    return {
+                        transaction: savedTransaction,
+                        paymentMethod: 'ONLINE',
+                        paymentUrl:
+                            paymentLinkRes?.checkoutUrl ||
+                            paymentLinkRes.checkoutUrl
+                    };
+                }
+            };
+
+            if (manager) {
+                return await executeTransaction(manager);
+            }
+
+            return await this.datasource.transaction(executeTransaction);
+        } catch (error) {
+            console.error(
+                '[TransactionService][createBookingTransaction] error:',
+                error
+            );
+
+            if (error instanceof BadRequestException) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException(
+                error.message || 'Lỗi hệ thống khi tạo giao dịch đặt chỗ'
+            );
+        }
+    }
+
+    async confirmCashPayment(dto: ConfirmCashPaymentDto): Promise<any> {
+        try {
+            return await this.datasource.transaction(async (manager) => {
+                const transaction = await manager.findOne(Transaction, {
+                    where: { id: dto.transactionId },
+                    relations: [
+                        'payment',
+                        'userMembership',
+                        'userMembership.membership'
+                    ]
+                });
+
+                if (!transaction) {
+                    throw new NotFoundException('Giao dịch không tồn tại');
+                }
+
+                if (transaction.status !== TransactionStatus.PENDING) {
+                    throw new BadRequestException(
+                        'Giao dịch đã được xử lý trước đó'
+                    );
+                }
+
+                const isCashPayment =
+                    transaction.payment.name
+                        .toLowerCase()
+                        .includes('tiền mặt') ||
+                    transaction.payment.name.toLowerCase().includes('cash');
+
+                if (!isCashPayment) {
+                    throw new BadRequestException(
+                        'Giao dịch này không phải thanh toán tiền mặt'
+                    );
+                }
+
+                // Cập nhật transaction thành SUCCESS
+                transaction.status = TransactionStatus.SUCCESS;
+                await manager.save(Transaction, transaction);
+
+                // Nếu là transaction của membership, kích hoạt membership
+                if (transaction.userMembershipId) {
+                    const userMembership = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: { id: transaction.userMembershipId },
+                            relations: ['membership']
+                        }
+                    );
+
+                    if (
+                        userMembership &&
+                        userMembership.status === UserMembershipStatus.PENDING
+                    ) {
+                        userMembership.status = UserMembershipStatus.ACTIVE;
+                        const expiredDate = new Date();
+                        expiredDate.setDate(
+                            expiredDate.getDate() +
+                                userMembership.membership.duration
+                        );
+                        userMembership.expiredDate = expiredDate;
+                        await manager.save(UserMembership, userMembership);
+                    }
+                }
+
+                const booking = await manager.findOne(Booking, {
+                    where: { transactionId: transaction.id }
+                });
+
+                if (
+                    booking &&
+                    booking.status === BookingStatus.PENDING_PAYMENT
+                ) {
+                    booking.status = BookingStatus.IN_PROGRESS;
+                    await manager.save(Booking, booking);
+
+                    // Cập nhật booking details
+                    const bookingDetails = await manager.find(BookingDetail, {
+                        where: { bookingId: booking.id }
+                    });
+
+                    for (const detail of bookingDetails) {
+                        if (
+                            detail.status ===
+                            BookingDetailStatus.PENDING_PAYMENT
+                        ) {
+                            detail.status = BookingDetailStatus.IN_PROGRESS;
+                            await manager.save(BookingDetail, detail);
+                        }
+                    }
+                }
+
+                return {
+                    message: 'Xác nhận thanh toán tiền mặt thành công',
+                    transaction: {
+                        id: transaction.id,
+                        status: transaction.status,
+                        totalPrice: transaction.totalPrice,
+                        dateTime: transaction.dateTime
+                    }
+                };
+            });
+        } catch (error) {
+            console.error(
+                '[TransactionService][confirmCashPayment] error:',
+                error
+            );
+
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException(
+                error.message || 'Lỗi hệ thống khi xác nhận thanh toán tiền mặt'
             );
         }
     }

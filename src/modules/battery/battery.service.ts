@@ -22,10 +22,10 @@ export class BatteryService {
     ) {}
 
     private ensureStatusInUseIfHasUserVehicle(battery: Battery) {
-    if (battery.userVehicleId !== null) {
-        battery.status = BatteryStatus.IN_USE;
+        if (battery.userVehicleId !== null) {
+            battery.status = BatteryStatus.IN_USE;
+        }
     }
-}
 
     async findAll(
         page: number = 1,
@@ -99,6 +99,62 @@ export class BatteryService {
             if (error instanceof NotFoundException) throw error;
             throw new InternalServerErrorException(
                 error?.message || 'Lỗi hệ thống khi lấy thông tin pin'
+            );
+        }
+    }
+
+    async getBatteryByType(
+        batteryTypeId: number,
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        status?: string
+    ): Promise<any> {
+        try {
+            const where: any = { batteryTypeId };
+            if (status) where.status = status;
+            if (search) where.model = Like(`%${search}%`);
+
+            const [data, total] = await this.batteryRepository.findAndCount({
+                where,
+                skip: (page - 1) * limit,
+                take: limit,
+                order: { model: 'ASC' },
+                relations: ['batteryType']
+            });
+
+            const mappedData = data.map(
+                ({
+                    createdAt,
+                    updatedAt,
+                    batteryTypeId,
+                    batteryType,
+                    ...rest
+                }) => ({
+                    ...rest,
+                    batteryType: {
+                        id: batteryType.id,
+                        name: batteryType.name
+                    }
+                })
+            );
+
+            return {
+                data: mappedData,
+                total,
+                page,
+                limit
+            };
+        } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy pin theo loại'
             );
         }
     }

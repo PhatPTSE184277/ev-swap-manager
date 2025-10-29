@@ -78,14 +78,7 @@ export class BatteryController {
         @Query('order') order: 'ASC' | 'DESC' = 'ASC',
         @Query('status') status?: BatteryStatus
     ) {
-        const result = await this.batteryService.findAll(
-            page,
-            limit,
-            search,
-            order,
-            status
-        );
-        return result;
+        return this.batteryService.findAll(page, limit, search, order, status);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -97,8 +90,7 @@ export class BatteryController {
     })
     @ApiParam({ name: 'id', type: Number, description: 'ID pin' })
     async findById(@Param('id') id: number) {
-        const result = await this.batteryService.findById(id);
-        return result;
+        return this.batteryService.findById(id);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -107,6 +99,59 @@ export class BatteryController {
     @ApiOperation({ summary: 'Tạo mới pin', description: 'Chỉ ADMIN' })
     async create(@Body() createBatteryDto: CreateBatteryDto) {
         return this.batteryService.create(createBatteryDto);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('type/:batteryTypeId')
+    @ApiOperation({
+        summary: 'Lấy danh sách pin theo loại',
+        description: 'Chỉ ADMIN'
+    })
+    @ApiParam({
+        name: 'batteryTypeId',
+        type: Number,
+        description: 'ID loại pin'
+    })
+    @ApiQuery({
+        name: 'page',
+        required: false,
+        type: Number,
+        example: 1,
+        description: 'Trang hiện tại'
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        type: Number,
+        example: 10,
+        description: 'Số lượng mỗi trang'
+    })
+    @ApiQuery({
+        name: 'search',
+        required: false,
+        type: String,
+        description: 'Tìm kiếm theo model pin'
+    })
+    @ApiQuery({
+        name: 'status',
+        required: false,
+        enum: BatteryStatus,
+        description: 'Lọc theo trạng thái pin'
+    })
+    async getBatteryByType(
+        @Param('batteryTypeId') batteryTypeId: number,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('search') search?: string,
+        @Query('status') status?: BatteryStatus
+    ) {
+        return this.batteryService.getBatteryByType(
+            batteryTypeId,
+            page,
+            limit,
+            search,
+            status
+        );
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)

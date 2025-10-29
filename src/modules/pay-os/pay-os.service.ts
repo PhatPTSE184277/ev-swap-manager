@@ -21,15 +21,23 @@ export class PayOSService {
         description: string;
         returnUrl: string;
         cancelUrl: string;
+        expiredAt?: number;
     }) {
         try {
-            const paymentLinkRes = await this.payos.paymentRequests.create({
+            const payload: any = {
                 orderCode: data.orderCode,
                 amount: data.amount,
                 description: data.description,
                 returnUrl: data.returnUrl,
                 cancelUrl: data.cancelUrl
-            });
+            };
+
+            if (data.expiredAt) {
+                payload.expiredAt = data.expiredAt;
+            }
+
+            const paymentLinkRes =
+                await this.payos.paymentRequests.create(payload);
 
             this.logger.log(
                 `Created PayOS payment link for order ${data.orderCode}`

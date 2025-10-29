@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ConfirmCashPaymentDto } from './dto/confirm-cash-payment.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Transaction')
 @Controller('transaction')
@@ -13,15 +15,23 @@ export class TransactionController {
         return this.transactionService.handlePayOSWebhook(webhookData);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get(':id/status')
-    @ApiOperation({ summary: 'Kiểm tra trạng thái thanh toán' })
+    @ApiOperation({ 
+        summary: 'Kiểm tra trạng thái thanh toán',
+        description: 'User check xem transaction đã thanh toán thành công chưa'
+    })
+    @ApiParam({ name: 'id', type: Number, description: 'Transaction ID' })
     async checkStatus(@Param('id') id: number) {
         return this.transactionService.checkPaymentStatus(id);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Post('confirm-cash-payment')
-    @ApiOperation({ summary: 'Staff xác nhận thanh toán tiền mặt cho booking onsite' })
-    async confirmCashPayment(@Body() dto: { transactionId: number }) {
+    @ApiOperation({ summary: 'Staff xác nhận thanh toán tiền mặt' })
+    async confirmCashPayment(@Body() dto: ConfirmCashPaymentDto) {
         return this.transactionService.confirmCashPayment(dto);
     }
 }

@@ -194,7 +194,7 @@ export class SimulationService {
                     }
 
                     const slot = await manager.findOne(Slot, {
-                        where: { id: putBatteryDto.slotId },
+                        where: { id: putBatteryDto.slotId},
                         relations: ['cabinet']
                     });
 

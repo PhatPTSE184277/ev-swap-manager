@@ -674,7 +674,7 @@ export const seedData = {
             healthScore: 89,
             lastChargeTime: new Date('2025-10-27T07:00:00'),
             estimatedFullChargeTime: new Date('2025-10-27T10:00:00'),
-            status: BatteryStatus.RESERVED,
+            status: BatteryStatus.IN_USE,
             userVehicleId: 2,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -1041,8 +1041,8 @@ export const seedData = {
             id: 29,
             cabinetId: 3,
             name: 'Slot 5',
-            batteryId: 23,
-            status: SlotStatus.RESERVED,
+            batteryId: null,
+            status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
         },

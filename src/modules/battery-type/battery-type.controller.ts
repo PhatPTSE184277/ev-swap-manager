@@ -114,8 +114,7 @@ export class BatteryTypeController {
         return result;
     }
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @UseGuards(JwtAuthGuard)
     @Get(':id')
     @ApiOperation({ summary: 'Lấy chi tiết loại pin', description: 'ADMIN' })
     @ApiParam({ name: 'id', type: Number, description: 'ID loại pin' })

@@ -44,7 +44,7 @@ export class BatteryService {
                 skip: (page - 1) * limit,
                 take: limit,
                 order: { model: order },
-                relations: ['batteryType']
+                relations: ['batteryType', 'slots']
             });
 
             const mappedData = data.map(
@@ -53,10 +53,12 @@ export class BatteryService {
                     updatedAt,
                     batteryTypeId,
                     batteryType,
+                    slots,
                     ...rest
                 }) => ({
                     ...rest,
-                    batteryType: batteryType?.name || null
+                    batteryType: batteryType?.name || null,
+                    slotId: slots && slots.length > 0 ? slots[0].id : null
                 })
             );
 
@@ -77,22 +79,47 @@ export class BatteryService {
         try {
             const battery = await this.batteryRepository.findOne({
                 where: { id },
-                relations: ['batteryType']
+                relations: ['batteryType', 'slots']
             });
             if (!battery) {
                 throw new NotFoundException('Pin không tồn tại');
             }
-            const { createdAt, updatedAt, batteryTypeId, ...rest } = battery;
+            const { createdAt, updatedAt, batteryTypeId, slots, ...rest } =
+                battery;
+
+            const slot = slots && slots.length > 0 ? slots[0] : null;
+
             if (battery.batteryType) {
                 const { createdAt, updatedAt, ...batteryTypeRest } =
                     battery.batteryType;
                 return {
-                    data: { ...rest, batteryType: batteryTypeRest },
+                    data: {
+                        ...rest,
+                        batteryType: batteryTypeRest,
+                        slot: slot
+                            ? {
+                                  id: slot.id,
+                                  name: slot.name,
+                                  cabinetId: slot.cabinetId,
+                                  status: slot.status
+                              }
+                            : null
+                    },
                     message: 'Lấy thông tin pin thành công'
                 };
             }
             return {
-                data: rest,
+                data: {
+                    ...rest,
+                    slot: slot
+                        ? {
+                              id: slot.id,
+                              name: slot.name,
+                              cabinetId: slot.cabinetId,
+                              status: slot.status
+                          }
+                        : null
+                },
                 message: 'Lấy thông tin pin thành công'
             };
         } catch (error) {
@@ -120,7 +147,7 @@ export class BatteryService {
                 skip: (page - 1) * limit,
                 take: limit,
                 order: { model: 'ASC' },
-                relations: ['batteryType']
+                relations: ['batteryType', 'slots']
             });
 
             const mappedData = data.map(
@@ -129,13 +156,15 @@ export class BatteryService {
                     updatedAt,
                     batteryTypeId,
                     batteryType,
+                    slots,
                     ...rest
                 }) => ({
                     ...rest,
                     batteryType: {
                         id: batteryType.id,
                         name: batteryType.name
-                    }
+                    },
+                    slotId: slots && slots.length > 0 ? slots[0].id : null
                 })
             );
 

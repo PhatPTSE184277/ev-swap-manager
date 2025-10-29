@@ -63,7 +63,7 @@ export class TransactionService {
                 });
 
                 const expiredAt = Math.floor(
-                    new Date(userMembership.paymentExpireAt).getTime()
+                    new Date(userMembership.paymentExpireAt).getTime() / 1000
                 );
 
                 const paymentLinkRes =
@@ -218,7 +218,6 @@ export class TransactionService {
                         transaction.status = TransactionStatus.SUCCESS;
                         await manager.save(Transaction, transaction);
 
-    
                         if (transaction.userMembershipId) {
                             const userMembership = await manager.findOne(
                                 UserMembership,

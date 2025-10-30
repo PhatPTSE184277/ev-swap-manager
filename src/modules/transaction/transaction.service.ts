@@ -66,7 +66,16 @@ export class TransactionService {
                     new Date(userMembership.paymentExpireAt).getTime() / 1000
                 );
 
-                const orderCode = Number(`${Date.now()}${savedTransaction.id}`);
+                const MAX_ORDER_CODE = 9007199254740991;
+                let orderCode = savedTransaction.id;
+
+                orderCode =
+                    savedTransaction.id * 1000 +
+                    Math.floor(Math.random() * 1000);
+
+                if (orderCode > MAX_ORDER_CODE) {
+                    orderCode = savedTransaction.id; 
+                }
                 const paymentLinkRes =
                     await this.payosService.createPaymentLink({
                         orderCode,

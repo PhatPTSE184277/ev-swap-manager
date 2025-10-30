@@ -33,7 +33,7 @@ export class Battery {
     userVehicleId: number | null;
 
     @Column({ type: 'int', default: 100 })
-    currentCapacity: number; // Đây là % pin hiện tại (0-100)
+    currentCapacity: number;
 
     @Column({ type: 'int', default: 100 })
     healthScore: number;

@@ -21,12 +21,6 @@ export class BatteryService {
         private readonly dataSource: DataSource
     ) {}
 
-    private ensureStatusInUseIfHasUserVehicle(battery: Battery) {
-        if (battery.userVehicleId !== null) {
-            battery.status = BatteryStatus.IN_USE;
-        }
-    }
-
     async findAll(
         page: number = 1,
         limit: number = 10,
@@ -215,7 +209,6 @@ export class BatteryService {
                         status:
                             createBatteryDto.status ?? BatteryStatus.AVAILABLE
                     });
-                    this.ensureStatusInUseIfHasUserVehicle(newBattery);
                     await manager.save(Battery, newBattery);
                     const { createdAt, updatedAt, batteryTypeId, ...rest } =
                         newBattery;
@@ -254,7 +247,6 @@ export class BatteryService {
             }
 
             Object.assign(battery, updateBatteryDto);
-            this.ensureStatusInUseIfHasUserVehicle(battery);
             await this.batteryRepository.update(id, battery);
             return {
                 message: 'Cập nhật pin thành công'

@@ -25,9 +25,6 @@ export class BatteryUsedHistory {
     @Column({ type: 'int' })
     percent: number;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2 })
-    recentPrice: number;
-
     @Column({ type: 'boolean', default: true })
     status: boolean;
 

@@ -121,6 +121,10 @@ export class TransactionService {
     }
 
     async handlePayOSWebhook(webhookData: any): Promise<any> {
+        if (!webhookData || !webhookData.data || !webhookData.signature) {
+            throw new BadRequestException('Webhook data không hợp lệ');
+        }
+
         try {
             const verifiedData =
                 await this.payosService.verifyPaymentWebhookData(webhookData);

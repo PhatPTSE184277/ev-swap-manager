@@ -121,7 +121,7 @@ export class TransactionService {
     }
 
     async handlePayOSWebhook(webhookData: any): Promise<any> {
-        if (!webhookData || !webhookData.data || !webhookData.signature) {
+        if (!webhookData) {
             throw new BadRequestException('Webhook data không hợp lệ');
         }
 
@@ -133,7 +133,7 @@ export class TransactionService {
                 throw new BadRequestException('Invalid webhook signature');
             }
 
-           const { orderCode, code } = (verifiedData as any).data;
+            const { orderCode, code } = verifiedData;
 
             const transaction = await this.transactionRepository.findOne({
                 where: { orderCode },

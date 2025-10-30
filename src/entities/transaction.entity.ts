@@ -30,6 +30,9 @@ export class Transaction {
     @Column({ type: 'timestamp' })
     dateTime: Date;
 
+    @Column({ type: 'bigint', unique: true, nullable: false })
+    orderCode: number;
+
     @Column({ type: 'varchar', length: 512, nullable: true })
     paymentUrl?: string;
 
@@ -53,7 +56,7 @@ export class Transaction {
     @ManyToOne(() => Payment)
     @JoinColumn({ name: 'paymentId' })
     payment: Payment;
-    
+
     @ManyToOne(() => UserMembership, { nullable: true })
     @JoinColumn({ name: 'userMembershipId' })
     userMembership: UserMembership;

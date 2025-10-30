@@ -66,16 +66,17 @@ export class TransactionService {
                     new Date(userMembership.paymentExpireAt).getTime() / 1000
                 );
 
-                const MAX_ORDER_CODE = 9007199254740991;
-                let orderCode = savedTransaction.id;
+                let orderCode =
+                    savedTransaction.id * 100 +
+                    Math.floor(Math.random() * 100) +
+                    1;
 
-                orderCode =
-                    savedTransaction.id * 1000 +
-                    Math.floor(Math.random() * 1000);
-
-                if (orderCode > MAX_ORDER_CODE) {
-                    orderCode = savedTransaction.id; 
+                if (orderCode > 9007199254740991) {
+                    orderCode = savedTransaction.id;
                 }
+                savedTransaction.orderCode = orderCode;
+                await mgr.save(Transaction, savedTransaction);
+
                 const paymentLinkRes =
                     await this.payosService.createPaymentLink({
                         orderCode,
@@ -120,8 +121,6 @@ export class TransactionService {
     }
 
     async handlePayOSWebhook(webhookData: any): Promise<any> {
-        console.log('Webhook data:', JSON.stringify(webhookData, null, 2));
-
         try {
             const verifiedData =
                 await this.payosService.verifyPaymentWebhookData(webhookData);
@@ -130,100 +129,65 @@ export class TransactionService {
                 throw new BadRequestException('Invalid webhook signature');
             }
 
-            // Lấy data từ webhook (PayOS trả về data trong trường data)
             const { orderCode, code } = verifiedData;
 
-            // Tách transactionId từ orderCode
-            const orderCodeStr = orderCode.toString();
-            const idMatch = orderCodeStr.match(/(\d{1,10})$/); // Lấy tối đa 10 chữ số cuối
-            const transactionId = idMatch ? Number(idMatch[1]) : null;
-
-            if (!transactionId) {
-                throw new NotFoundException(
-                    `Không xác định được transactionId từ orderCode: ${orderCode}`
-                );
-            }
-
-            console.log(
-                `Extracted transactionId: ${transactionId} from orderCode: ${orderCode}`
-            );
-
             const transaction = await this.transactionRepository.findOne({
-                where: { id: transactionId },
+                where: { orderCode },
                 relations: ['userMembership']
             });
 
             if (!transaction) {
-                throw new NotFoundException(
-                    `Giao dịch không tồn tại với id: ${transactionId}`
-                );
+                throw new NotFoundException('Giao dịch không tồn tại');
             }
 
             if (transaction.status !== TransactionStatus.PENDING) {
-                return {
-                    message: `Giao dịch đã được xử lý trước đó với trạng thái: ${transaction.status}`
-                };
+                return { message: 'Giao dịch đã được xử lý trước đó' };
             }
 
-            if (code === '00') {
-                transaction.status = TransactionStatus.SUCCESS;
-                await this.transactionRepository.save(transaction);
+            await this.datasource.transaction(async (manager) => {
+                if (code === '00') {
+                    transaction.status = TransactionStatus.SUCCESS;
+                    await manager.save(Transaction, transaction);
 
-                if (transaction.userMembership) {
-                    const userMembership = transaction.userMembership;
-
-                    if (
-                        userMembership.status === UserMembershipStatus.PENDING
-                    ) {
-                        const now = new Date();
-                        const membership = await this.datasource
-                            .getRepository('memberships')
-                            .findOne({
-                                where: { id: userMembership.membershipId }
-                            });
-
-                        if (membership) {
-                            const durationInDays =
-                                typeof membership.duration === 'string'
-                                    ? parseInt(membership.duration)
-                                    : membership.duration;
-
-                            userMembership.status = UserMembershipStatus.ACTIVE;
-                            userMembership.expiredDate = new Date(
-                                now.getTime() +
-                                    durationInDays * 24 * 60 * 60 * 1000
-                            );
-
-                            await this.userMembershipRepository.save(
-                                userMembership
-                            );
+                    const userMembership = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: { id: transaction.userMembershipId },
+                            relations: ['membership']
                         }
+                    );
+
+                    if (userMembership) {
+                        userMembership.status = UserMembershipStatus.ACTIVE;
+                        const expiredDate = new Date();
+                        expiredDate.setDate(
+                            expiredDate.getDate() +
+                                userMembership.membership.duration
+                        );
+                        userMembership.expiredDate = expiredDate;
+
+                        await manager.save(UserMembership, userMembership);
+                    }
+                } else {
+                    transaction.status = TransactionStatus.FAILED;
+                    await manager.save(Transaction, transaction);
+
+                    const userMembership = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: { id: transaction.userMembershipId }
+                        }
+                    );
+
+                    if (userMembership) {
+                        userMembership.status = UserMembershipStatus.CANCELLED;
+                        await manager.save(UserMembership, userMembership);
                     }
                 }
+            });
 
-                return {
-                    success: true,
-                    message: 'Xử lý webhook thành công - Thanh toán thành công'
-                };
-            } else {
-                transaction.status = TransactionStatus.FAILED;
-                await this.transactionRepository.save(transaction);
-
-                if (transaction.userMembership) {
-                    transaction.userMembership.status =
-                        UserMembershipStatus.CANCELLED;
-                    await this.userMembershipRepository.save(
-                        transaction.userMembership
-                    );
-                }
-
-                return {
-                    success: true,
-                    message: 'Xử lý webhook thành công - Thanh toán thất bại'
-                };
-            }
+            return { message: 'Webhook xử lý thành công' };
         } catch (error) {
-            console.error('Error handling PayOS webhook:', error);
             throw new InternalServerErrorException(
                 error.message || 'Lỗi xử lý webhook PayOS'
             );

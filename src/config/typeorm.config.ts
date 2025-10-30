@@ -14,4 +14,5 @@ export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOption
   logging: false,
   autoLoadEntities: true,
   ssl: configService.get<string>('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+  timezone: '+07:00',
 });

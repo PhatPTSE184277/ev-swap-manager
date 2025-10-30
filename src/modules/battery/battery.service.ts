@@ -6,12 +6,13 @@ import {
     NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Battery, BatteryType, UserVehicle } from 'src/entities';
+import { Battery, BatteryType, Slot, UserVehicle } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
 import { CreateBatteryDto } from './dto/create-battery.dto';
-import { BatteryStatus, BookingStatus } from 'src/enums';
+import { BatteryStatus, SlotStatus } from 'src/enums';
 import { CreateUserBatteryDto } from './dto/create-user-battery.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class BatteryService {
@@ -20,6 +21,56 @@ export class BatteryService {
         private readonly batteryRepository: Repository<Battery>,
         private readonly dataSource: DataSource
     ) {}
+
+    @Cron(CronExpression.EVERY_MINUTE)
+    async chargeBatteries() {
+        const chargingBatteries = await this.batteryRepository.find({
+            where: { status: BatteryStatus.CHARGING },
+            relations: ['batteryType']
+        });
+
+        for (const battery of chargingBatteries) {
+            if (!battery.batteryType?.chargeRate) continue;
+
+            const now = new Date();
+            const lastCharge = battery.lastChargeTime || now;
+            const minutesCharged = Math.floor(
+                (now.getTime() - lastCharge.getTime()) / 60000
+            );
+
+            const totalMinutesToFull = battery.batteryType.chargeRate * 60;
+            const percentIncrease = (minutesCharged / totalMinutesToFull) * 100;
+            let newCapacity = Math.min(
+                100,
+                Math.round(battery.currentCapacity + percentIncrease)
+            );
+
+            // Lấy slot chứa pin này
+            const slot = await this.dataSource.getRepository(Slot).findOne({
+                where: { batteryId: battery.id }
+            });
+
+            if (newCapacity >= 100) {
+                newCapacity = 100;
+                battery.status = BatteryStatus.AVAILABLE;
+                if (slot) {
+                    slot.status = SlotStatus.AVAILABLE;
+                    await this.dataSource.getRepository(Slot).save(slot);
+                }
+            } else {
+                // Nếu có slot, cập nhật trạng thái slot về CHARGING (nếu có)
+                if (slot && slot.status === SlotStatus.CHARGING) {
+                    slot.status = SlotStatus.CHARGING;
+                    await this.dataSource.getRepository(Slot).save(slot);
+                }
+            }
+
+            battery.currentCapacity = newCapacity;
+            battery.lastChargeTime = now;
+
+            await this.batteryRepository.save(battery);
+        }
+    }
 
     async findAll(
         page: number = 1,

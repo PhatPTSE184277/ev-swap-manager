@@ -23,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { BookingStatus } from 'src/enums/booking.enum';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreateOnsiteBookingDto } from './dto/create-onsite-booking.dto';
 
 @ApiTags('Booking')
 @ApiBearerAuth()
@@ -107,5 +108,16 @@ export class BookingController {
     ) {
         const userId = req.user.id;
         return this.bookingService.createBooking(userId, createBookingDto);
+    }
+
+     @UseGuards(JwtAuthGuard)
+    @Post('onsite')
+    @ApiOperation({ summary: 'Tạo booking đổi pin tại chỗ (onsite)' })
+    async createOnsiteBooking(
+        @Req() req,
+        @Body() createOnsiteBookingDto: CreateOnsiteBookingDto
+    ) {
+        const userId = req.user.id;
+        return this.bookingService.createOnsiteBooking(userId, createOnsiteBookingDto);
     }
 }

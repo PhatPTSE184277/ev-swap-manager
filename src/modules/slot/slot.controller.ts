@@ -30,8 +30,7 @@ import { UpdateSlotDto } from './dto/update-slot.dto';
 export class SlotController {
     constructor(private readonly slotService: SlotService) {}
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @UseGuards(JwtAuthGuard)
     @Get()
     @ApiOperation({
         summary: 'Lấy danh sách slot (phân trang, filter, search)',
@@ -78,16 +77,14 @@ export class SlotController {
         return this.slotService.findById(id);
     }
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @UseGuards(JwtAuthGuard)
     @Post()
     @ApiOperation({ summary: 'Tạo mới slot', description: 'Chỉ ADMIN' })
     async create(@Body() createSlotDto: CreateSlotDto) {
         return this.slotService.create(createSlotDto);
     }
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @UseGuards(JwtAuthGuard)
     @Patch(':id')
     @ApiOperation({ summary: 'Cập nhật slot', description: 'Chỉ ADMIN' })
     @ApiParam({ name: 'id', type: Number, description: 'ID slot' })
@@ -98,8 +95,7 @@ export class SlotController {
         return this.slotService.update(id, updateSlotDto);
     }
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa mềm slot', description: 'Chỉ ADMIN' })
     @ApiParam({ name: 'id', type: Number, description: 'ID slot' })
@@ -107,8 +103,7 @@ export class SlotController {
         return this.slotService.softDelete(id);
     }
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @UseGuards(JwtAuthGuard)
     @Patch('restore/:id')
     @ApiOperation({ summary: 'Khôi phục slot', description: 'Chỉ ADMIN' })
     @ApiParam({ name: 'id', type: Number, description: 'ID slot' })

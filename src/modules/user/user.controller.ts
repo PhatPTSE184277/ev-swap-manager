@@ -55,7 +55,7 @@ export class UserController {
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @Roles(RoleName.ADMIN, RoleName.STAFF)
     @Get()
     @ApiOperation({
         summary: 'Lấy danh sách người dùng (phân trang, filter, search)',

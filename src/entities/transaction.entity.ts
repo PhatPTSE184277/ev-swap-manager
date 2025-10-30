@@ -30,7 +30,7 @@ export class Transaction {
     @Column({ type: 'timestamp' })
     dateTime: Date;
 
-    @Column({ type: 'bigint', unique: true, nullable: false })
+    @Column({ type: 'bigint',  nullable: true })
     orderCode: number;
 
     @Column({ type: 'varchar', length: 512, nullable: true })

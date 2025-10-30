@@ -140,7 +140,10 @@ export class VehicleTypeService {
                 message: 'Lấy thông tin loại xe thành công',
                 data: {
                     ...rest,
-                    batteryTypeName: batteryType?.name || null
+                    batteryType: {
+                        id: batteryType?.id || null,
+                        name: batteryType?.name || null
+                    }
                 }
             };
         } catch (error) {

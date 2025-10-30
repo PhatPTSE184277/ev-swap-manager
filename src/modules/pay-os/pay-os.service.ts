@@ -61,7 +61,7 @@ export class PayOSService {
     async verifyPaymentWebhookData(webhookData: any) {
         try {
             const verified = await this.payos.webhooks.verify(webhookData);
-            this.logger.log('Webhook verified successfully');
+            this.logger.log('Webhook verified successfully: ' + JSON.stringify(verified));
             return verified;
         } catch (error) {
             this.logger.error('Error verifying webhook:', error);

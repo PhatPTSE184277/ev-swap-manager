@@ -133,7 +133,7 @@ export class TransactionService {
                 throw new BadRequestException('Invalid webhook signature');
             }
 
-            const { orderCode, code } = verifiedData;
+           const { orderCode, code } = (verifiedData as any).data;
 
             const transaction = await this.transactionRepository.findOne({
                 where: { orderCode },

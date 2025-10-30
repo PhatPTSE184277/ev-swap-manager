@@ -68,7 +68,7 @@ export class TransactionService {
 
                 const paymentLinkRes =
                     await this.payosService.createPaymentLink({
-                        orderCode: savedTransaction.id,
+                        orderCode: `membership_${savedTransaction.id}_${Date.now()}`,
                         amount: dto.totalPrice,
                         description: shortDescription,
                         returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
@@ -158,7 +158,6 @@ export class TransactionService {
                         await manager.save(UserMembership, userMembership);
                     }
                 } else {
-                    // Thanh toán thất bại
                     transaction.status = TransactionStatus.FAILED;
                     await manager.save(Transaction, transaction);
 

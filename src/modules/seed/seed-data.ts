@@ -4,8 +4,6 @@ import { UserMembershipStatus } from '../../enums/membership.enum';
 import { StaffHistoryShift } from '../../enums/station.enum';
 import { BatteryStatus } from '../../enums/battery.enum';
 import { SlotStatus } from '../../enums/slot.enum';
-import { BookingStatus, BookingDetailStatus } from '../../enums/booking.enum';
-import { TransactionStatus } from '../../enums/transaction.enum';
 
 export const seedData = {
     roles: [
@@ -340,7 +338,7 @@ export const seedData = {
             capacityKWh: 2.0,
             cycleLife: 1000,
             chargeRate: 2.5,
-            pricePerSwap: 50000,
+            pricePerSwap: 2000,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -352,7 +350,7 @@ export const seedData = {
             capacityKWh: 3.0,
             cycleLife: 1200,
             chargeRate: 3.0,
-            pricePerSwap: 50000,
+            pricePerSwap: 3000,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -513,8 +511,8 @@ export const seedData = {
             healthScore: 96,
             lastChargeTime: new Date('2025-10-27T10:00:00'),
             estimatedFullChargeTime: new Date('2025-10-27T12:30:00'),
-            status: BatteryStatus.RESERVED,
-            userVehicleId: 3,
+            status: BatteryStatus.AVAILABLE,
+            userVehicleId: null,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -920,8 +918,8 @@ export const seedData = {
             healthScore: 92,
             lastChargeTime: new Date('2025-10-27T10:05:00'),
             estimatedFullChargeTime: new Date('2025-10-27T13:05:00'),
-            status: BatteryStatus.RESERVED,
-            userVehicleId: 3,
+            status: BatteryStatus.AVAILABLE,
+            userVehicleId: null,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1046,8 +1044,8 @@ export const seedData = {
             healthScore: 85,
             lastChargeTime: new Date('2025-10-27T08:25:00'),
             estimatedFullChargeTime: new Date('2025-10-27T10:55:00'),
-            status: BatteryStatus.RESERVED,
-            userVehicleId: 4,
+            status: BatteryStatus.AVAILABLE,
+            userVehicleId: null,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1060,8 +1058,8 @@ export const seedData = {
             healthScore: 95,
             lastChargeTime: new Date('2025-10-27T09:55:00'),
             estimatedFullChargeTime: new Date('2025-10-27T12:25:00'),
-            status: BatteryStatus.AVAILABLE,
-            userVehicleId: null,
+            status: BatteryStatus.IN_USE,
+            userVehicleId: 4,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1074,8 +1072,8 @@ export const seedData = {
             healthScore: 72,
             lastChargeTime: new Date('2025-10-27T05:45:00'),
             estimatedFullChargeTime: new Date('2025-10-27T08:15:00'),
-            status: BatteryStatus.CHARGING,
-            userVehicleId: null,
+            status: BatteryStatus.IN_USE,
+            userVehicleId: 4,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1188,8 +1186,8 @@ export const seedData = {
             healthScore: 97,
             lastChargeTime: new Date('2025-10-27T10:10:00'),
             estimatedFullChargeTime: new Date('2025-10-27T13:10:00'),
-            status: BatteryStatus.RESERVED,
-            userVehicleId: 4,
+            status: BatteryStatus.AVAILABLE,
+            userVehicleId: null,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1286,8 +1284,8 @@ export const seedData = {
             healthScore: 93,
             lastChargeTime: new Date('2025-10-27T09:45:00'),
             estimatedFullChargeTime: new Date('2025-10-27T12:45:00'),
-            status: BatteryStatus.AVAILABLE,
-            userVehicleId: null,
+            status: BatteryStatus.IN_USE,
+            userVehicleId: 3,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1300,8 +1298,8 @@ export const seedData = {
             healthScore: 73,
             lastChargeTime: new Date('2025-10-27T06:10:00'),
             estimatedFullChargeTime: new Date('2025-10-27T09:10:00'),
-            status: BatteryStatus.MAINTENANCE,
-            userVehicleId: null,
+            status: BatteryStatus.IN_USE,
+            userVehicleId: 3,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1382,7 +1380,7 @@ export const seedData = {
             cabinetId: 1,
             name: 'Slot 1-7',
             batteryId: 7,
-            status: SlotStatus.RESERVED,
+            status: SlotStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1703,7 +1701,7 @@ export const seedData = {
             cabinetId: 4,
             name: 'Slot 4-6',
             batteryId: 36,
-            status: SlotStatus.RESERVED,
+            status: SlotStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1804,7 +1802,7 @@ export const seedData = {
             cabinetId: 5,
             name: 'Slot 5-5',
             batteryId: 45,
-            status: SlotStatus.RESERVED,
+            status: SlotStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1812,8 +1810,8 @@ export const seedData = {
             id: 54,
             cabinetId: 5,
             name: 'Slot 5-6',
-            batteryId: 46,
-            status: SlotStatus.AVAILABLE,
+            batteryId: null,
+            status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1821,8 +1819,8 @@ export const seedData = {
             id: 55,
             cabinetId: 5,
             name: 'Slot 5-7',
-            batteryId: 47,
-            status: SlotStatus.CHARGING,
+            batteryId: null,
+            status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1896,7 +1894,7 @@ export const seedData = {
             cabinetId: 6,
             name: 'Slot 6-3',
             batteryId: 55,
-            status: SlotStatus.RESERVED,
+            status: SlotStatus.AVAILABLE,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1958,8 +1956,8 @@ export const seedData = {
             id: 70,
             cabinetId: 6,
             name: 'Slot 6-10',
-            batteryId: 62,
-            status: SlotStatus.AVAILABLE,
+            batteryId: null,
+            status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1967,8 +1965,8 @@ export const seedData = {
             id: 71,
             cabinetId: 6,
             name: 'Slot 6-11',
-            batteryId: 63,
-            status: SlotStatus.MAINTENANCE,
+            batteryId: null,
+            status: SlotStatus.EMPTY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1978,25 +1976,6 @@ export const seedData = {
             name: 'Slot 6-12',
             batteryId: 64,
             status: SlotStatus.AVAILABLE,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-    ],
-
-    slotHistories: [
-        {
-            id: 1,
-            slotId: 1,
-            batteryId: 1,
-            status: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 2,
-            slotId: 2,
-            batteryId: 2,
-            status: true,
             createdAt: new Date(),
             updatedAt: new Date()
         }
@@ -2015,89 +1994,6 @@ export const seedData = {
             id: 2,
             name: 'Ví điện tử',
             description: 'Thanh toán qua ví điện tử',
-            status: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-    ],
-
-    transactions: [
-        {
-            id: 1,
-            paymentId: 2,
-            totalPrice: 50000,
-            dateTime: new Date('2025-09-30T08:00:00'),
-            status: TransactionStatus.SUCCESS,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 2,
-            paymentId: 1,
-            totalPrice: 75000,
-            dateTime: new Date('2025-09-30T10:00:00'),
-            status: TransactionStatus.SUCCESS,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-    ],
-
-    bookings: [
-        {
-            id: 1,
-            userVehicleId: 3,
-            userMembershipId: 1,
-            transactionId: 1,
-            stationId: 1,
-            expectedPickupTime: new Date('2025-10-30T08:00:00Z'),
-            checkinTime: null,
-            status: BookingStatus.RESERVED,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 2,
-            userVehicleId: 4,
-            userMembershipId: 2,
-            transactionId: 2,
-            stationId: 2,
-            expectedPickupTime: new Date('2025-10-21T10:00:00'),
-            status: BookingStatus.RESERVED,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-    ],
-
-    bookingDetails: [
-        {
-            id: 1,
-            bookingId: 1,
-            batteryId: [7, 36],
-            price: 150000.0,
-            status: BookingDetailStatus.RESERVED,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: 2,
-            bookingId: 2,
-            batteryId: [45, 55],
-            price: 50000,
-            status: BookingDetailStatus.RESERVED,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-    ],
-    batteryUsedHistories: [
-        {
-            id: 1,
-            batteryId: 1,
-            bookingId: 1,
-            currentCapacity: 1800,
-            currentCycle: 150,
-            healthScore: 90,
-            percent: 15,
-            recentPrice: 50000,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()

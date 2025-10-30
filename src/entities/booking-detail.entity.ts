@@ -8,7 +8,6 @@ import {
     BeforeUpdate
 } from 'typeorm';
 import { Booking } from './booking.entity';
-import { Slot } from './slot.entity';
 import { BookingDetailStatus } from '../enums';
 import { Battery } from './battery.entity';
 
@@ -23,7 +22,7 @@ export class BookingDetail {
     @Column()
     batteryId: number;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
     price: number;
 
     @Column({

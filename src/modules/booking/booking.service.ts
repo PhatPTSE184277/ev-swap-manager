@@ -225,7 +225,6 @@ export class BookingService {
                         const bookingDetail = manager.create('BookingDetail', {
                             bookingId: booking.id,
                             batteryId: detail.batteryId,
-                            price: price,
                             status: BookingDetailStatus.RESERVED
                         });
                         await manager.save('BookingDetail', bookingDetail);

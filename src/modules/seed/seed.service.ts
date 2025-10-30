@@ -125,9 +125,9 @@ export class SeedService {
         await manager.getRepository(Slot).save(seedData.slots);
     }
 
-    private async seedSlotHistories(manager) {
-        await manager.getRepository(SlotHistory).save(seedData.slotHistories);
-    }
+    // private async seedSlotHistories(manager) {
+    //     await manager.getRepository(SlotHistory).save(seedData.slotHistories);
+    // }
 
     private async seedBatteryTypes(manager) {
         await manager.getRepository(BatteryType).save(seedData.batteryTypes);
@@ -137,11 +137,11 @@ export class SeedService {
         await manager.getRepository(Battery).save(seedData.batteries);
     }
 
-    private async seedBatteryUsedHistories(manager) {
-        await manager
-            .getRepository(BatteryUsedHistory)
-            .save(seedData.batteryUsedHistories);
-    }
+    // private async seedBatteryUsedHistories(manager) {
+    //     await manager
+    //         .getRepository(BatteryUsedHistory)
+    //         .save(seedData.batteryUsedHistories);
+    // }
 
     private async seedVehicleTypes(manager) {
         await manager.getRepository(VehicleType).save(seedData.vehicleTypes);
@@ -155,19 +155,19 @@ export class SeedService {
         await manager.getRepository(Payment).save(seedData.payments);
     }
 
-    private async seedTransactions(manager) {
-        await manager.getRepository(Transaction).save(seedData.transactions);
-    }
+    // private async seedTransactions(manager) {
+    //     await manager.getRepository(Transaction).save(seedData.transactions);
+    // }
 
-    private async seedBookings(manager) {
-        await manager.getRepository(Booking).save(seedData.bookings);
-    }
+    // private async seedBookings(manager) {
+    //     await manager.getRepository(Booking).save(seedData.bookings);
+    // }
 
-    private async seedBookingDetails(manager) {
-        await manager
-            .getRepository(BookingDetail)
-            .save(seedData.bookingDetails);
-    }
+    // private async seedBookingDetails(manager) {
+    //     await manager
+    //         .getRepository(BookingDetail)
+    //         .save(seedData.bookingDetails);
+    // }
 
     private async seedFeedbacks(manager) {
         await manager.getRepository(Feedback).save(seedData.feedbacks);
@@ -220,12 +220,12 @@ export class SeedService {
                 await this.seedCabinetHistories(manager);
                 await this.seedBatteries(manager);
                 await this.seedSlots(manager);
-                await this.seedSlotHistories(manager);
+                // await this.seedSlotHistories(manager);
                 await this.seedPayments(manager);
-                await this.seedTransactions(manager);
-                await this.seedBookings(manager);
-                await this.seedBookingDetails(manager);
-                await this.seedBatteryUsedHistories(manager);
+                // await this.seedTransactions(manager);
+                // await this.seedBookings(manager);
+                // await this.seedBookingDetails(manager);
+                // await this.seedBatteryUsedHistories(manager);
                 await this.seedFeedbacks(manager);
             });
             return { message: 'Seeding completed successfully' };

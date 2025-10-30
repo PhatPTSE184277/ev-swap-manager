@@ -258,9 +258,7 @@ export class BatteryService {
                         currentCapacity: 100,
                         healthScore: 100,
                         status:
-                            createBatteryDto.status ?? BatteryStatus.AVAILABLE,
-                        createdAt: new Date(),
-                        updatedAt: new Date()
+                            createBatteryDto.status ?? BatteryStatus.AVAILABLE
                     });
                     await manager.save(Battery, newBattery);
                     const { createdAt, updatedAt, batteryTypeId, ...rest } =
@@ -298,9 +296,7 @@ export class BatteryService {
                     throw new BadRequestException('Pin đã tồn tại');
                 }
             }
-
-            const updatedAt = new Date();
-            Object.assign(battery, updateBatteryDto, { updatedAt });
+            Object.assign(battery, updateBatteryDto);
             await this.batteryRepository.update(id, battery);
             return {
                 message: 'Cập nhật pin thành công'
@@ -356,9 +352,7 @@ export class BatteryService {
                         currentCycle: dto.currentCycle ?? 0,
                         healthScore: dto.healthScore ?? 100,
                         status: BatteryStatus.IN_USE,
-                        userVehicleId: dto.userVehicleId,
-                        createdAt: new Date(),
-                        updatedAt: new Date()
+                        userVehicleId: dto.userVehicleId
                     });
                     await manager.save(Battery, newBattery);
 

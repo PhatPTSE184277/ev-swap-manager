@@ -179,9 +179,7 @@ export class BookingService {
                         userVehicleId: createBookingDto.userVehicleId,
                         stationId: createBookingDto.stationId,
                         expectedPickupTime,
-                        status: BookingStatus.RESERVED,
-                        createdAt: new Date(),
-                        updatedAt: new Date()
+                        status: BookingStatus.RESERVED
                     };
                     if (userMembership) {
                         bookingData.userMembershipId = userMembership.id;
@@ -223,14 +221,10 @@ export class BookingService {
                         slot.status = SlotStatus.RESERVED;
                         await manager.save(Slot, slot);
 
-                        const price = battery.batteryType?.pricePerSwap ?? 0;
-
                         const bookingDetail = manager.create('BookingDetail', {
                             bookingId: booking.id,
                             batteryId: detail.batteryId,
                             status: BookingDetailStatus.RESERVED,
-                            createdAt: new Date(),
-                            updatedAt: new Date()
                         });
                         await manager.save('BookingDetail', bookingDetail);
 

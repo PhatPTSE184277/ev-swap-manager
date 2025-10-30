@@ -49,9 +49,7 @@ export class SimulationService {
                         throw new NotFoundException('Không tìm thấy booking');
                     }
 
-                    if (
-                        booking.status !== BookingStatus.IN_PROGRESS
-                    ) {
+                    if (booking.status !== BookingStatus.IN_PROGRESS) {
                         throw new BadRequestException(
                             `Booking đang ở trạng thái ${booking.status}, không thể lấy pin`
                         );
@@ -112,7 +110,7 @@ export class SimulationService {
                     });
                     await manager.save(SlotHistory, slotHistory);
 
-                    slot.batteryId = null;
+                    slot.batteryId = null as any;
                     slot.status = SlotStatus.EMPTY;
                     await manager.save(Slot, slot);
 
@@ -172,9 +170,7 @@ export class SimulationService {
         }
     }
 
-    async putBatteryToSlot(
-        putBatteryDto: PutBatteryDto
-    ): Promise<any> {
+    async putBatteryToSlot(putBatteryDto: PutBatteryDto): Promise<any> {
         try {
             const result = await this.dataSource.transaction(
                 async (manager) => {
@@ -194,7 +190,7 @@ export class SimulationService {
                     }
 
                     const slot = await manager.findOne(Slot, {
-                        where: { id: putBatteryDto.slotId},
+                        where: { id: putBatteryDto.slotId },
                         relations: ['cabinet']
                     });
 

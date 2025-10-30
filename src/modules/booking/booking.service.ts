@@ -31,6 +31,7 @@ import Helpers from '../../utils/helpers';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CreateOnsiteBookingDto } from './dto/create-onsite-booking.dto';
 import { TransactionService } from '../transaction/transaction.service';
+import { create } from 'domain';
 
 @Injectable()
 export class BookingService {
@@ -178,7 +179,9 @@ export class BookingService {
                         userVehicleId: createBookingDto.userVehicleId,
                         stationId: createBookingDto.stationId,
                         expectedPickupTime,
-                        status: BookingStatus.RESERVED
+                        status: BookingStatus.RESERVED,
+                        createdAt: new Date(),
+                        updatedAt: new Date()
                     };
                     if (userMembership) {
                         bookingData.userMembershipId = userMembership.id;
@@ -225,7 +228,9 @@ export class BookingService {
                         const bookingDetail = manager.create('BookingDetail', {
                             bookingId: booking.id,
                             batteryId: detail.batteryId,
-                            status: BookingDetailStatus.RESERVED
+                            status: BookingDetailStatus.RESERVED,
+                            createdAt: new Date(),
+                            updatedAt: new Date()
                         });
                         await manager.save('BookingDetail', bookingDetail);
 

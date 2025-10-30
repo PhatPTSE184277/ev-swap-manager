@@ -1,6 +1,11 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiParam,
+    ApiTags
+} from '@nestjs/swagger';
 import { ConfirmCashPaymentDto } from './dto/confirm-cash-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -10,15 +15,19 @@ export class TransactionController {
     constructor(private readonly transactionService: TransactionService) {}
 
     @Post('payos-webhook')
-    @ApiOperation({ summary: 'Webhook từ PayOS khi thanh toán thành công/thất bại' })
+    @ApiOperation({
+        summary: 'Webhook từ PayOS khi thanh toán thành công/thất bại'
+    })
     async payosWebhook(@Body() webhookData: any) {
-        return this.transactionService.handlePayOSWebhook(webhookData);
+        const result =
+            await this.transactionService.handlePayOSWebhook(webhookData);
+        return result;
     }
 
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @Get(':id/status')
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Kiểm tra trạng thái thanh toán',
         description: 'User check xem transaction đã thanh toán thành công chưa'
     })

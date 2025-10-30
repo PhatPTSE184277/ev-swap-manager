@@ -16,7 +16,7 @@ export class PayOSService {
     }
 
     async createPaymentLink(data: {
-        orderCode: string;
+        orderCode: number;
         amount: number;
         description: string;
         returnUrl: string;

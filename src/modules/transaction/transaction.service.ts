@@ -66,9 +66,10 @@ export class TransactionService {
                     new Date(userMembership.paymentExpireAt).getTime() / 1000
                 );
 
+                const orderCode = Number(`${Date.now()}${savedTransaction.id}`);
                 const paymentLinkRes =
                     await this.payosService.createPaymentLink({
-                        orderCode: `membership_${savedTransaction.id}_${Date.now()}`,
+                        orderCode,
                         amount: dto.totalPrice,
                         description: shortDescription,
                         returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
@@ -120,8 +121,17 @@ export class TransactionService {
 
             const { orderCode, code } = verifiedData;
 
+            const idMatch = orderCode.toString().match(/(\d+)$/);
+            const transactionId = idMatch ? Number(idMatch[1]) : null;
+
+            if (!transactionId) {
+                throw new NotFoundException(
+                    'Không xác định được transactionId từ orderCode'
+                );
+            }
+
             const transaction = await this.transactionRepository.findOne({
-                where: { id: orderCode },
+                where: { id: transactionId },
                 relations: ['userMembership']
             });
 

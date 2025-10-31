@@ -800,15 +800,13 @@ export class TransactionService {
             throw new NotFoundException('Giao dịch không tồn tại');
         }
 
-        if (transaction.status !== TransactionStatus.PENDING) {
-            return { message: 'Giao dịch đã được xử lý trước đó' };
-        }
-
         await this.datasource.transaction(async (manager) => {
             if (code === '00' || status === 'PAID') {
-                await manager.update(Transaction, transaction.id, {
-                    status: TransactionStatus.SUCCESS
-                });
+                if (transaction.status !== TransactionStatus.SUCCESS) {
+                    await manager.update(Transaction, transaction.id, {
+                        status: TransactionStatus.SUCCESS
+                    });
+                }
 
                 const booking = await manager.findOne(Booking, {
                     where: { transactionId: transaction.id }
@@ -836,15 +834,17 @@ export class TransactionService {
                     }
                 }
             } else {
-                await manager.update(Transaction, transaction.id, {
-                    status: TransactionStatus.FAILED
-                });
+                if (transaction.status !== TransactionStatus.FAILED) {
+                    await manager.update(Transaction, transaction.id, {
+                        status: TransactionStatus.FAILED
+                    });
+                }
 
                 const booking = await manager.findOne(Booking, {
                     where: { transactionId: transaction.id }
                 });
 
-                if (booking) {
+                if (booking && booking.status !== BookingStatus.CANCELLED) {
                     booking.status = BookingStatus.CANCELLED;
                     await manager.save(Booking, booking);
 
@@ -853,26 +853,28 @@ export class TransactionService {
                     });
 
                     for (const detail of bookingDetails) {
-                        detail.status = BookingDetailStatus.CANCELLED;
-                        await manager.save(BookingDetail, detail);
+                        if (detail.status !== BookingDetailStatus.CANCELLED) {
+                            detail.status = BookingDetailStatus.CANCELLED;
+                            await manager.save(BookingDetail, detail);
 
-                        const battery = await manager.findOne(Battery, {
-                            where: { id: detail.batteryId }
-                        });
-                        if (
-                            battery &&
-                            battery.status === BatteryStatus.RESERVED
-                        ) {
-                            battery.status = BatteryStatus.AVAILABLE;
-                            await manager.save(Battery, battery);
-                        }
+                            const battery = await manager.findOne(Battery, {
+                                where: { id: detail.batteryId }
+                            });
+                            if (
+                                battery &&
+                                battery.status === BatteryStatus.RESERVED
+                            ) {
+                                battery.status = BatteryStatus.AVAILABLE;
+                                await manager.save(Battery, battery);
+                            }
 
-                        const slot = await manager.findOne(Slot, {
-                            where: { batteryId: detail.batteryId }
-                        });
-                        if (slot && slot.status === SlotStatus.RESERVED) {
-                            slot.status = SlotStatus.AVAILABLE;
-                            await manager.save(Slot, slot);
+                            const slot = await manager.findOne(Slot, {
+                                where: { batteryId: detail.batteryId }
+                            });
+                            if (slot && slot.status === SlotStatus.RESERVED) {
+                                slot.status = SlotStatus.AVAILABLE;
+                                await manager.save(Slot, slot);
+                            }
                         }
                     }
                 }

@@ -443,9 +443,20 @@ export class TransactionService {
                 } else {
                     const shortDescription = `Booking #${dto.bookingId}`;
 
+                    let orderCode =
+                        savedTransaction.id * 100 +
+                        Math.floor(Math.random() * 100) +
+                        1;
+
+                    if (orderCode > 9007199254740991) {
+                        orderCode = savedTransaction.id;
+                    }
+                    savedTransaction.orderCode = orderCode;
+                    await mgr.save(Transaction, savedTransaction);
+
                     const paymentLinkRes =
                         await this.payosService.createPaymentLink({
-                            orderCode: savedTransaction.id,
+                            orderCode,
                             amount: dto.totalPrice,
                             description: shortDescription,
                             returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
@@ -488,7 +499,7 @@ export class TransactionService {
         }
     }
 
-   async confirmCashPayment(dto: ConfirmCashPaymentDto): Promise<any> {
+    async confirmCashPayment(dto: ConfirmCashPaymentDto): Promise<any> {
         try {
             return await this.datasource.transaction(async (manager) => {
                 const transaction = await manager.findOne(Transaction, {
@@ -617,7 +628,7 @@ export class TransactionService {
             );
         }
     }
-    
+
     async handlePayOSCallback(
         dto: UpdateMembershipTransactionDto
     ): Promise<any> {
@@ -799,7 +810,6 @@ export class TransactionService {
                     status: TransactionStatus.SUCCESS
                 });
 
-
                 const booking = await manager.findOne(Booking, {
                     where: { transactionId: transaction.id }
                 });
@@ -810,7 +820,6 @@ export class TransactionService {
                 ) {
                     booking.status = BookingStatus.IN_PROGRESS;
                     await manager.save(Booking, booking);
-
 
                     const bookingDetails = await manager.find(BookingDetail, {
                         where: { bookingId: booking.id }
@@ -838,7 +847,6 @@ export class TransactionService {
                 if (booking) {
                     booking.status = BookingStatus.CANCELLED;
                     await manager.save(Booking, booking);
-
 
                     const bookingDetails = await manager.find(BookingDetail, {
                         where: { bookingId: booking.id }

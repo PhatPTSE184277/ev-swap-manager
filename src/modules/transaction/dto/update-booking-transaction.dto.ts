@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { StringRequired } from 'src/common/decorators';
+import { NumberRequired, StringRequired } from 'src/common/decorators';
 
 export class UpdateBookingTransactionDto {
     @StringRequired('Payment Code')
     code: string;
 
-    @StringRequired('Order Code')
+    @NumberRequired('Order Code')
     orderCode: number;
 
     @StringRequired('Payment Status')

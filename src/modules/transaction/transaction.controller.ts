@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Param,
+    Post,
+    Query,
+    UseGuards
+} from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import {
     ApiBearerAuth,
@@ -55,7 +63,9 @@ export class TransactionController {
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @Get('all')
-    @ApiOperation({ summary: 'Admin lấy danh sách transaction (phân trang, lọc)' })
+    @ApiOperation({
+        summary: 'Admin lấy danh sách transaction (phân trang, lọc)'
+    })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'search', required: false, type: String })
@@ -73,6 +83,36 @@ export class TransactionController {
             limit,
             search,
             order,
+            status
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get('by-station')
+    @ApiOperation({
+        summary: 'Staff lấy danh sách transaction booking theo trạm'
+    })
+    @ApiQuery({ name: 'stationId', required: true, type: Number })
+    @ApiQuery({ name: 'page', required: false, type: Number })
+    @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'search', required: false, type: String })
+    @ApiQuery({ name: 'order', required: false, enum: ['ASC', 'DESC'] })
+    @ApiQuery({ name: 'status', required: false, enum: TransactionStatus })
+    async getTransactionsByStationForStaff(
+        @Query('stationId') stationId: number,
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
+        @Query('search') search?: string,
+        @Query('order') order?: 'ASC' | 'DESC',
+        @Query('status') status?: TransactionStatus
+    ) {
+        return this.transactionService.getTransactionsByStationForStaff(
+            Number(stationId),
+            Number(page) || 1,
+            Number(limit) || 10,
+            search,
+            order || 'DESC',
             status
         );
     }

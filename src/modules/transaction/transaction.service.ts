@@ -681,6 +681,85 @@ export class TransactionService {
     }
 
     async getAllTransactionsForAdmin(
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        order: 'ASC' | 'DESC' = 'DESC',
+        status?: TransactionStatus
+    ): Promise<any> {
+        try {
+            const where: any = {};
+            if (status) where.status = status;
+
+            if (search) {
+                where.orderCode = Number(search) || undefined;
+            }
+
+            const [data, total] = await this.transactionRepository.findAndCount(
+                {
+                    where,
+                    relations: [
+                        'payment',
+                        'userMembership',
+                        'userMembership.membership',
+                        'booking'
+                    ],
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    order: { createdAt: order }
+                }
+            );
+
+            const mappedData = data.map((transaction) => ({
+                id: transaction.id,
+                orderCode: transaction.orderCode,
+                status: transaction.status,
+                totalPrice: transaction.totalPrice,
+                dateTime: transaction.dateTime,
+                payment: transaction.payment
+                    ? {
+                          id: transaction.payment.id,
+                          name: transaction.payment.name
+                      }
+                    : null,
+                paymentUrl: transaction.paymentUrl,
+                userMembership: transaction.userMembership
+                    ? {
+                          id: transaction.userMembership.id,
+                          membership: transaction.userMembership.membership
+                              ? {
+                                    id: transaction.userMembership.membership
+                                        .id,
+                                    name: transaction.userMembership.membership
+                                        .name
+                                }
+                              : null
+                      }
+                    : null,
+                booking: transaction.booking
+                    ? {
+                          id: transaction.booking.id,
+                          status: transaction.booking.status
+                      }
+                    : null
+            }));
+
+            return {
+                data: mappedData,
+                total,
+                page,
+                limit,
+                message: 'Lấy danh sách transaction thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                error.message || 'Lỗi hệ thống khi lấy danh sách transaction'
+            );
+        }
+    }
+
+    async getTransactionsByStationForStaff(
+    stationId: number,
     page: number = 1,
     limit: number = 10,
     search?: string,
@@ -690,10 +769,9 @@ export class TransactionService {
     try {
         const where: any = {};
         if (status) where.status = status;
+        if (search) where.orderCode = Number(search) || undefined;
 
-        if (search) {
-            where.orderCode = Number(search) || undefined;
-        }
+        where.booking = { stationId };
 
         const [data, total] = await this.transactionRepository.findAndCount({
             where,
@@ -745,11 +823,11 @@ export class TransactionService {
             total,
             page,
             limit,
-            message: 'Lấy danh sách transaction thành công'
+            message: 'Lấy danh sách transaction booking theo trạm thành công'
         };
     } catch (error) {
         throw new InternalServerErrorException(
-            error.message || 'Lỗi hệ thống khi lấy danh sách transaction'
+            error.message || 'Lỗi hệ thống khi lấy danh sách transaction booking theo trạm'
         );
     }
 }

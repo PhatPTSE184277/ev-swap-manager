@@ -785,104 +785,103 @@ export class TransactionService {
             );
         }
     }
+async handlePayOSCallbackForBooking(
+    dto: UpdateMembershipTransactionDto
+): Promise<any> {
+    const { orderCode, code, status } = dto;
 
-    async handlePayOSCallbackForBooking(
-        dto: UpdateMembershipTransactionDto
-    ): Promise<any> {
-        const { orderCode, code, status } = dto;
+    const transaction = await this.transactionRepository.findOne({
+        where: { orderCode: Number(orderCode) },
+        relations: ['booking']
+    });
 
-        const transaction = await this.transactionRepository.findOne({
-            where: { orderCode: Number(orderCode) },
-            relations: ['booking']
-        });
+    if (!transaction) {
+        throw new NotFoundException('Giao dịch không tồn tại');
+    }
 
-        if (!transaction) {
-            throw new NotFoundException('Giao dịch không tồn tại');
-        }
-
-        await this.datasource.transaction(async (manager) => {
-            if (code === '00' || status === 'PAID') {
-                if (transaction.status !== TransactionStatus.SUCCESS) {
-                    await manager.update(Transaction, transaction.id, {
-                        status: TransactionStatus.SUCCESS
-                    });
-                }
-
-                const booking = await manager.findOne(Booking, {
-                    where: { transactionId: transaction.id }
+    await this.datasource.transaction(async (manager) => {
+        if (code === '00' || status === 'PAID') {
+            if (transaction.status !== TransactionStatus.SUCCESS) {
+                await manager.update(Transaction, transaction.id, {
+                    status: TransactionStatus.SUCCESS
                 });
+            }
+            const booking = await manager.findOne(Booking, {
+                where: { transactionId: transaction.id }
+            });
 
-                if (
-                    booking &&
-                    booking.status === BookingStatus.PENDING_PAYMENT
-                ) {
+            if (booking) {
+                if (booking.status === BookingStatus.PENDING_PAYMENT) {
                     booking.status = BookingStatus.IN_PROGRESS;
                     await manager.save(Booking, booking);
-
-                    const bookingDetails = await manager.find(BookingDetail, {
-                        where: { bookingId: booking.id }
-                    });
-
-                    for (const detail of bookingDetails) {
-                        if (
-                            detail.status ===
-                            BookingDetailStatus.PENDING_PAYMENT
-                        ) {
-                            detail.status = BookingDetailStatus.IN_PROGRESS;
-                            await manager.save(BookingDetail, detail);
-                        }
-                    }
-                }
-            } else {
-                if (transaction.status !== TransactionStatus.FAILED) {
-                    await manager.update(Transaction, transaction.id, {
-                        status: TransactionStatus.FAILED
-                    });
                 }
 
-                const booking = await manager.findOne(Booking, {
-                    where: { transactionId: transaction.id }
+
+                const bookingDetails = await manager.find(BookingDetail, {
+                    where: { bookingId: booking.id }
                 });
 
-                if (booking && booking.status !== BookingStatus.CANCELLED) {
-                    booking.status = BookingStatus.CANCELLED;
-                    await manager.save(Booking, booking);
+                for (const detail of bookingDetails) {
+                    if (
+                        detail.status !== BookingDetailStatus.IN_PROGRESS &&
+                        detail.status !== BookingDetailStatus.COMPLETED &&
+                        detail.status !== BookingDetailStatus.CANCELLED
+                    ) {
+                        detail.status = BookingDetailStatus.IN_PROGRESS;
+                        await manager.save(BookingDetail, detail);
+                    }
+                }
+            }
+        } else {
+            if (transaction.status !== TransactionStatus.FAILED) {
+                await manager.update(Transaction, transaction.id, {
+                    status: TransactionStatus.FAILED
+                });
+            }
 
-                    const bookingDetails = await manager.find(BookingDetail, {
-                        where: { bookingId: booking.id }
-                    });
+            const booking = await manager.findOne(Booking, {
+                where: { transactionId: transaction.id }
+            });
 
-                    for (const detail of bookingDetails) {
-                        if (detail.status !== BookingDetailStatus.CANCELLED) {
-                            detail.status = BookingDetailStatus.CANCELLED;
-                            await manager.save(BookingDetail, detail);
+            if (booking && booking.status !== BookingStatus.CANCELLED) {
+                booking.status = BookingStatus.CANCELLED;
+                await manager.save(Booking, booking);
 
-                            const battery = await manager.findOne(Battery, {
-                                where: { id: detail.batteryId }
-                            });
-                            if (
-                                battery &&
-                                battery.status === BatteryStatus.RESERVED
-                            ) {
-                                battery.status = BatteryStatus.AVAILABLE;
-                                await manager.save(Battery, battery);
-                            }
+                const bookingDetails = await manager.find(BookingDetail, {
+                    where: { bookingId: booking.id }
+                });
 
-                            const slot = await manager.findOne(Slot, {
-                                where: { batteryId: detail.batteryId }
-                            });
-                            if (slot && slot.status === SlotStatus.RESERVED) {
-                                slot.status = SlotStatus.AVAILABLE;
-                                await manager.save(Slot, slot);
-                            }
+                for (const detail of bookingDetails) {
+                    if (detail.status !== BookingDetailStatus.CANCELLED) {
+                        detail.status = BookingDetailStatus.CANCELLED;
+                        await manager.save(BookingDetail, detail);
+
+                        const battery = await manager.findOne(Battery, {
+                            where: { id: detail.batteryId }
+                        });
+                        if (
+                            battery &&
+                            battery.status === BatteryStatus.RESERVED
+                        ) {
+                            battery.status = BatteryStatus.AVAILABLE;
+                            await manager.save(Battery, battery);
+                        }
+
+                        const slot = await manager.findOne(Slot, {
+                            where: { batteryId: detail.batteryId }
+                        });
+                        if (slot && slot.status === SlotStatus.RESERVED) {
+                            slot.status = SlotStatus.AVAILABLE;
+                            await manager.save(Slot, slot);
                         }
                     }
                 }
             }
-        });
+        }
+    });
 
-        return { message: 'Cập nhật trạng thái giao dịch booking thành công' };
-    }
+    return { message: 'Cập nhật trạng thái giao dịch booking thành công' };
+}
 
     async getTransactionsByStationForStaff(
         stationId: number,

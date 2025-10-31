@@ -5,11 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Transaction, UserMembership } from 'src/entities';
 import { PayOSService } from '../pay-os/pay-os.service';
 import { ConfigModule } from '@nestjs/config';
+import { TransactionGateway } from 'src/gateways/transaction.gateway';
+import { GatewaysModule } from 'src/gateways/gateways.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Transaction, UserMembership]),
-    ConfigModule
+    TypeOrmModule.forFeature([Transaction, UserMembership]), GatewaysModule
   ],
   controllers: [TransactionController],
   providers: [TransactionService, PayOSService],

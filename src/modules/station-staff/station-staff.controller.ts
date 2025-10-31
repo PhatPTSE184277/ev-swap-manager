@@ -21,6 +21,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { RoleName } from 'src/enums';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreateStationStaffDto } from './dto/create-staff.dto';
+import { TransferStationDto } from './dto/transferstation.dto';
 
 @ApiTags('StationStaff')
 @ApiBearerAuth()
@@ -100,5 +101,14 @@ export class StationStaffController {
         return this.stationStaffService.createStationStaff(
             createStationStaffDto
         );
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Post('transfer')
+    @ApiOperation({ summary: 'Chuyển trạm cho nhân viên (có lưu history)' })
+    @ApiBody({ type: TransferStationDto })
+    async transferStation(@Body() transferDto: TransferStationDto) {
+        return this.stationStaffService.transferStation(transferDto);
     }
 }

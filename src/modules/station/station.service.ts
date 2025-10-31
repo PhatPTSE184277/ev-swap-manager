@@ -344,7 +344,6 @@ export class StationService {
                         image: station.image,
                         latitude: station.latitude,
                         longitude: station.longitude,
-                        temperature: station.temperature,
                         totalCabinets: cabinets.length,
                         slotAvailable,
                         slotCharging,

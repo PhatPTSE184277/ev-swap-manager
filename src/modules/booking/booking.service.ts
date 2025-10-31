@@ -406,10 +406,12 @@ export class BookingService {
                     'userVehicle',
                     'userVehicle.user',
                     'userVehicle.batteries',
+                    'userVehicle.batteries.batteryType',
                     'bookingDetails',
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
-                    'userMembership'
+                    'userMembership',
+                    'transaction'
                 ],
                 skip: (page - 1) * limit,
                 take: limit,
@@ -435,7 +437,13 @@ export class BookingService {
                             model: battery.model,
                             currentCycle: battery.currentCycle,
                             healthScore: battery.healthScore,
-                            status: battery.status
+                            status: battery.status,
+                            batteryType: battery.batteryTypeId
+                                ? {
+                                      id: battery.batteryType?.id,
+                                      name: battery.batteryType.name
+                                  }
+                                : null
                         })
                     )
                 },
@@ -561,7 +569,9 @@ export class BookingService {
                             );
                         }
 
-                        const price = battery.batteryType?.pricePerSwap ?? 0;
+                        const price = battery.batteryType?.pricePerSwap
+                            ? Number(battery.batteryType.pricePerSwap)
+                            : 0;
                         totalPrice += price;
 
                         const bookingDetail = manager.create('BookingDetail', {
@@ -644,6 +654,7 @@ export class BookingService {
             );
         }
     }
+
     async checkinBooking(userId: number, stationId: number): Promise<any> {
         try {
             const result = await this.dataSource.transaction(

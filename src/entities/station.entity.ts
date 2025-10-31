@@ -34,9 +34,6 @@ export class Station {
     @Column({ type: 'decimal', precision: 11, scale: 8 })
     longitude: number;
 
-    @Column({ type: 'decimal', precision: 5, scale: 2 })
-    temperature: number;
-
     @Column({ type: 'time', nullable: true })
     openTime: string;
 

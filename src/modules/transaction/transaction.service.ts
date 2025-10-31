@@ -150,8 +150,9 @@ export class TransactionService {
 
             await this.datasource.transaction(async (manager) => {
                 if (code === '00') {
-                    transaction.status = TransactionStatus.SUCCESS;
-                    await manager.save(Transaction, transaction);
+                    await manager.update(Transaction, transaction.id, {
+                        status: TransactionStatus.SUCCESS
+                    });
 
                     const userMembership = await manager.findOne(
                         UserMembership,
@@ -162,19 +163,24 @@ export class TransactionService {
                     );
 
                     if (userMembership) {
-                        userMembership.status = UserMembershipStatus.ACTIVE;
                         const expiredDate = new Date();
                         expiredDate.setDate(
                             expiredDate.getDate() +
                                 userMembership.membership.duration
                         );
-                        userMembership.expiredDate = expiredDate;
-
-                        await manager.save(UserMembership, userMembership);
+                        await manager.update(
+                            UserMembership,
+                            userMembership.id,
+                            {
+                                status: UserMembershipStatus.ACTIVE,
+                                expiredDate
+                            }
+                        );
                     }
                 } else {
-                    transaction.status = TransactionStatus.FAILED;
-                    await manager.save(Transaction, transaction);
+                    await manager.update(Transaction, transaction.id, {
+                        status: TransactionStatus.FAILED
+                    });
 
                     const userMembership = await manager.findOne(
                         UserMembership,
@@ -184,8 +190,13 @@ export class TransactionService {
                     );
 
                     if (userMembership) {
-                        userMembership.status = UserMembershipStatus.CANCELLED;
-                        await manager.save(UserMembership, userMembership);
+                        await manager.update(
+                            UserMembership,
+                            userMembership.id,
+                            {
+                                status: UserMembershipStatus.CANCELLED
+                            }
+                        );
                     }
                 }
             });
@@ -197,7 +208,7 @@ export class TransactionService {
             );
         }
     }
-
+    
     async checkPaymentStatus(transactionId: number): Promise<any> {
         try {
             const transaction = await this.transactionRepository.findOne({

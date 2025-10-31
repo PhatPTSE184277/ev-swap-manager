@@ -110,9 +110,10 @@ export class SimulationService {
                     });
                     await manager.save(SlotHistory, slotHistory);
 
-                    slot.batteryId = null as any;
-                    slot.status = SlotStatus.EMPTY;
-                    await manager.save(Slot, slot);
+                    await manager.update(Slot, slot.id, {
+                        batteryId: null as any,
+                        status: SlotStatus.EMPTY
+                    });
 
                     battery.userVehicleId = booking.userVehicle.id;
                     battery.status = BatteryStatus.IN_USE;

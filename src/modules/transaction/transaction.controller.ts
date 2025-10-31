@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { ConfirmCashPaymentDto } from './dto/confirm-cash-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UpdateMembershipTransactionDto } from './dto/update-membership-transaction.dto';
 
 @ApiTags('Transaction')
 @Controller('transaction')
@@ -42,5 +43,10 @@ export class TransactionController {
     @ApiOperation({ summary: 'Staff xác nhận thanh toán tiền mặt' })
     async confirmCashPayment(@Body() dto: ConfirmCashPaymentDto) {
         return this.transactionService.confirmCashPayment(dto);
+    }
+
+    @Post('payos-callback')
+    async payosCallback(@Body() dto: UpdateMembershipTransactionDto) {
+        return this.transactionService.handlePayOSCallback(dto);
     }
 }

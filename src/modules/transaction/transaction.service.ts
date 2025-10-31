@@ -23,6 +23,7 @@ import {
     BookingDetail
 } from 'src/entities';
 import { BookingDetailStatus } from 'src/enums';
+import { UpdateMembershipTransactionDto } from './dto/update-membership-transaction.dto';
 
 @Injectable()
 export class TransactionService {
@@ -208,7 +209,7 @@ export class TransactionService {
             );
         }
     }
-    
+
     async checkPaymentStatus(transactionId: number): Promise<any> {
         try {
             const transaction = await this.transactionRepository.findOne({
@@ -598,5 +599,84 @@ export class TransactionService {
                 error.message || 'Lỗi hệ thống khi xác nhận thanh toán tiền mặt'
             );
         }
+    }
+
+    async handlePayOSCallback(
+        dto: UpdateMembershipTransactionDto
+    ): Promise<any> {
+        const { orderCode, code, status } = dto;
+
+        const transaction = await this.transactionRepository.findOne({
+            where: { orderCode: Number(orderCode) },
+            relations: ['userMembership', 'userMembership.membership']
+        });
+
+        if (!transaction) {
+            throw new NotFoundException('Giao dịch không tồn tại');
+        }
+
+        if (transaction.status !== TransactionStatus.PENDING) {
+            return { message: 'Giao dịch đã được xử lý trước đó' };
+        }
+
+        await this.datasource.transaction(async (manager) => {
+            if (code === '00' || status === 'PAID') {
+                await manager.update(Transaction, transaction.id, {
+                    status: TransactionStatus.SUCCESS
+                });
+
+                if (transaction.userMembershipId) {
+                    const userMembership = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: { id: transaction.userMembershipId },
+                            relations: ['membership']
+                        }
+                    );
+
+                    if (userMembership) {
+                        const expiredDate = new Date();
+                        expiredDate.setDate(
+                            expiredDate.getDate() +
+                                userMembership.membership.duration
+                        );
+                        await manager.update(
+                            UserMembership,
+                            userMembership.id,
+                            {
+                                status: UserMembershipStatus.ACTIVE,
+                                expiredDate,
+                                paymentExpireAt: null as any
+                            }
+                        );
+                    }
+                }
+            } else {
+                await manager.update(Transaction, transaction.id, {
+                    status: TransactionStatus.FAILED
+                });
+
+                if (transaction.userMembershipId) {
+                    const userMembership = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: { id: transaction.userMembershipId }
+                        }
+                    );
+
+                    if (userMembership) {
+                        await manager.update(
+                            UserMembership,
+                            userMembership.id,
+                            {
+                                status: UserMembershipStatus.CANCELLED
+                            }
+                        );
+                    }
+                }
+            }
+        });
+
+        return { message: 'Cập nhật trạng thái giao dịch thành công' };
     }
 }

@@ -682,6 +682,7 @@ export class BookingService {
 
                     booking.expectedPickupTime = now;
                     booking.status = BookingStatus.IN_PROGRESS;
+                    booking.checkinTime = now;
                     await manager.save(Booking, booking);
 
                     for (const detail of booking.bookingDetails) {

@@ -78,7 +78,6 @@ export class FeedbackController {
         return this.feedbackService.getFeedbacksByUser(userId, page, limit, search, stationId);
     }
 
-    @UseGuards(JwtAuthGuard)
     @Get('station/:stationId')
     @ApiOperation({
         summary: 'Lấy danh sách feedback của trạm',

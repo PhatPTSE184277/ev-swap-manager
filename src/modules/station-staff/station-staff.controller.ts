@@ -20,7 +20,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RoleName } from 'src/enums';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { CreateStationStaffDto } from './dto/create-staff.dto';
 import { TransferStationDto } from './dto/transferstation.dto';
 
 @ApiTags('StationStaff')
@@ -89,17 +88,6 @@ export class StationStaffController {
             limit,
             search,
             status
-        );
-    }
-
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
-    @Post()
-    @ApiOperation({ summary: 'Tạo mới nhân viên trạm' })
-    @ApiBody({ type: CreateStationStaffDto })
-    async create(@Body() createStationStaffDto: CreateStationStaffDto) {
-        return this.stationStaffService.createStationStaff(
-            createStationStaffDto
         );
     }
 

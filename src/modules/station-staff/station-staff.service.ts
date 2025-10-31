@@ -7,9 +7,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Station, StationStaff, StationStaffHistory } from 'src/entities';
 import { DataSource, In, Like, Repository } from 'typeorm';
-import { CreateStationStaffDto } from './dto/create-staff.dto';
+import { CreateStaffAccountDto } from './dto/create-staff-account.dto';
 import { StaffHistoryShift } from 'src/enums/station.enum';
 import { TransferStationDto } from './dto/transferstation.dto';
+import { UserService } from '../user/user.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class StationStaffService {
@@ -18,7 +20,11 @@ export class StationStaffService {
         private readonly stationStaffRepository: Repository<StationStaff>,
         @InjectRepository(StationStaffHistory)
         private readonly stationStaffHistoryRepository: Repository<StationStaffHistory>,
-        private readonly dataSource: DataSource
+        @InjectRepository(Station)
+        private readonly stationRepository: Repository<Station>,
+        private readonly dataSource: DataSource,
+        private readonly userService: UserService,
+        private readonly mailService: MailService
     ) {}
 
     async getAllStationStaff(
@@ -151,49 +157,67 @@ export class StationStaffService {
         });
     }
 
-    async createStationStaff(
-        createStationStaffDto: CreateStationStaffDto
-    ): Promise<{
-        message: string;
-    }> {
+    async createStaffAccount(
+        dto: CreateStaffAccountDto
+    ): Promise<{ message: string }> {
         try {
-            const result = await this.dataSource.transaction(
-                async (manager) => {
-                    const staff = manager.create(StationStaff, {
-                        userId: createStationStaffDto.userId,
-                        stationId: createStationStaffDto.stationId,
-                        isHead: createStationStaffDto.isHead ?? false,
-                        status: true
-                    });
-                    await manager.save(StationStaff, staff);
-
-                    const historyData = createStationStaffDto.history
-                        ? {
-                              ...createStationStaffDto.history,
-                              stationStaffId: staff.id,
-                              stationId: createStationStaffDto.stationId
-                          }
-                        : {
-                              stationStaffId: staff.id,
-                              stationId: createStationStaffDto.stationId,
-                              date: new Date(),
-                              shift: StaffHistoryShift.MORNING,
-                              status: true
-                          };
-
-                    const staffHistory = manager.create(
-                        StationStaffHistory,
-                        historyData
-                    );
-                    await manager.save(StationStaffHistory, staffHistory);
-
-                    return {
-                        message: 'Tạo nhân viên trạm và lịch sử thành công'
-                    };
+            return await this.dataSource.transaction(async (manager) => {
+                // 1. Kiểm tra station có tồn tại
+                const station = await manager.findOne(Station, {
+                    where: { id: dto.stationId }
+                });
+                if (!station) {
+                    throw new NotFoundException('Trạm không tồn tại');
                 }
-            );
 
-            return result;
+                // 2. Tạo mật khẩu random
+                const defaultPassword = this.generateRandomPassword();
+
+                // 3. Tạo User thông qua UserService
+                const user = await this.userService.createStaffUser(
+                    dto.username,
+                    dto.email,
+                    dto.fullName,
+                    defaultPassword,
+                    manager
+                );
+
+                // 4. Tạo StationStaff
+                const staff = manager.create(StationStaff, {
+                    userId: user.id,
+                    stationId: dto.stationId,
+                    isHead: dto.isHead ?? false,
+                    status: true
+                });
+                await manager.save(StationStaff, staff);
+
+                // 5. Tạo History
+                const historyData = {
+                    stationStaffId: staff.id,
+                    stationId: dto.stationId,
+                    shift: dto.shift || StaffHistoryShift.MORNING,
+                    status: true
+                };
+
+                const staffHistory = manager.create(
+                    StationStaffHistory,
+                    historyData
+                );
+                await manager.save(StationStaffHistory, staffHistory);
+
+                // 6. Gửi email (không chặn transaction nếu lỗi)
+                await this.mailService.sendStaffCredentials(
+                    user.email,
+                    user.fullName,
+                    dto.username,
+                    defaultPassword,
+                    station.name
+                );
+
+                return {
+                    message: `Tạo tài khoản nhân viên thành công. Email đã được gửi tới ${user.email}`
+                };
+            });
         } catch (error) {
             if (
                 error instanceof BadRequestException ||
@@ -202,9 +226,13 @@ export class StationStaffService {
                 throw error;
             }
             throw new InternalServerErrorException(
-                'Tạo nhân viên trạm thất bại'
+                'Tạo tài khoản nhân viên thất bại'
             );
         }
+    }
+
+    private generateRandomPassword(): string {
+        return Math.random().toString(36).slice(-8);
     }
 
     async transferStation(

@@ -104,4 +104,49 @@ export class MailService {
             );
         }
     }
+
+    async sendStaffCredentials(
+    email: string,
+    fullName: string,
+    username: string,
+    password: string,
+    stationName: string
+): Promise<void> {
+    try {
+        const templatePath = path.join(
+            process.cwd(),
+            'src',
+            'modules',
+            'mail',
+            'html',
+            'StaffCredentials.html'
+        );
+        let html = await readFile(templatePath, 'utf-8');
+
+        html = html
+            .replace(/\$\{fullName\}/g, fullName)
+            .replace(/\$\{username\}/g, username)
+            .replace(/\$\{password\}/g, password)
+            .replace(/\$\{stationName\}/g, stationName)
+            .replace(/\$\{email\}/g, email)
+            .replace(
+                /\$\{#dates.year\(date\)\}/g,
+                new Date().getFullYear().toString()
+            );
+
+        const fromEmail = this.configService.get<string>('MAIL_FROM');
+        if (!fromEmail)
+            throw new InternalServerErrorException('MAIL_FROM is not set');
+
+        await sgMail.send({
+            to: email,
+            from: fromEmail,
+            subject: 'Thông tin tài khoản nhân viên - EV Swap Manager',
+            html: html
+        });
+    } catch (error) {
+        console.error('[sendStaffCredentials] error:', error);
+    }
+}
+
 }

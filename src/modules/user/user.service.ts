@@ -5,7 +5,7 @@ import {
     InternalServerErrorException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { StationStaff, User } from 'src/entities';
+import { Role, StationStaff, User } from 'src/entities';
 import { Like, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcryptjs';
@@ -530,4 +530,60 @@ export class UserService {
             );
         }
     }
+
+    async createStaffUser(
+    username: string,
+    email: string,
+    fullName: string,
+    password: string,
+    manager?: any
+): Promise<User> {
+    try {
+        const executeCreate = async (mgr: any) => {
+
+            const existingUser = await mgr.findOne(User, {
+                where: [{ username }, { email }]
+            });
+            if (existingUser) {
+                throw new BadRequestException(
+                    'Username hoặc Email đã tồn tại'
+                );
+            }
+
+            const staffRole = await mgr.findOne(Role, {
+                where: { name: RoleName.STAFF }
+            });
+            if (!staffRole) {
+                throw new InternalServerErrorException(
+                    'Không tìm thấy role STAFF trong hệ thống'
+                );
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            const user = mgr.create(User, {
+                username,
+                email,
+                password: hashedPassword,
+                fullName,
+                roleId: staffRole.id,
+                status: UserStatus.VERIFIED
+            });
+
+            return await mgr.save(User, user);
+        };
+
+        return manager ? executeCreate(manager) : executeCreate(this.userRepository.manager);
+    } catch (error) {
+        if (
+            error instanceof BadRequestException ||
+            error instanceof InternalServerErrorException
+        ) {
+            throw error;
+        }
+        throw new InternalServerErrorException(
+            'Lỗi hệ thống khi tạo user staff'
+        );
+    }
+}
 }

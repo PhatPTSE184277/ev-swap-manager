@@ -31,7 +31,7 @@ export class CabinetController {
     constructor(private readonly cabinetService: CabinetService) {}
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @Roles(RoleName.ADMIN, RoleName.STAFF)
     @Get()
     @ApiOperation({
         summary: 'Lấy danh sách tủ (phân trang, filter, search) - ADMIN'

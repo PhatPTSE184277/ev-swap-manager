@@ -290,7 +290,8 @@ export class BookingService {
                     'bookingDetails',
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
-                    'userMembership'
+                    'userMembership',
+                    'transaction'
                 ],
                 skip: (page - 1) * limit,
                 take: limit,
@@ -331,9 +332,23 @@ export class BookingService {
                     batteryId: detail.batteryId,
                     price: detail.price,
                     status: detail.status
-                }))
+                })),
+                transaction: booking.transaction
+                    ? {
+                          id: booking.transaction.id,
+                          status: booking.transaction.status,
+                          totalPrice: booking.transaction.totalPrice,
+                          paymentMethod: booking.transaction.paymentId,
+                          paymentUrl: booking.transaction.paymentUrl
+                      }
+                    : undefined,
+                userMembership: booking.userMembership
+                    ? {
+                          id: booking.userMembership.id,
+                          membershipId: booking.userMembership.membershipId
+                      }
+                    : undefined
             }));
-
             return {
                 data: mappedData,
                 total,
@@ -578,7 +593,6 @@ export class BookingService {
 
                     let transactionResult: any = null;
                     if (!userMembership) {
-                        // Kiểm tra paymentId có được truyền không
                         if (!dto.paymentId) {
                             throw new BadRequestException(
                                 'Phương thức thanh toán là bắt buộc khi không có gói thành viên'
@@ -594,6 +608,9 @@ export class BookingService {
                                 },
                                 manager
                             );
+
+                        booking.transactionId = transactionResult.transactionId;
+                        await manager.save(Booking, booking);
                     }
 
                     return {
@@ -606,11 +623,10 @@ export class BookingService {
                         expectedPickupTime: now,
                         totalPrice: userMembership ? 0 : totalPrice,
                         usedMembership: !!userMembership,
-                        status: userMembership
-                            ? BookingStatus.IN_PROGRESS
-                            : BookingStatus.PENDING_PAYMENT,
+                        status: booking.status,
                         paymentUrl: transactionResult?.paymentUrl || null,
-                        paymentMethod: transactionResult?.paymentMethod || null
+                        paymentMethod: transactionResult?.paymentMethod || null,
+                        transactionId: transactionResult?.transactionId || null
                     };
                 }
             );
@@ -628,7 +644,6 @@ export class BookingService {
             );
         }
     }
-
     async checkinBooking(userId: number, stationId: number): Promise<any> {
         try {
             const result = await this.dataSource.transaction(

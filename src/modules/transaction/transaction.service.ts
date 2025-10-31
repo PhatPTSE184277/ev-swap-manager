@@ -10,7 +10,9 @@ import { CreateMembershipTransactionDto } from './dto/create-membership-transact
 import {
     TransactionStatus,
     UserMembershipStatus,
-    BookingStatus
+    BookingStatus,
+    BatteryStatus,
+    SlotStatus
 } from 'src/enums';
 import { PayOSService } from '../pay-os/pay-os.service';
 import { CreateBookingTransactionDto } from './dto/create-booking-transaction.dto';
@@ -20,7 +22,9 @@ import {
     Payment,
     Transaction,
     UserMembership,
-    BookingDetail
+    BookingDetail,
+    Battery,
+    Slot
 } from 'src/entities';
 import { BookingDetailStatus } from 'src/enums';
 import { UpdateMembershipTransactionDto } from './dto/update-membership-transaction.dto';
@@ -758,77 +762,182 @@ export class TransactionService {
         }
     }
 
-    async getTransactionsByStationForStaff(
-    stationId: number,
-    page: number = 1,
-    limit: number = 10,
-    search?: string,
-    order: 'ASC' | 'DESC' = 'DESC',
-    status?: TransactionStatus
-): Promise<any> {
-    try {
-        const where: any = {};
-        if (status) where.status = status;
-        if (search) where.orderCode = Number(search) || undefined;
+    async handlePayOSCallbackForBooking(
+        dto: UpdateMembershipTransactionDto
+    ): Promise<any> {
+        const { orderCode, code, status } = dto;
 
-        where.booking = { stationId };
-
-        const [data, total] = await this.transactionRepository.findAndCount({
-            where,
-            relations: [
-                'payment',
-                'userMembership',
-                'userMembership.membership',
-                'booking'
-            ],
-            skip: (page - 1) * limit,
-            take: limit,
-            order: { createdAt: order }
+        const transaction = await this.transactionRepository.findOne({
+            where: { orderCode: Number(orderCode) },
+            relations: ['booking']
         });
 
-        const mappedData = data.map((transaction) => ({
-            id: transaction.id,
-            orderCode: transaction.orderCode,
-            status: transaction.status,
-            totalPrice: transaction.totalPrice,
-            dateTime: transaction.dateTime,
-            payment: transaction.payment
-                ? {
-                      id: transaction.payment.id,
-                      name: transaction.payment.name
-                  }
-                : null,
-            paymentUrl: transaction.paymentUrl,
-            userMembership: transaction.userMembership
-                ? {
-                      id: transaction.userMembership.id,
-                      membership: transaction.userMembership.membership
-                          ? {
-                                id: transaction.userMembership.membership.id,
-                                name: transaction.userMembership.membership.name
-                            }
-                          : null
-                  }
-                : null,
-            booking: transaction.booking
-                ? {
-                      id: transaction.booking.id,
-                      status: transaction.booking.status
-                  }
-                : null
-        }));
+        if (!transaction) {
+            throw new NotFoundException('Giao dịch không tồn tại');
+        }
 
-        return {
-            data: mappedData,
-            total,
-            page,
-            limit,
-            message: 'Lấy danh sách transaction booking theo trạm thành công'
-        };
-    } catch (error) {
-        throw new InternalServerErrorException(
-            error.message || 'Lỗi hệ thống khi lấy danh sách transaction booking theo trạm'
-        );
+        if (transaction.status !== TransactionStatus.PENDING) {
+            return { message: 'Giao dịch đã được xử lý trước đó' };
+        }
+
+        await this.datasource.transaction(async (manager) => {
+            if (code === '00' || status === 'PAID') {
+                await manager.update(Transaction, transaction.id, {
+                    status: TransactionStatus.SUCCESS
+                });
+
+
+                const booking = await manager.findOne(Booking, {
+                    where: { transactionId: transaction.id }
+                });
+
+                if (
+                    booking &&
+                    booking.status === BookingStatus.PENDING_PAYMENT
+                ) {
+                    booking.status = BookingStatus.IN_PROGRESS;
+                    await manager.save(Booking, booking);
+
+
+                    const bookingDetails = await manager.find(BookingDetail, {
+                        where: { bookingId: booking.id }
+                    });
+
+                    for (const detail of bookingDetails) {
+                        if (
+                            detail.status ===
+                            BookingDetailStatus.PENDING_PAYMENT
+                        ) {
+                            detail.status = BookingDetailStatus.IN_PROGRESS;
+                            await manager.save(BookingDetail, detail);
+                        }
+                    }
+                }
+            } else {
+                await manager.update(Transaction, transaction.id, {
+                    status: TransactionStatus.FAILED
+                });
+
+                const booking = await manager.findOne(Booking, {
+                    where: { transactionId: transaction.id }
+                });
+
+                if (booking) {
+                    booking.status = BookingStatus.CANCELLED;
+                    await manager.save(Booking, booking);
+
+
+                    const bookingDetails = await manager.find(BookingDetail, {
+                        where: { bookingId: booking.id }
+                    });
+
+                    for (const detail of bookingDetails) {
+                        detail.status = BookingDetailStatus.CANCELLED;
+                        await manager.save(BookingDetail, detail);
+
+                        const battery = await manager.findOne(Battery, {
+                            where: { id: detail.batteryId }
+                        });
+                        if (
+                            battery &&
+                            battery.status === BatteryStatus.RESERVED
+                        ) {
+                            battery.status = BatteryStatus.AVAILABLE;
+                            await manager.save(Battery, battery);
+                        }
+
+                        const slot = await manager.findOne(Slot, {
+                            where: { batteryId: detail.batteryId }
+                        });
+                        if (slot && slot.status === SlotStatus.RESERVED) {
+                            slot.status = SlotStatus.AVAILABLE;
+                            await manager.save(Slot, slot);
+                        }
+                    }
+                }
+            }
+        });
+
+        return { message: 'Cập nhật trạng thái giao dịch booking thành công' };
     }
-}
+
+    async getTransactionsByStationForStaff(
+        stationId: number,
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        order: 'ASC' | 'DESC' = 'DESC',
+        status?: TransactionStatus
+    ): Promise<any> {
+        try {
+            const where: any = {};
+            if (status) where.status = status;
+            if (search) where.orderCode = Number(search) || undefined;
+
+            where.booking = { stationId };
+
+            const [data, total] = await this.transactionRepository.findAndCount(
+                {
+                    where,
+                    relations: [
+                        'payment',
+                        'userMembership',
+                        'userMembership.membership',
+                        'booking'
+                    ],
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    order: { createdAt: order }
+                }
+            );
+
+            const mappedData = data.map((transaction) => ({
+                id: transaction.id,
+                orderCode: transaction.orderCode,
+                status: transaction.status,
+                totalPrice: transaction.totalPrice,
+                dateTime: transaction.dateTime,
+                payment: transaction.payment
+                    ? {
+                          id: transaction.payment.id,
+                          name: transaction.payment.name
+                      }
+                    : null,
+                paymentUrl: transaction.paymentUrl,
+                userMembership: transaction.userMembership
+                    ? {
+                          id: transaction.userMembership.id,
+                          membership: transaction.userMembership.membership
+                              ? {
+                                    id: transaction.userMembership.membership
+                                        .id,
+                                    name: transaction.userMembership.membership
+                                        .name
+                                }
+                              : null
+                      }
+                    : null,
+                booking: transaction.booking
+                    ? {
+                          id: transaction.booking.id,
+                          status: transaction.booking.status
+                      }
+                    : null
+            }));
+
+            return {
+                data: mappedData,
+                total,
+                page,
+                limit,
+                message:
+                    'Lấy danh sách transaction booking theo trạm thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                error.message ||
+                    'Lỗi hệ thống khi lấy danh sách transaction booking theo trạm'
+            );
+        }
+    }
 }

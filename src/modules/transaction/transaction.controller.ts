@@ -60,6 +60,12 @@ export class TransactionController {
         return this.transactionService.handlePayOSCallback(dto);
     }
 
+    @Post('payos-callback-booking')
+    @ApiOperation({ summary: 'Callback PayOS cho booking onsite' })
+    async payosCallbackBooking(@Body() dto: UpdateMembershipTransactionDto) {
+        return this.transactionService.handlePayOSCallbackForBooking(dto);
+    }
+
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @Get('all')

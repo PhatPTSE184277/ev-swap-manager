@@ -224,7 +224,7 @@ export class BookingService {
                         const bookingDetail = manager.create('BookingDetail', {
                             bookingId: booking.id,
                             batteryId: detail.batteryId,
-                            status: BookingDetailStatus.RESERVED,
+                            status: BookingDetailStatus.RESERVED
                         });
                         await manager.save('BookingDetail', bookingDetail);
 
@@ -286,6 +286,7 @@ export class BookingService {
                     'userVehicle',
                     'userVehicle.user',
                     'userVehicle.batteries',
+                    'userVehicle.batteries.batteryType',
                     'bookingDetails',
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
@@ -315,7 +316,13 @@ export class BookingService {
                             model: battery.model,
                             currentCycle: battery.currentCycle,
                             healthScore: battery.healthScore,
-                            status: battery.status
+                            status: battery.status,
+                            batteryType: battery.batteryTypeId
+                                ? {
+                                      id: battery.batteryType?.id,
+                                      name: battery.batteryType.name
+                                  }
+                                : null
                         })
                     )
                 },

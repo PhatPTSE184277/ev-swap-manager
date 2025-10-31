@@ -3,5 +3,5 @@ import { CreateCabinetDto } from './create-cabinet.dto';
 
 export class UpdateCabinetDto extends OmitType(
     PartialType(CreateCabinetDto),
-    ['slotCount'] as const
+    ['slotCount', 'batteryTypeId'] as const
 ) {}

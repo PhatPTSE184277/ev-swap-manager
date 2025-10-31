@@ -28,6 +28,7 @@ import {
 } from 'src/entities';
 import { BookingDetailStatus } from 'src/enums';
 import { UpdateMembershipTransactionDto } from './dto/update-membership-transaction.dto';
+import { TransactionGateway } from 'src/gateways/transaction.gateway';
 
 @Injectable()
 export class TransactionService {
@@ -37,7 +38,8 @@ export class TransactionService {
         @InjectRepository(UserMembership)
         private readonly userMembershipRepository: Repository<UserMembership>,
         private readonly datasource: DataSource,
-        private readonly payosService: PayOSService
+        private readonly payosService: PayOSService,
+        private readonly transactionGateway: TransactionGateway
     ) {}
 
     async createMembershipTransaction(
@@ -486,7 +488,7 @@ export class TransactionService {
         }
     }
 
-    async confirmCashPayment(dto: ConfirmCashPaymentDto): Promise<any> {
+   async confirmCashPayment(dto: ConfirmCashPaymentDto): Promise<any> {
         try {
             return await this.datasource.transaction(async (manager) => {
                 const transaction = await manager.findOne(Transaction, {
@@ -520,11 +522,12 @@ export class TransactionService {
                     );
                 }
 
-                // Cập nhật transaction thành SUCCESS
                 transaction.status = TransactionStatus.SUCCESS;
                 await manager.save(Transaction, transaction);
 
-                // Nếu là transaction của membership, kích hoạt membership
+                let bookingId: number | undefined = undefined;
+                let userMembershipId: number | undefined = undefined;
+
                 if (transaction.userMembershipId) {
                     const userMembership = await manager.findOne(
                         UserMembership,
@@ -546,6 +549,7 @@ export class TransactionService {
                         );
                         userMembership.expiredDate = expiredDate;
                         await manager.save(UserMembership, userMembership);
+                        userMembershipId = userMembership.id;
                     }
                 }
 
@@ -559,8 +563,8 @@ export class TransactionService {
                 ) {
                     booking.status = BookingStatus.IN_PROGRESS;
                     await manager.save(Booking, booking);
+                    bookingId = booking.id;
 
-                    // Cập nhật booking details
                     const bookingDetails = await manager.find(BookingDetail, {
                         where: { bookingId: booking.id }
                     });
@@ -575,6 +579,15 @@ export class TransactionService {
                         }
                     }
                 }
+
+                // Emit WebSocket event (Thêm đoạn này)
+                this.transactionGateway.emitPaymentConfirmed({
+                    transactionId: transaction.id,
+                    bookingId,
+                    userMembershipId,
+                    status: TransactionStatus.SUCCESS,
+                    totalPrice: Number(transaction.totalPrice)
+                });
 
                 return {
                     message: 'Xác nhận thanh toán tiền mặt thành công',
@@ -604,7 +617,7 @@ export class TransactionService {
             );
         }
     }
-
+    
     async handlePayOSCallback(
         dto: UpdateMembershipTransactionDto
     ): Promise<any> {

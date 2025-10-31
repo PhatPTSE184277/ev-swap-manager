@@ -27,6 +27,7 @@ import { ChatMessageModule } from './modules/chat-message/chat-message.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { PayOSModule } from './modules/pay-os/pay-os.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
+import { TransactionGateway } from './gateways/transaction.gateway';
 
 @Module({
   imports: [
@@ -64,7 +65,7 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
     FeedbackModule,
   ],
   controllers: [],
-  providers: [BatteryGateway],
-  exports: [BatteryGateway],
+  providers: [BatteryGateway, TransactionGateway],
+  exports: [BatteryGateway, TransactionGateway],
 })
 export class AppModule {}

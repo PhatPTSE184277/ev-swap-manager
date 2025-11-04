@@ -23,6 +23,9 @@ export class ChatRoom {
   @Column({ name: 'created_by' })
   createdBy: number;
 
+  @Column({ nullable: true })
+  supporterId: number;
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
@@ -36,6 +39,10 @@ export class ChatRoom {
   @OneToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   user: User;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'supporterId' })
+  supporter: User;
 
   @OneToMany(() => ChatMessage, (message) => message.room)
   messages: ChatMessage[];

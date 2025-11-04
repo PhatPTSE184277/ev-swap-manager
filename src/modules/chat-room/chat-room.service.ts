@@ -19,7 +19,7 @@ export class ChatRoomService {
   async findAll(): Promise<any> {
     try {
       const chatRooms = await this.chatroomRepository.find({
-        relations: ['messages', 'user'],
+        relations: ['messages', 'user', 'supporter'],
         select: {
           id: true,
           name: true,
@@ -27,6 +27,7 @@ export class ChatRoomService {
           createdAt: true,
           updatedAt: true,
           user: { username: true, fullName: true, avatar: true },
+          supporter: { username: true, fullName: true, avatar: true },
           messages: { content: true, createdAt: true },
         },
         order: {
@@ -67,7 +68,10 @@ export class ChatRoomService {
     try {
       const chatroom = await this.chatroomRepository.findOne({
         where: { id },
-        relations: ['messages'],
+        relations: ['messages', 'supporter'],
+        select: {
+          supporter: { username: true, fullName: true, avatar: true },
+        },
       });
 
       if (!chatroom) {
@@ -89,7 +93,10 @@ export class ChatRoomService {
     try {
       const chatroom = await this.chatroomRepository.findOne({
         where: { createdBy: userId },
-        relations: ['messages'],
+        relations: ['messages', 'supporter'],
+        select: {
+          supporter: { username: true, fullName: true, avatar: true },
+        },
       });
 
       if (!chatroom) {
@@ -128,6 +135,39 @@ export class ChatRoomService {
       return {
         data: newChatRoom.id,
         message: 'Tạo phòng chat thành công',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi tạo phòng chat',
+      );
+    }
+  }
+
+  async staffStartChat(userId: number, roomId: number): Promise<any> {
+    try {
+      const user = await this.dataSource
+        .getRepository(User)
+        .findOne({ where: { id: userId } });
+
+      if (!user) {
+        throw new NotFoundException('Người dùng không tồn tại');
+      }
+
+      const chatRoomTest = await this.chatroomRepository.findOne({
+        where: { id: roomId },
+      });
+
+      const updateChatRoom = await this.chatroomRepository.update(
+        { id: roomId },
+        { supporterId: userId },
+      );
+
+      const chatRoom = await this.chatroomRepository.findOne({
+        where: { id: roomId },
+      });
+      return {
+        data: chatRoom,
+        message: 'Vào phòng thành công',
       };
     } catch (error) {
       throw new InternalServerErrorException(

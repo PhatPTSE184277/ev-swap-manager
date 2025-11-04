@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -55,5 +63,17 @@ export class ChatRoomController {
     const userId = req.user?.id;
 
     return await this.chatRoomService.createChatRoom(userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.STAFF)
+  @Post('staff-start-chat')
+  @ApiOperation({
+    summary: 'Staff bấm bắt đầu chat (đảm nhận chat cho room này)',
+    description: 'STAFF',
+  })
+  async staffStartChat(@Req() req, @Body('roomId') roomId: number) {
+    const userId = req?.user?.id;
+    return await this.chatRoomService.staffStartChat(userId, roomId);
   }
 }

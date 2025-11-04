@@ -28,6 +28,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { PayOSModule } from './modules/pay-os/pay-os.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { TransactionGateway } from './gateways/transaction.gateway';
+import { CleanupModule } from './modules/cleanup/cleanup.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { TransactionGateway } from './gateways/transaction.gateway';
     SimulationModule,
     ChatRoomModule,
     ChatMessageModule,
+    CleanupModule,
     PayOSModule,
     PaymentModule,
     FeedbackModule,

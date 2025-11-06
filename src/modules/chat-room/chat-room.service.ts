@@ -121,6 +121,78 @@ export class ChatRoomService {
     }
   }
 
+  // prm
+  async findByUserIdPRM(userId: number): Promise<any> {
+    try {
+      // Tìm phòng chat của user
+      const chatroom = await this.chatroomRepository.findOne({
+        where: { createdBy: userId },
+        relations: ['messages'], // chỉ cần messages thôi
+      });
+
+      // Nếu chưa có thì tạo mới
+      if (!chatroom) {
+        const newChatRoom = await this.createChatRoomPRM(userId);
+        const getChatRoomById = await this.findById(newChatRoom.data);
+
+        return {
+          message: 'Lấy chi tiết chat thành công',
+          data: getChatRoomById,
+        };
+      }
+
+      return {
+        data: chatroom,
+        message: 'Lấy chi tiết chat thành công',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi lấy chi tiết chat',
+      );
+    }
+  }
+
+  async createChatRoomPRM(userId: number): Promise<any> {
+    try {
+      const newChatRoom = await this.chatroomRepository.save({
+        name: `Phòng chat ${userId}`,
+        createdBy: userId,
+      });
+
+      return {
+        data: newChatRoom.id,
+        message: 'Tạo phòng chat thành công',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi tạo phòng chat',
+      );
+    }
+  }
+
+  async findByIdPRM(id: number): Promise<any> {
+    try {
+      const chatroom = await this.chatroomRepository.findOne({
+        where: { id },
+        relations: ['messages'],
+      });
+
+      if (!chatroom) {
+        throw new NotFoundException('Phòng chat không tồn tại');
+      }
+
+      return {
+        data: chatroom,
+        message: 'Lấy chi tiết chat thành công',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi lấy chi tiết chat',
+      );
+    }
+  }
+  // end prm
+
   async createChatRoom(userId: number): Promise<any> {
     try {
       const user = await this.dataSource

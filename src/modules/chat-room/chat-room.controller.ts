@@ -47,6 +47,26 @@ export class ChatRoomController {
     return await this.chatRoomService.findByUserId(userId);
   }
 
+  // prm
+  @Get('prm/:id')
+  @ApiOperation({
+    summary: 'Lấy chi tiết phòng theo userid prm',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async findByUserIdPRM(@Param('id') id: number) {
+    return await this.chatRoomService.findByUserIdPRM(id);
+  }
+
+  @Get('detail-prm/:id')
+  @ApiOperation({
+    summary: 'Lấy chi tiết phòng chat kèm message',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'ID phòng chat' })
+  async findByIdPrm(@Param('id') id: number) {
+    return await this.chatRoomService.findByIdPRM(id);
+  }
+  //end prm
+
   @Get(':id')
   @ApiOperation({
     summary: 'Lấy chi tiết phòng chat kèm message',

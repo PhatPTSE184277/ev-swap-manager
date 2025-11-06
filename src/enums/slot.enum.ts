@@ -1,0 +1,7 @@
+export enum SlotStatus {
+    EMPTY = 'EMPTY',
+    AVAILABLE = 'AVAILABLE',
+    CHARGING = 'CHARGING',
+    MAINTENANCE = 'MAINTENANCE',
+    RESERVED = 'RESERVED'
+}

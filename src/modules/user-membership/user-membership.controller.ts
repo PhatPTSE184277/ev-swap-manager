@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateUserMembershipDto } from './dto/create-user-membership.dto';
 import { UserMembershipStatus } from '../../enums';
+import { UpgradeUserMembershipDto } from './dto/upgrade-user-membership.dto';
 
 @ApiTags('UserMembership')
 @ApiBearerAuth()
@@ -99,6 +100,24 @@ export class UserMembershipController {
         return this.userMembershipService.cancelActiveMemberships(
             userId,
             Number(userMembershipId)
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('upgrade')
+    @ApiOperation({
+        summary: 'User nâng cấp gói thành viên',
+        description:
+            'User nâng cấp lên gói thành viên cao hơn, được giảm giá theo số lượt swap còn lại'
+    })
+    async upgradeUserMembership(
+        @Req() req,
+        @Body() upgradeUserMembershipDto: UpgradeUserMembershipDto
+    ) {
+        const userId = req.user.id;
+        return this.userMembershipService.upgradeUserMembership(
+            userId,
+            upgradeUserMembershipDto
         );
     }
 }

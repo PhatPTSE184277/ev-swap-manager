@@ -344,6 +344,15 @@ export class UserMembershipService {
                         );
                     }
 
+                    if (
+                        oldMembership.swapLimit === null ||
+                        oldMembership.swapLimit === 0
+                    ) {
+                        throw new BadRequestException(
+                            'Bạn đang ở gói cao nhất, không thể nâng cấp thêm'
+                        );
+                    }
+
                     const newMembership = await manager.findOne(Membership, {
                         where: { id: dto.newMembershipId }
                     });
@@ -442,7 +451,7 @@ export class UserMembershipService {
                     return {
                         message:
                             'Tạo yêu cầu nâng cấp gói thành công, vui lòng thanh toán để kích hoạt',
-                        paymentUrl: transactionResult.paymentUrl,
+                        paymentUrl: transactionResult.paymentUrl
                     };
                 }
             );

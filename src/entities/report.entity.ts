@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { BookingDetail } from './booking-detail.entity';
 import { User } from './user.entity';
+import { ReportStatus } from 'src/enums/report.enum';
 
 @Entity('reports')
 export class Report {
@@ -24,8 +25,13 @@ export class Report {
     @Column({ type: 'text', nullable: true })
     description: string;
 
-    @Column({ default: 'PENDING', nullable: true })
-    status: string;
+    @Column({
+        type: 'enum',
+        enum: ReportStatus,
+        default: ReportStatus.PENDING,
+        nullable: true
+    })
+    status: ReportStatus;
 
     @CreateDateColumn()
     createdAt: Date;
@@ -33,7 +39,9 @@ export class Report {
     @UpdateDateColumn()
     updatedAt: Date;
 
-    @ManyToOne(() => BookingDetail, (bookingDetail) => bookingDetail.reports, { nullable: true })
+    @ManyToOne(() => BookingDetail, (bookingDetail) => bookingDetail.reports, {
+        nullable: true
+    })
     @JoinColumn({ name: 'bookingDetailId' })
     bookingDetail: BookingDetail;
 

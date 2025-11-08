@@ -33,7 +33,8 @@ export class ReportService {
             const report = this.reportRepository.create({
                 bookingDetailId: dto.bookingDetailId,
                 userId: userId,
-                description: dto.description
+                description: dto.description,
+                status: ReportStatus.PENDING
             });
             await this.reportRepository.save(report);
             return { message: 'Tạo báo cáo thành công' };
@@ -172,6 +173,63 @@ export class ReportService {
             throw new InternalServerErrorException(
                 'Lỗi khi lấy danh sách báo cáo'
             );
+        }
+    }
+
+    async confirmReport(reportId: number): Promise<any> {
+        try {
+            const report = await this.reportRepository.findOne({
+                where: { id: reportId }
+            });
+            if (!report) {
+                throw new NotFoundException('Báo cáo không tồn tại');
+            }
+
+            if (report.status !== ReportStatus.PENDING) {
+                throw new BadRequestException('Báo cáo đã được xử lý');
+            }
+
+            await this.reportRepository.update(reportId, {
+                status: ReportStatus.CONFIRMED
+            });
+            return { message: 'Xác nhận báo cáo thành công' };
+        } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException('Lỗi khi xác nhận báo cáo');
+        }
+    }
+
+    async rejectReport(reportId: number): Promise<any> {
+        try {
+            const report = await this.reportRepository.findOne({
+                where: { id: reportId }
+            });
+            if (!report) {
+                throw new NotFoundException('Báo cáo không tồn tại');
+            }
+
+            if (report.status !== ReportStatus.PENDING) {
+                throw new BadRequestException('Báo cáo đã được xử lý');
+            }
+
+            await this.reportRepository.update(reportId, {
+                status: ReportStatus.REJECTED
+            });
+            return { message: 'Từ chối báo cáo thành công' };
+        } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+            throw new InternalServerErrorException('Lỗi khi từ chối báo cáo');
         }
     }
 }

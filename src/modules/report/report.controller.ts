@@ -3,6 +3,8 @@ import {
     Controller,
     Get,
     Post,
+    Patch,
+    Param,
     Query,
     Req,
     UseGuards
@@ -63,5 +65,19 @@ export class ReportController {
             search,
             status
         );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Roles(RoleName.STAFF, RoleName.ADMIN)
+    @Patch(':id/confirm')
+    async confirmReport(@Param('id') id: number) {
+        return this.reportService.confirmReport(Number(id));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Roles(RoleName.STAFF, RoleName.ADMIN)
+    @Patch(':id/reject')
+    async rejectReport(@Param('id') id: number) {
+        return this.reportService.rejectReport(Number(id));
     }
 }

@@ -8,8 +8,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Report } from 'src/entities/report.entity';
 import { DataSource, Like, Repository } from 'typeorm';
 import { CreateReportDto } from './dto/create-report.dto';
-import { BookingDetail } from 'src/entities';
+import { Battery, BookingDetail } from 'src/entities';
 import { ReportStatus } from 'src/enums/report.enum';
+import { BatteryStatus } from 'src/enums';
 
 @Injectable()
 export class ReportService {
@@ -17,7 +18,8 @@ export class ReportService {
         @InjectRepository(Report)
         private readonly reportRepository: Repository<Report>,
         @InjectRepository(BookingDetail)
-        private readonly bookingDetailRepository: Repository<BookingDetail>
+        private readonly bookingDetailRepository: Repository<BookingDetail>,
+        private readonly dataSource: DataSource
     ) {}
 
     async createReport(userId: number, dto: CreateReportDto): Promise<any> {
@@ -30,11 +32,21 @@ export class ReportService {
                 throw new NotFoundException('Chi tiết đặt chỗ không tồn tại');
             }
 
+            const existedReport = await this.reportRepository.findOne({
+                where: { bookingDetailId: dto.bookingDetailId }
+            });
+            if (existedReport) {
+                throw new BadRequestException(
+                    'Bạn đã báo cáo lỗi cho lần đổi pin này'
+                );
+            }
+
             const report = this.reportRepository.create({
                 bookingDetailId: dto.bookingDetailId,
                 userId: userId,
                 description: dto.description,
-                status: ReportStatus.PENDING
+                status: ReportStatus.PENDING,
+                faultyBatteryId: bookingDetail.batteryId
             });
             await this.reportRepository.save(report);
             return { message: 'Tạo báo cáo thành công' };
@@ -49,7 +61,6 @@ export class ReportService {
             throw new InternalServerErrorException('Lỗi khi tạo báo cáo');
         }
     }
-
     async getReportsByStation(
         stationId: number,
         page: number = 1,
@@ -178,21 +189,40 @@ export class ReportService {
 
     async confirmReport(reportId: number): Promise<any> {
         try {
-            const report = await this.reportRepository.findOne({
-                where: { id: reportId }
-            });
-            if (!report) {
-                throw new NotFoundException('Báo cáo không tồn tại');
-            }
+            return await this.dataSource.transaction(async (manager) => {
+                const report = await manager.findOne(Report, {
+                    where: { id: reportId },
+                    relations: ['bookingDetail']
+                });
+                if (!report) {
+                    throw new NotFoundException('Báo cáo không tồn tại');
+                }
 
-            if (report.status !== ReportStatus.PENDING) {
-                throw new BadRequestException('Báo cáo đã được xử lý');
-            }
+                if (report.status !== ReportStatus.PENDING) {
+                    throw new BadRequestException('Báo cáo đã được xử lý');
+                }
 
-            await this.reportRepository.update(reportId, {
-                status: ReportStatus.CONFIRMED
+                // Đánh dấu pin bị lỗi
+                const bookingDetail = report.bookingDetail;
+                if (bookingDetail && bookingDetail.batteryId) {
+                    const battery = await manager.findOne(Battery, {
+                        where: { id: bookingDetail.batteryId }
+                    });
+                    if (battery) {
+                        battery.status = BatteryStatus.DAMAGED;
+                        await manager.update(Battery, battery.id, battery);
+                        report.faultyBatteryId = battery.id;
+                    }
+                }
+
+                report.status = ReportStatus.CONFIRMED;
+                await manager.update(Report, report.id, report);
+
+                return {
+                    message:
+                        'Xác nhận báo cáo thành công. User được phép đổi pin miễn phí tại trạm.'
+                };
             });
-            return { message: 'Xác nhận báo cáo thành công' };
         } catch (error) {
             if (
                 error instanceof BadRequestException ||

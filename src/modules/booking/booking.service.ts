@@ -32,6 +32,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { CreateOnsiteBookingDto } from './dto/create-onsite-booking.dto';
 import { TransactionService } from '../transaction/transaction.service';
 import { create } from 'domain';
+import { Report } from 'src/entities/report.entity';
+import { ReportStatus } from 'src/enums/report.enum';
 
 @Injectable()
 export class BookingService {
@@ -477,6 +479,17 @@ export class BookingService {
         try {
             const result = await this.dataSource.transaction(
                 async (manager) => {
+                    // Kiểm tra report đã confirm chưa
+                    const confirmedReport = await manager.findOne(Report, {
+                        where: {
+                            userId,
+                            status: ReportStatus.CONFIRMED
+                        },
+                        order: { createdAt: 'DESC' }
+                    });
+
+                    const isFreeBooking = !!confirmedReport;
+
                     const userVehicle = await manager.findOne(UserVehicle, {
                         where: {
                             id: dto.userVehicleId,
@@ -512,7 +525,8 @@ export class BookingService {
                         }
                     );
 
-                    if (userMembership) {
+                    // Nếu là booking miễn phí, không trừ lượt
+                    if (userMembership && !isFreeBooking) {
                         if (
                             userMembership.remainingSwaps <
                             dto.bookingDetails.length
@@ -530,9 +544,10 @@ export class BookingService {
                         userVehicleId: dto.userVehicleId,
                         stationId: dto.stationId,
                         expectedPickupTime: now,
-                        status: userMembership
-                            ? BookingStatus.IN_PROGRESS
-                            : BookingStatus.PENDING_PAYMENT
+                        status:
+                            userMembership || isFreeBooking
+                                ? BookingStatus.IN_PROGRESS
+                                : BookingStatus.PENDING_PAYMENT
                     };
                     if (userMembership) {
                         bookingData.userMembershipId = userMembership.id;
@@ -569,18 +584,21 @@ export class BookingService {
                             );
                         }
 
-                        const price = battery.batteryType?.pricePerSwap
-                            ? Number(battery.batteryType.pricePerSwap)
-                            : 0;
+                        const price = isFreeBooking
+                            ? 0
+                            : battery.batteryType?.pricePerSwap
+                              ? Number(battery.batteryType.pricePerSwap)
+                              : 0;
                         totalPrice += price;
 
                         const bookingDetail = manager.create('BookingDetail', {
                             bookingId: booking.id,
                             batteryId: d.batteryId,
                             price,
-                            status: userMembership
-                                ? BookingDetailStatus.IN_PROGRESS
-                                : BookingDetailStatus.PENDING_PAYMENT
+                            status:
+                                userMembership || isFreeBooking
+                                    ? BookingDetailStatus.IN_PROGRESS
+                                    : BookingDetailStatus.PENDING_PAYMENT
                         });
                         await manager.save('BookingDetail', bookingDetail);
 
@@ -601,8 +619,14 @@ export class BookingService {
                         });
                     }
 
+                    // Nếu là booking miễn phí, đổi trạng thái report sang COMPLETED
+                    if (isFreeBooking && confirmedReport) {
+                        confirmedReport.status = ReportStatus.COMPLETED;
+                        await manager.save(Report, confirmedReport);
+                    }
+
                     let transactionResult: any = null;
-                    if (!userMembership) {
+                    if (!userMembership && !isFreeBooking) {
                         if (!dto.paymentId) {
                             throw new BadRequestException(
                                 'Phương thức thanh toán là bắt buộc khi không có gói thành viên'
@@ -619,24 +643,30 @@ export class BookingService {
                                 manager
                             );
 
-                        booking.transactionId = transactionResult.transactionId;
+                        booking.transactionId =
+                            transactionResult.transaction.id;
                         await manager.save(Booking, booking);
                     }
 
                     return {
-                        message: userMembership
-                            ? 'Đặt lịch đổi pin tại chỗ thành công (sử dụng gói thành viên)'
-                            : transactionResult?.paymentMethod === 'CASH'
-                              ? `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán ${totalPrice} VND tiền mặt tại quầy`
-                              : `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán qua link dưới đây`,
+                        message: isFreeBooking
+                            ? 'Đặt lịch đổi pin miễn phí do báo cáo lỗi đã được xác nhận'
+                            : userMembership
+                              ? 'Đặt lịch đổi pin tại chỗ thành công (sử dụng gói thành viên)'
+                              : transactionResult?.paymentMethod === 'CASH'
+                                ? `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán ${totalPrice} VND tiền mặt tại quầy`
+                                : `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán qua link dưới đây`,
                         bookingId: booking.id,
                         expectedPickupTime: now,
-                        totalPrice: userMembership ? 0 : totalPrice,
+                        totalPrice:
+                            userMembership || isFreeBooking ? 0 : totalPrice,
                         usedMembership: !!userMembership,
+                        isFreeBooking,
                         status: booking.status,
                         paymentUrl: transactionResult?.paymentUrl || null,
                         paymentMethod: transactionResult?.paymentMethod || null,
-                        transactionId: transactionResult?.transactionId || null
+                        transactionId:
+                            transactionResult?.transaction?.id || null
                     };
                 }
             );

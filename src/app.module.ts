@@ -30,6 +30,7 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
 import { TransactionGateway } from './gateways/transaction.gateway';
 import { CleanupModule } from './modules/cleanup/cleanup.module';
 import { ReportModule } from './modules/report/report.module';
+import { AnalyticModule } from './modules/analytic/analytic.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { ReportModule } from './modules/report/report.module';
     PaymentModule,
     FeedbackModule,
     ReportModule,
+    AnalyticModule,
   ],
   controllers: [],
   providers: [BatteryGateway, TransactionGateway],

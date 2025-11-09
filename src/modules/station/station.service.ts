@@ -312,7 +312,8 @@ export class StationService {
                         slots
                             .filter(
                                 (s) =>
-                                    s.status === SlotStatus.CHARGING && s.batteryId !== null
+                                    s.status === SlotStatus.CHARGING &&
+                                    s.batteryId !== null
                             )
                             .map(async (s) => {
                                 if (!s.batteryId) return 0;
@@ -365,4 +366,122 @@ export class StationService {
             );
         }
     }
+
+    async getStationUsageData(from: string, to: string): Promise<any> {
+    try {
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            throw new BadRequestException('Ngày không hợp lệ');
+        }
+
+        // Lấy tất cả trạm
+        const stations = await this.stationRepository.find({
+            select: ['id', 'name']
+        });
+
+        const result: Array<{
+            stationId: number;
+            stationName: string;
+            date: string;
+            totalBookings: number;
+            totalReports: number;
+        }> = [];
+
+        for (const station of stations) {
+            // Đếm số booking theo ngày
+            const bookings = await this.dataSource
+                .createQueryBuilder()
+                .select('DATE(booking.createdAt)', 'date')
+                .addSelect('COUNT(booking.id)', 'totalBookings')
+                .from('bookings', 'booking')
+                .where('booking.stationId = :stationId', {
+                    stationId: station.id
+                })
+                .andWhere('booking.createdAt BETWEEN :from AND :to', {
+                    from: fromDate,
+                    to: toDate
+                })
+                .groupBy('DATE(booking.createdAt)')
+                .getRawMany();
+
+            // Đếm số report theo ngày
+            const reports = await this.dataSource
+                .createQueryBuilder()
+                .select('DATE(report.createdAt)', 'date')
+                .addSelect('COUNT(report.id)', 'totalReports')
+                .from('reports', 'report')
+                .innerJoin(
+                    'booking_details',
+                    'bd',
+                    'bd.id = report.bookingDetailId'
+                )
+                .innerJoin(
+                    'bookings',
+                    'booking',
+                    'booking.id = bd.bookingId'
+                )
+                .where('booking.stationId = :stationId', {
+                    stationId: station.id
+                })
+                .andWhere('report.createdAt BETWEEN :from AND :to', {
+                    from: fromDate,
+                    to: toDate
+                })
+                .groupBy('DATE(report.createdAt)')
+                .getRawMany();
+
+            // Merge dữ liệu booking và report theo ngày
+            const dateMap = new Map<string, {
+                stationId: number;
+                stationName: string;
+                date: string;
+                totalBookings: number;
+                totalReports: number;
+            }>();
+
+            bookings.forEach((b) => {
+                dateMap.set(b.date, {
+                    stationId: station.id,
+                    stationName: station.name,
+                    date: b.date,
+                    totalBookings: parseInt(b.totalBookings),
+                    totalReports: 0
+                });
+            });
+
+            reports.forEach((r) => {
+                const existingData = dateMap.get(r.date);
+                if (existingData) {
+                    existingData.totalReports = parseInt(r.totalReports);
+                } else {
+                    dateMap.set(r.date, {
+                        stationId: station.id,
+                        stationName: station.name,
+                        date: r.date,
+                        totalBookings: 0,
+                        totalReports: parseInt(r.totalReports)
+                    });
+                }
+            });
+
+            result.push(...Array.from(dateMap.values()));
+        }
+
+        return {
+            message: 'Lấy dữ liệu sử dụng trạm thành công',
+            data: result,
+            from,
+            to
+        };
+    } catch (error) {
+        if (error instanceof BadRequestException) {
+            throw error;
+        }
+        throw new InternalServerErrorException(
+            'Lỗi khi lấy dữ liệu sử dụng trạm'
+        );
+    }
+}
 }

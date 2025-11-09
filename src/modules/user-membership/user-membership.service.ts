@@ -138,9 +138,11 @@ export class UserMembershipService {
                         userId: user.id,
                         membershipId: membership.id,
                         remainingSwaps:
-                            typeof membership.swapLimit === 'number'
-                                ? membership.swapLimit + bonusSwaps
-                                : 1,
+                            membership.swapLimit === null
+                                ? null
+                                : typeof membership.swapLimit === 'number'
+                                  ? membership.swapLimit + bonusSwaps
+                                  : null,
                         paymentExpireAt: new Date(
                             now.getTime() + 20 * 60 * 1000
                         ),
@@ -422,14 +424,15 @@ export class UserMembershipService {
                     await manager.save(currentUserMembership);
 
                     const now = new Date();
-
                     const newUserMembership = manager.create(UserMembership, {
                         userId,
                         membershipId: newMembership.id,
                         remainingSwaps:
-                            typeof newMembership.swapLimit === 'number'
-                                ? newMembership.swapLimit
-                                : 1,
+                            newMembership.swapLimit === null
+                                ? null
+                                : typeof newMembership.swapLimit === 'number'
+                                  ? newMembership.swapLimit
+                                  : null,
                         paymentExpireAt: new Date(
                             now.getTime() + 20 * 60 * 1000
                         ),

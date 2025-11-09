@@ -162,7 +162,11 @@ export class BookingService {
                         );
                     }
 
-                    if (userMembership) {
+                    // Chỉ trừ lượt nếu remainingSwaps !== null (không phải VIP)
+                    if (
+                        userMembership &&
+                        userMembership.remainingSwaps !== null
+                    ) {
                         if (
                             userMembership.remainingSwaps <
                             createBookingDto.bookingDetails.length
@@ -526,7 +530,12 @@ export class BookingService {
                     );
 
                     // Nếu là booking miễn phí, không trừ lượt
-                    if (userMembership && !isFreeBooking) {
+                    // Chỉ trừ lượt nếu remainingSwaps !== null (không phải VIP)
+                    if (
+                        userMembership &&
+                        !isFreeBooking &&
+                        userMembership.remainingSwaps !== null
+                    ) {
                         if (
                             userMembership.remainingSwaps <
                             dto.bookingDetails.length

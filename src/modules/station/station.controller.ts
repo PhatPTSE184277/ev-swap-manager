@@ -200,4 +200,30 @@ export class StationController {
     async findById(@Param('id') id: number) {
         return this.stationService.findById(id);
     }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('usage')
+    @ApiOperation({
+        summary: 'Thống kê số lượt booking và report theo trạm, theo ngày',
+        description: 'Chỉ ADMIN, dùng cho phân tích/dự báo AI'
+    })
+    @ApiQuery({
+        name: 'from',
+        required: true,
+        type: String,
+        example: '2025-11-01'
+    })
+    @ApiQuery({
+        name: 'to',
+        required: true,
+        type: String,
+        example: '2025-11-30'
+    })
+    async getStationUsageData(
+        @Query('from') from: string,
+        @Query('to') to: string
+    ) {
+        return this.stationService.getStationUsageData(from, to);
+    }
 }

@@ -297,7 +297,8 @@ export class BookingService {
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
                     'userMembership',
-                    'transaction'
+                    'transaction',
+                    'bookingDetails.report'
                 ],
                 skip: (page - 1) * limit,
                 take: limit,
@@ -337,7 +338,8 @@ export class BookingService {
                     id: detail.id,
                     batteryId: detail.batteryId,
                     price: detail.price,
-                    status: detail.status
+                    status: detail.status,
+                    report: detail.reports
                 })),
                 transaction: booking.transaction
                     ? {
@@ -417,7 +419,8 @@ export class BookingService {
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
                     'userMembership',
-                    'transaction'
+                    'transaction',
+                    'bookingDetails.report'
                 ],
                 skip: (page - 1) * limit,
                 take: limit,
@@ -457,7 +460,8 @@ export class BookingService {
                     id: detail.id,
                     batteryId: detail.batteryId,
                     price: detail.price,
-                    status: detail.status
+                    status: detail.status,
+                    report: detail.reports
                 }))
             }));
 

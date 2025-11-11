@@ -11,6 +11,7 @@ import { CreateReportDto } from './dto/create-report.dto';
 import { Battery, BookingDetail } from 'src/entities';
 import { ReportStatus } from 'src/enums/report.enum';
 import { BatteryStatus } from 'src/enums';
+import { StationStaff } from 'src/entities/station-staff.entity'; // Thêm import
 
 @Injectable()
 export class ReportService {

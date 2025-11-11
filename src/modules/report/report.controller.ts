@@ -42,7 +42,7 @@ export class ReportController {
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @Roles(RoleName.STAFF)
     @Get('station/:stationId')
     @ApiOperation({ summary: 'Lấy danh sách báo cáo theo trạm (ADMIN)' })
     @ApiParam({ name: 'stationId', type: Number })
@@ -94,7 +94,7 @@ export class ReportController {
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @Roles(RoleName.STAFF)
     @Patch('confirm/:reportId')
     @ApiOperation({ summary: 'Xác nhận báo cáo lỗi pin (ADMIN)' })
     @ApiParam({ name: 'reportId', type: Number })
@@ -103,7 +103,7 @@ export class ReportController {
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @Roles(RoleName.STAFF)
     @Patch('reject/:reportId')
     @ApiOperation({ summary: 'Từ chối báo cáo lỗi pin (ADMIN)' })
     @ApiParam({ name: 'reportId', type: Number })

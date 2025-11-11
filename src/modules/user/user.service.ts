@@ -123,15 +123,13 @@ export class UserService {
                 throw new NotFoundException('Người dùng không tồn tại');
             }
 
-            let isHead: boolean = false;
             let stationId: number | null = null;
 
             if (user.role?.name === RoleName.STAFF) {
                 const staff = await this.stationStaffRepository.findOne({
                     where: { userId: user.id }
                 });
-                isHead = staff?.isHead ?? false;
-                stationId = staff?.stationId ?? null; // Thêm dòng này
+                stationId = staff?.stationId ?? null;
             }
 
             const activeMemberships = user.userMemberships
@@ -176,9 +174,6 @@ export class UserService {
                     role: role?.name || null,
                     ...(role?.name === RoleName.USER
                         ? { memberships: activeMemberships }
-                        : {}),
-                    ...(role?.name === RoleName.STAFF
-                        ? { isHead, stationId }
                         : {})
                 },
                 message: 'Lấy thông tin người dùng thành công'

@@ -459,8 +459,8 @@ export class TransactionService {
                             orderCode,
                             amount: dto.totalPrice,
                             description: shortDescription,
-                            returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
-                            cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`
+                            returnUrl: `${process.env.SIMULATION_URL}/payment/success`,
+                            cancelUrl: `${process.env.SIMULATION_URL}/payment/cancel`
                         });
 
                     const paymentUrl =

@@ -3,54 +3,80 @@ import {
     Controller,
     Get,
     Post,
-    Patch,
-    Param,
     Query,
+    UseGuards,
     Req,
-    UseGuards
+    Param,
+    Patch
 } from '@nestjs/common';
 import { ReportService } from './report.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CreateReportDto } from './dto/create-report.dto';
-import { ReportStatus } from 'src/enums/report.enum';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { RoleName } from 'src/enums';
+import { RoleName } from 'src/enums/role.enum';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiTags,
+    ApiQuery,
+    ApiParam
+} from '@nestjs/swagger';
+import { ReportStatus } from 'src/enums/report.enum';
+import { CreateReportDto } from './dto/create-report.dto';
 
+@ApiTags('Report')
+@ApiBearerAuth()
 @Controller('report')
 export class ReportController {
     constructor(private readonly reportService: ReportService) {}
 
     @UseGuards(JwtAuthGuard)
     @Post()
-    async createReport(@Req() req, @Body() dto: CreateReportDto) {
+    @ApiOperation({ summary: 'Tạo báo cáo lỗi pin cho lần đổi pin' })
+    async createReport(
+        @Req() req,
+        @Body() createReportDto: CreateReportDto
+    ) {
         const userId = req.user.id;
-        return this.reportService.createReport(userId, dto);
+        return this.reportService.createReport(userId, createReportDto);
     }
 
-    @UseGuards(JwtAuthGuard)
-    @Get('by-station')
-    @Roles(RoleName.STAFF, RoleName.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('station/:stationId')
+    @ApiOperation({ summary: 'Lấy danh sách báo cáo theo trạm (ADMIN)' })
+    @ApiParam({ name: 'stationId', type: Number })
+    @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+    @ApiQuery({ name: 'search', required: false, type: String, description: 'Tìm kiếm mô tả lỗi' })
+    @ApiQuery({ name: 'status', required: false, enum: ReportStatus, description: 'Lọc theo trạng thái báo cáo' })
     async getReportsByStation(
-        @Query('stationId') stationId: number,
+        @Param('stationId') stationId: number,
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10,
         @Query('search') search?: string,
         @Query('status') status?: ReportStatus
     ) {
         return this.reportService.getReportsByStation(
-            Number(stationId),
-            Number(page),
-            Number(limit),
+            stationId,
+            page,
+            limit,
             search,
             status
         );
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get('by-user-booking')
+    @Get('booking/:bookingId')
+    @ApiOperation({ summary: 'Lấy danh sách báo cáo của user theo booking' })
+    @ApiParam({ name: 'bookingId', type: Number })
+    @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+    @ApiQuery({ name: 'search', required: false, type: String, description: 'Tìm kiếm mô tả lỗi' })
+    @ApiQuery({ name: 'status', required: false, enum: ReportStatus, description: 'Lọc theo trạng thái báo cáo' })
     async getReportsByUserBooking(
         @Req() req,
-        @Query('bookingId') bookingId: number,
+        @Param('bookingId') bookingId: number,
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10,
         @Query('search') search?: string,
@@ -59,25 +85,29 @@ export class ReportController {
         const userId = req.user.id;
         return this.reportService.getReportsByUserBooking(
             userId,
-            Number(bookingId),
-            Number(page),
-            Number(limit),
+            bookingId,
+            page,
+            limit,
             search,
             status
         );
     }
 
-    @UseGuards(JwtAuthGuard)
-    @Roles(RoleName.STAFF, RoleName.ADMIN)
-    @Patch(':id/confirm')
-    async confirmReport(@Param('id') id: number) {
-        return this.reportService.confirmReport(Number(id));
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Patch('confirm/:reportId')
+    @ApiOperation({ summary: 'Xác nhận báo cáo lỗi pin (ADMIN)' })
+    @ApiParam({ name: 'reportId', type: Number })
+    async confirmReport(@Param('reportId') reportId: number) {
+        return this.reportService.confirmReport(reportId);
     }
 
-    @UseGuards(JwtAuthGuard)
-    @Roles(RoleName.STAFF, RoleName.ADMIN)
-    @Patch(':id/reject')
-    async rejectReport(@Param('id') id: number) {
-        return this.reportService.rejectReport(Number(id));
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Patch('reject/:reportId')
+    @ApiOperation({ summary: 'Từ chối báo cáo lỗi pin (ADMIN)' })
+    @ApiParam({ name: 'reportId', type: Number })
+    async rejectReport(@Param('reportId') reportId: number) {
+        return this.reportService.rejectReport(reportId);
     }
 }

@@ -5,7 +5,8 @@ import {
     User,
     Booking,
     UserMembership,
-    Transaction
+    Transaction,
+    Feedback
 } from 'src/entities';
 import {
     RoleName,
@@ -13,7 +14,7 @@ import {
     UserMembershipStatus,
     TransactionStatus
 } from 'src/enums';
-import { Between, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, DataSource, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
 
 @Injectable()
 export class DashboardService {
@@ -27,7 +28,8 @@ export class DashboardService {
         @InjectRepository(UserMembership)
         private readonly userMembershipRepository: Repository<UserMembership>,
         @InjectRepository(Transaction)
-        private readonly transactionRepository: Repository<Transaction>
+        private readonly transactionRepository: Repository<Transaction>,
+        private readonly dataSource: DataSource
     ) {}
 
     async countUsers(): Promise<any> {
@@ -136,32 +138,144 @@ export class DashboardService {
     }
 
     async getRevenueChart(year: number): Promise<any[]> {
-    try {
-        const result: { month: string; revenue: number }[] = [];
-        for (let m = 0; m < 12; m++) {
-            const start = new Date(year, m, 1);
-            const end = new Date(year, m + 1, 1);
+        try {
+            const result: { month: string; revenue: number }[] = [];
+            for (let m = 0; m < 12; m++) {
+                const start = new Date(year, m, 1);
+                const end = new Date(year, m + 1, 1);
 
-            const transactions = await this.transactionRepository.find({
-                where: {
-                    status: TransactionStatus.SUCCESS,
-                    createdAt: Between(start, end)
+                const transactions = await this.transactionRepository.find({
+                    where: {
+                        status: TransactionStatus.SUCCESS,
+                        createdAt: Between(start, end)
+                    }
+                });
+
+                const revenue = transactions.reduce(
+                    (sum, t) => sum + Number(t.totalPrice),
+                    0
+                );
+
+                result.push({
+                    month: `${m + 1}/${year}`,
+                    revenue
+                });
+            }
+            return result;
+        } catch (error) {
+            throw new InternalServerErrorException(
+                'Lỗi khi lấy dữ liệu doanh thu chart'
+            );
+        }
+    }
+
+    async getTopStations(): Promise<any> {
+        try {
+            // Lấy tất cả booking với stationId
+            const bookings = await this.bookingRepository.find({
+                select: ['stationId'],
+                relations: ['station']
+            });
+
+            // Đếm số lượng booking theo từng station
+            const stationCount: Record<
+                number,
+                { station: Station; count: number }
+            > = {};
+
+            bookings.forEach((booking) => {
+                if (booking.stationId) {
+                    if (!stationCount[booking.stationId]) {
+                        stationCount[booking.stationId] = {
+                            station: booking.station,
+                            count: 0
+                        };
+                    }
+                    stationCount[booking.stationId].count++;
                 }
             });
 
-            const revenue = transactions.reduce(
-                (sum, t) => sum + Number(t.totalPrice),
-                0
+            // Chuyển thành mảng và sắp xếp
+            const sortedStations = Object.values(stationCount).sort(
+                (a, b) => b.count - a.count
             );
 
-            result.push({
-                month: `${m + 1}/${year}`,
-                revenue
-            });
+            // Lấy top 3 nhiều nhất
+            const topMost = sortedStations.slice(0, 3).map((item) => ({
+                id: item.station.id,
+                name: item.station.name,
+                address: item.station.address,
+                bookingCount: item.count
+            }));
+
+            // Lấy top 3 ít nhất
+            const topLeast = sortedStations
+                .slice(-3)
+                .reverse()
+                .map((item) => ({
+                    id: item.station.id,
+                    name: item.station.name,
+                    address: item.station.address,
+                    bookingCount: item.count
+                }));
+
+            return {
+                topMost,
+                topLeast,
+                message: 'Lấy top trạm thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException('Lỗi khi lấy top trạm');
         }
-        return result;
-    } catch (error) {
-        throw new InternalServerErrorException('Lỗi khi lấy dữ liệu doanh thu chart');
     }
-}
+
+    async getTopFeedbackStations(): Promise<any> {
+        try {
+            // Lấy tất cả feedbacks có stationId
+            const feedbacks = await this.dataSource
+                .getRepository(Feedback)
+                .find({
+                    relations: ['station']
+                });
+
+            // Đếm số lượng feedback theo từng station
+            const stationCount: Record<
+                number,
+                { station: any; count: number }
+            > = {};
+            feedbacks.forEach((fb) => {
+                if (fb.stationId) {
+                    if (!stationCount[fb.stationId]) {
+                        stationCount[fb.stationId] = {
+                            station: fb.station,
+                            count: 0
+                        };
+                    }
+                    stationCount[fb.stationId].count++;
+                }
+            });
+
+            // Chuyển thành mảng và sắp xếp giảm dần
+            const sortedStations = Object.values(stationCount).sort(
+                (a, b) => b.count - a.count
+            );
+
+            // Lấy top 3 trạm được feedback nhiều nhất
+            const topFeedback = sortedStations.slice(0, 3).map((item) => ({
+                id: item.station.id,
+                name: item.station.name,
+                address: item.station.address,
+                feedbackCount: item.count
+            }));
+
+            return {
+                topFeedback,
+                message: 'Lấy top 3 trạm được feedback nhiều nhất thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                'Lỗi khi lấy top feedback trạm'
+            );
+        }
+    }
 }

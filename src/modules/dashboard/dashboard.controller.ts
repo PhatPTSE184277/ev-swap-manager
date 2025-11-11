@@ -105,4 +105,24 @@ export class DashboardController {
     async getRevenueChart(@Query('year') year: number) {
         return await this.dashboardService.getRevenueChart(year);
     }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('top-stations')
+    @ApiOperation({
+        summary: 'Lấy top 3 trạm đặt nhiều nhất và ít nhất (ADMIN)'
+    })
+    async getTopStations() {
+        return await this.dashboardService.getTopStations();
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('top-feedback-stations')
+    @ApiOperation({
+        summary: 'Lấy top 3 trạm được feedback nhiều nhất (ADMIN)'
+    })
+    async getTopFeedbackStations() {
+        return await this.dashboardService.getTopFeedbackStations();
+    }
 }

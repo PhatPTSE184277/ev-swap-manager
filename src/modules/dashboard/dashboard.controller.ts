@@ -1,7 +1,8 @@
 import {
     Controller,
     Get,
-    UseGuards
+    UseGuards,
+    Query
 } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,7 +12,8 @@ import { RoleName } from 'src/enums/role.enum';
 import {
     ApiBearerAuth,
     ApiOperation,
-    ApiTags
+    ApiTags,
+    ApiQuery
 } from '@nestjs/swagger';
 
 @ApiTags('Dashboard')
@@ -26,5 +28,39 @@ export class DashboardController {
     @ApiOperation({ summary: 'Đếm số lượng user có role USER (ADMIN)' })
     async countUsers() {
         return await this.dashboardService.countUsers();
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('station-count')
+    @ApiOperation({ summary: 'Đếm số lượng trạm (ADMIN)' })
+    async countStations() {
+        return await this.dashboardService.countStations();
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('active-booking-count')
+    @ApiOperation({ summary: 'Đếm số lượng booking COMPLETED theo tháng/năm (ADMIN)' })
+    @ApiQuery({ name: 'month', required: true, type: Number })
+    @ApiQuery({ name: 'year', required: true, type: Number })
+    async countActiveBookingsByMonthYear(
+        @Query('month') month: number,
+        @Query('year') year: number
+    ) {
+        return await this.dashboardService.countActiveBookingsByMonthYear(month, year);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('active-user-membership-count')
+    @ApiOperation({ summary: 'Đếm số lượng user membership ACTIVE theo tháng/năm (ADMIN)' })
+    @ApiQuery({ name: 'month', required: true, type: Number })
+    @ApiQuery({ name: 'year', required: true, type: Number })
+    async countActiveUserMembershipsByMonthYear(
+        @Query('month') month: number,
+        @Query('year') year: number
+    ) {
+        return await this.dashboardService.countActiveUserMembershipsByMonthYear(month, year);
     }
 }

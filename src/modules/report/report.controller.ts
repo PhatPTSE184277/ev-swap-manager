@@ -33,10 +33,7 @@ export class ReportController {
     @UseGuards(JwtAuthGuard)
     @Post()
     @ApiOperation({ summary: 'Tạo báo cáo lỗi pin cho lần đổi pin' })
-    async createReport(
-        @Req() req,
-        @Body() createReportDto: CreateReportDto
-    ) {
+    async createReport(@Req() req, @Body() createReportDto: CreateReportDto) {
         const userId = req.user.id;
         return this.reportService.createReport(userId, createReportDto);
     }
@@ -48,8 +45,18 @@ export class ReportController {
     @ApiParam({ name: 'stationId', type: Number })
     @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
     @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-    @ApiQuery({ name: 'search', required: false, type: String, description: 'Tìm kiếm mô tả lỗi' })
-    @ApiQuery({ name: 'status', required: false, enum: ReportStatus, description: 'Lọc theo trạng thái báo cáo' })
+    @ApiQuery({
+        name: 'search',
+        required: false,
+        type: String,
+        description: 'Tìm kiếm mô tả lỗi'
+    })
+    @ApiQuery({
+        name: 'status',
+        required: false,
+        enum: ReportStatus,
+        description: 'Lọc theo trạng thái báo cáo'
+    })
     async getReportsByStation(
         @Param('stationId') stationId: number,
         @Query('page') page: number = 1,
@@ -68,26 +75,34 @@ export class ReportController {
 
     @UseGuards(JwtAuthGuard)
     @Get('booking/:bookingId')
-    @ApiOperation({ summary: 'Lấy danh sách báo cáo của user theo booking' })
+    @ApiOperation({
+        summary: 'Lấy danh sách báo cáo theo booking (USER, ADMIN, STAFF)'
+    })
     @ApiParam({ name: 'bookingId', type: Number })
-    @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-    @ApiQuery({ name: 'search', required: false, type: String, description: 'Tìm kiếm mô tả lỗi' })
-    @ApiQuery({ name: 'status', required: false, enum: ReportStatus, description: 'Lọc theo trạng thái báo cáo' })
+    @ApiQuery({
+        name: 'search',
+        required: false,
+        type: String,
+        description: 'Tìm kiếm mô tả lỗi'
+    })
+    @ApiQuery({
+        name: 'status',
+        required: false,
+        enum: ReportStatus,
+        description: 'Lọc theo trạng thái báo cáo'
+    })
     async getReportsByUserBooking(
         @Req() req,
         @Param('bookingId') bookingId: number,
-        @Query('page') page: number = 1,
-        @Query('limit') limit: number = 10,
         @Query('search') search?: string,
         @Query('status') status?: ReportStatus
     ) {
         const userId = req.user.id;
+        const userRole = req.user.role?.name?.toUpperCase();
         return this.reportService.getReportsByUserBooking(
             userId,
             bookingId,
-            page,
-            limit,
+            userRole,
             search,
             status
         );

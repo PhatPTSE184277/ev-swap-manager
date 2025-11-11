@@ -6,11 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Report } from 'src/entities/report.entity';
-import { DataSource, Like, Repository } from 'typeorm';
+import { DataSource, In, Like, Repository } from 'typeorm';
 import { CreateReportDto } from './dto/create-report.dto';
-import { Battery, BookingDetail } from 'src/entities';
+import { Battery, Booking, BookingDetail } from 'src/entities';
 import { ReportStatus } from 'src/enums/report.enum';
-import { BatteryStatus } from 'src/enums';
+import { BatteryStatus, RoleName } from 'src/enums';
 
 @Injectable()
 export class ReportService {
@@ -19,6 +19,8 @@ export class ReportService {
         private readonly reportRepository: Repository<Report>,
         @InjectRepository(BookingDetail)
         private readonly bookingDetailRepository: Repository<BookingDetail>,
+        @InjectRepository(Booking)
+        private readonly bookingRepository: Repository<Booking>,
         private readonly dataSource: DataSource
     ) {}
 
@@ -61,6 +63,7 @@ export class ReportService {
             throw new InternalServerErrorException('Lỗi khi tạo báo cáo');
         }
     }
+
     async getReportsByStation(
         stationId: number,
         page: number = 1,
@@ -93,7 +96,7 @@ export class ReportService {
                 };
             }
 
-            const where: any = { bookingDetailId: ids };
+            const where: any = { bookingDetailId: In(ids) };
             if (status) where.status = status;
             if (search) where.description = Like(`%${search}%`);
 
@@ -105,8 +108,25 @@ export class ReportService {
                 order: { createdAt: 'DESC' }
             });
 
+            const safeReports = reports.map((report) => ({
+                ...report,
+                user: report.user
+                    ? {
+                          id: report.user.id,
+                          username: report.user.username,
+                          email: report.user.email,
+                          fullName: report.user.fullName,
+                          avatar: report.user.avatar,
+                          status: report.user.status,
+                          roleId: report.user.roleId,
+                          createdAt: report.user.createdAt,
+                          updatedAt: report.user.updatedAt
+                      }
+                    : null
+            }));
+
             return {
-                data: reports,
+                data: safeReports,
                 total,
                 page,
                 limit,
@@ -128,51 +148,70 @@ export class ReportService {
     async getReportsByUserBooking(
         userId: number,
         bookingId: number,
-        page: number = 1,
-        limit: number = 10,
+        userRole: RoleName,
         search?: string,
         status?: ReportStatus
     ): Promise<{
         data: any[];
-        total: number;
-        page: number;
-        limit: number;
         message: string;
     }> {
         try {
+            if (userRole === RoleName.USER) {
+                const booking = await this.bookingRepository.findOne({
+                    where: { id: bookingId },
+                    relations: ['userVehicle']
+                });
+
+                if (!booking || booking.userVehicle?.userId !== userId) {
+                    throw new BadRequestException(
+                        'Bạn không có quyền xem báo cáo của booking này'
+                    );
+                }
+            }
+
             const bookingDetails = await this.bookingDetailRepository.find({
                 where: { bookingId }
             });
             const ids = bookingDetails.map((bd) => bd.id);
+
             if (ids.length === 0) {
                 return {
                     data: [],
-                    total: 0,
-                    page,
-                    limit,
                     message: 'Không có báo cáo nào cho booking này'
                 };
             }
 
-            const where: any = { bookingDetailId: ids, userId };
+            const where: any = { bookingDetailId: In(ids) };
+            if (userRole === RoleName.USER) where.userId = userId;
             if (status) where.status = status;
             if (search) where.description = Like(`%${search}%`);
 
-            const [reports, total] = await this.reportRepository.findAndCount({
+            const reports = await this.reportRepository.find({
                 where,
-                relations: ['bookingDetail'],
-                skip: (page - 1) * limit,
-                take: limit,
+                relations: ['bookingDetail', 'user'],
                 order: { createdAt: 'DESC' }
             });
 
+            const safeReports = reports.map((report) => ({
+                ...report,
+                user: report.user
+                    ? {
+                          id: report.user.id,
+                          username: report.user.username,
+                          email: report.user.email,
+                          fullName: report.user.fullName,
+                          avatar: report.user.avatar,
+                          status: report.user.status,
+                          roleId: report.user.roleId,
+                          createdAt: report.user.createdAt,
+                          updatedAt: report.user.updatedAt
+                      }
+                    : null
+            }));
+
             return {
-                data: reports,
-                total,
-                page,
-                limit,
-                message:
-                    'Lấy danh sách báo cáo theo booking của user thành công'
+                data: safeReports,
+                message: 'Lấy danh sách báo cáo theo booking thành công'
             };
         } catch (error) {
             if (

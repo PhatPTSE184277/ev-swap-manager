@@ -6,7 +6,8 @@ import {
     Booking,
     UserMembership,
     Transaction,
-    Feedback
+    Feedback,
+    Membership
 } from 'src/entities';
 import {
     RoleName,
@@ -35,6 +36,8 @@ export class DashboardService {
         private readonly userMembershipRepository: Repository<UserMembership>,
         @InjectRepository(Transaction)
         private readonly transactionRepository: Repository<Transaction>,
+        @InjectRepository(Membership)
+        private readonly membershipRepository: Repository<Membership>,
         private readonly dataSource: DataSource
     ) {}
 
@@ -298,6 +301,68 @@ export class DashboardService {
         } catch (error) {
             throw new InternalServerErrorException(
                 'Lỗi khi lấy trạm rating trung bình cao/thấp nhất'
+            );
+        }
+    }
+
+    async getUserMembershipStats(): Promise<any> {
+        try {
+            // Lấy tất cả user có role USER
+            const allUsers = await this.userRepository.find({
+                where: {
+                    role: { name: RoleName.USER }
+                },
+                relations: ['userMemberships', 'userMemberships.membership']
+            });
+
+            // Lấy tất cả membership
+            const allMemberships = await this.membershipRepository.find({
+                where: { status: true }
+            });
+
+            // Đếm số user chưa đăng ký gói (không có userMembership ACTIVE nào)
+            const usersWithoutMembership = allUsers.filter((user) => {
+                const hasActiveMembership = user.userMemberships?.some(
+                    (um) => um.status === UserMembershipStatus.ACTIVE
+                );
+                return !hasActiveMembership;
+            });
+
+            // Đếm số user đăng ký từng loại gói
+            const membershipStats = allMemberships.map((membership) => {
+                const count = allUsers.filter((user) => {
+                    return user.userMemberships?.some(
+                        (um) =>
+                            um.membershipId === membership.id &&
+                            um.status === UserMembershipStatus.ACTIVE
+                    );
+                }).length;
+
+                return {
+                    membershipId: membership.id,
+                    membershipName: membership.name,
+                    price: membership.price,
+                    userCount: count
+                };
+            });
+
+            // Tính tổng user đã đăng ký (có ít nhất 1 gói ACTIVE)
+            const usersWithMembership = allUsers.filter((user) => {
+                return user.userMemberships?.some(
+                    (um) => um.status === UserMembershipStatus.ACTIVE
+                );
+            });
+
+            return {
+                totalUsers: allUsers.length,
+                usersWithoutMembership: usersWithoutMembership.length,
+                usersWithMembership: usersWithMembership.length,
+                membershipStats,
+                message: 'Lấy thống kê gói thành viên thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                'Lỗi khi lấy thống kê gói thành viên'
             );
         }
     }

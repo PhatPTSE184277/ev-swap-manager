@@ -125,4 +125,15 @@ export class DashboardController {
     async getTopAvgRatingStations() {
         return await this.dashboardService.getTopAvgRatingStations();
     }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('user-membership-stats')
+    @ApiOperation({
+        summary:
+            'Thống kê số người dùng chưa đăng ký gói và đã đăng ký từng gói (ADMIN)'
+    })
+    async getUserMembershipStats() {
+        return await this.dashboardService.getUserMembershipStats();
+    }
 }

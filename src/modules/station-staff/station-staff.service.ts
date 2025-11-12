@@ -194,25 +194,17 @@ export class StationStaffService {
 
         // Helper function để lấy field từ row (case-insensitive)
         const getField = (obj: any, candidates: string[]): string => {
-            for (const key of candidates) {
-                if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                    const value = obj[key];
-                    if (value !== null && value !== undefined && value !== '') {
-                        return String(value).trim();
-                    }
-                }
-            }
-
+            // Loại bỏ dấu cách ở tên cột
             const lowerMap = Object.keys(obj).reduce(
                 (acc, key) => {
-                    acc[key.toLowerCase()] = obj[key];
+                    acc[key.toLowerCase().trim()] = obj[key];
                     return acc;
                 },
                 {} as Record<string, any>
             );
 
             for (const candidate of candidates) {
-                const lower = candidate.toLowerCase();
+                const lower = candidate.toLowerCase().trim();
                 if (Object.prototype.hasOwnProperty.call(lowerMap, lower)) {
                     const value = lowerMap[lower];
                     if (value !== null && value !== undefined && value !== '') {
@@ -338,6 +330,7 @@ export class StationStaffService {
                     const historyData = {
                         stationStaffId: staff.id,
                         stationId: stationId,
+                        date: new Date(),
                         status: true
                     };
                     const staffHistory = manager.create(

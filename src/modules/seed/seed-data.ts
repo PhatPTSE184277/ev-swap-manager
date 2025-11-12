@@ -237,7 +237,7 @@ export const seedData = {
             id: 1,
             stationStaffId: 1,
             stationId: 1,
-            date: new Date('2024-09-30'),
+            date: new Date(),
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -246,7 +246,7 @@ export const seedData = {
             id: 2,
             stationStaffId: 1,
             stationId: 1,
-            date: new Date('2024-09-30'),
+            date: new Date(),
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()

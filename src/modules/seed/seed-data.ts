@@ -1,7 +1,6 @@
 import { RoleName } from '../../enums/role.enum';
 import { UserStatus } from '../../enums/user.enum';
 import { UserMembershipStatus } from '../../enums/membership.enum';
-import { StaffHistoryShift } from '../../enums/station.enum';
 import { BatteryStatus } from '../../enums/battery.enum';
 import { SlotStatus } from '../../enums/slot.enum';
 
@@ -239,7 +238,6 @@ export const seedData = {
             stationStaffId: 1,
             stationId: 1,
             date: new Date('2024-09-30'),
-            shift: StaffHistoryShift.MORNING,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -249,7 +247,6 @@ export const seedData = {
             stationStaffId: 1,
             stationId: 1,
             date: new Date('2024-09-30'),
-            shift: StaffHistoryShift.AFTERNOON,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()

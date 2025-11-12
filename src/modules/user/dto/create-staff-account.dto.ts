@@ -1,7 +1,6 @@
-import { IsEmail, IsOptional, ValidateNested, IsEnum } from 'class-validator';
+import { IsEmail } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { BooleanNotRequired, NumberRequired, StringRequired } from 'src/common/decorators';
-import { StaffHistoryShift } from 'src/enums/station.enum';
+import { NumberRequired, StringRequired } from 'src/common/decorators';
 
 export class CreateStaffAccountDto {
     @StringRequired('Username')
@@ -16,12 +15,4 @@ export class CreateStaffAccountDto {
 
     @NumberRequired('ID trạm')
     stationId: number;
-
-    @BooleanNotRequired('Có phải trưởng trạm không')
-    isHead?: boolean = false;
-
-    @ApiProperty({ enum: StaffHistoryShift, required: false })
-    @IsOptional()
-    @IsEnum(StaffHistoryShift)
-    shift?: StaffHistoryShift;
 }

@@ -6,12 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Station, StationStaff, StationStaffHistory } from 'src/entities';
-import { DataSource, In, Like, Repository } from 'typeorm';
-import { CreateStaffAccountDto } from './dto/create-staff-account.dto';
-import { StaffHistoryShift } from 'src/enums/station.enum';
+import { DataSource, Like, Repository } from 'typeorm';
 import { TransferStationDto } from './dto/transferstation.dto';
 import { UserService } from '../user/user.service';
 import { MailService } from '../mail/mail.service';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class StationStaffService {
@@ -157,78 +156,205 @@ export class StationStaffService {
         });
     }
 
-    async createStaffAccount(
-        dto: CreateStaffAccountDto
-    ): Promise<{ message: string }> {
-        try {
-            return await this.dataSource.transaction(async (manager) => {
-                // 1. Kiểm tra station có tồn tại
-                const station = await manager.findOne(Station, {
-                    where: { id: dto.stationId }
-                });
-                if (!station) {
-                    throw new NotFoundException('Trạm không tồn tại');
-                }
-
-                // 2. Tạo mật khẩu random
-                const defaultPassword = this.generateRandomPassword();
-
-                // 3. Tạo User thông qua UserService
-                const user = await this.userService.createStaffUser(
-                    dto.username,
-                    dto.email,
-                    dto.fullName,
-                    defaultPassword,
-                    manager
-                );
-
-                // 4. Tạo StationStaff
-                const staff = manager.create(StationStaff, {
-                    userId: user.id,
-                    stationId: dto.stationId,
-                    isHead: dto.isHead ?? false,
-                    status: true
-                });
-                await manager.save(StationStaff, staff);
-
-                // 5. Tạo History
-                const historyData = {
-                    stationStaffId: staff.id,
-                    stationId: dto.stationId,
-                    shift: dto.shift || StaffHistoryShift.MORNING,
-                    status: true
-                };
-
-                const staffHistory = manager.create(
-                    StationStaffHistory,
-                    historyData
-                );
-                await manager.save(StationStaffHistory, staffHistory);
-
-                // 6. Gửi email (không chặn transaction nếu lỗi)
-                await this.mailService.sendStaffCredentials(
-                    user.email,
-                    user.fullName,
-                    dto.username,
-                    defaultPassword,
-                    station.name
-                );
-
-                return {
-                    message: `Tạo tài khoản nhân viên thành công. Email đã được gửi tới ${user.email}`
-                };
-            });
-        } catch (error) {
-            if (
-                error instanceof BadRequestException ||
-                error instanceof NotFoundException
-            ) {
-                throw error;
-            }
-            throw new InternalServerErrorException(
-                'Tạo tài khoản nhân viên thất bại'
-            );
+    async importStaffFromExcel(
+        file: Express.Multer.File
+    ): Promise<{
+        message: string;
+        created: number;
+        failed: Array<{ row: number; reason: string; data: any }>;
+    }> {
+        if (!file || !file.buffer) {
+            throw new BadRequestException('File Excel không hợp lệ');
         }
+
+        let workbook: XLSX.WorkBook;
+        try {
+            workbook = XLSX.read(file.buffer, { type: 'buffer' });
+        } catch (err) {
+            throw new BadRequestException('Không thể đọc file Excel');
+        }
+
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        if (!rows || rows.length === 0) {
+            throw new BadRequestException('File Excel không có dữ liệu');
+        }
+
+        const results = {
+            created: 0,
+            failed: [] as Array<{ row: number; reason: string; data: any }>
+        };
+        const emailsToSend: Array<{
+            email: string;
+            fullName: string;
+            username: string;
+            password: string;
+            stationName: string;
+        }> = [];
+
+        // Helper function để lấy field từ row (case-insensitive)
+        const getField = (obj: any, candidates: string[]): string => {
+            for (const key of candidates) {
+                if (
+                    Object.prototype.hasOwnProperty.call(obj, key) &&
+                    obj[key] !== ''
+                )
+                    return String(obj[key]).trim();
+            }
+            const lowerMap = Object.keys(obj).reduce(
+                (acc, key) => {
+                    acc[key.toLowerCase()] = obj[key];
+                    return acc;
+                },
+                {} as Record<string, any>
+            );
+            for (const candidate of candidates) {
+                const lower = candidate.toLowerCase();
+                if (lowerMap[lower] !== undefined && lowerMap[lower] !== '') {
+                    return String(lowerMap[lower]).trim();
+                }
+            }
+            return '';
+        };
+
+        // Xử lý từng dòng
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rowIndex = i + 2; // Giả sử header ở dòng 1
+
+            const username = getField(row, [
+                'username',
+                'Username',
+                'user',
+                'taiKhoan',
+                'Tài khoản'
+            ]);
+            const email = getField(row, ['email', 'Email', 'mail', 'Mail']);
+            const fullName = getField(row, [
+                'fullName',
+                'fullname',
+                'FullName',
+                'hoTen',
+                'Họ tên',
+                'full_name'
+            ]);
+            const stationIdRaw = getField(row, [
+                'stationId',
+                'station_id',
+                'StationId',
+                'Trạm',
+                'station',
+                'maTram'
+            ]);
+            const stationId = Number(stationIdRaw);
+
+            // Validate các trường bắt buộc
+            if (
+                !username ||
+                !email ||
+                !fullName ||
+                !stationIdRaw ||
+                Number.isNaN(stationId)
+            ) {
+                results.failed.push({
+                    row: rowIndex,
+                    reason:
+                        'Thiếu thông tin bắt buộc (username, email, fullName, stationId)',
+                    data: row
+                });
+                continue;
+            }
+
+            try {
+                // Xử lý từng dòng trong transaction riêng
+                await this.dataSource.transaction(async (manager) => {
+                    // 1. Kiểm tra station có tồn tại
+                    const station = await manager.findOne(Station, {
+                        where: { id: stationId }
+                    });
+                    if (!station) {
+                        throw new NotFoundException(
+                            `Trạm id=${stationId} không tồn tại`
+                        );
+                    }
+
+                    // 2. Tạo mật khẩu random
+                    const password = this.generateRandomPassword();
+
+                    // 3. Tạo User thông qua UserService
+                    const user = await this.userService.createStaffUser(
+                        username,
+                        email,
+                        fullName,
+                        password,
+                        manager
+                    );
+
+                    // 4. Tạo StationStaff
+                    const staff = manager.create(StationStaff, {
+                        userId: user.id,
+                        stationId: stationId,
+                        status: true
+                    });
+                    await manager.save(StationStaff, staff);
+
+                    // 5. Tạo History
+                    const historyData = {
+                        stationStaffId: staff.id,
+                        stationId: stationId,
+                        status: true
+                    };
+                    const staffHistory = manager.create(
+                        StationStaffHistory,
+                        historyData
+                    );
+                    await manager.save(StationStaffHistory, staffHistory);
+
+                    // Chuẩn bị dữ liệu email
+                    emailsToSend.push({
+                        email: user.email,
+                        fullName: user.fullName || fullName,
+                        username,
+                        password,
+                        stationName: station.name
+                    });
+                });
+
+                results.created++;
+            } catch (error) {
+                results.failed.push({
+                    row: rowIndex,
+                    reason: error?.message || 'Lỗi khi tạo tài khoản',
+                    data: row
+                });
+            }
+        }
+
+        // Gửi email bất đồng bộ (không chặn response)
+        for (const info of emailsToSend) {
+            try {
+                await this.mailService.sendStaffCredentials(
+                    info.email,
+                    info.fullName,
+                    info.username,
+                    info.password,
+                    info.stationName
+                );
+            } catch (err) {
+                console.error(
+                    `[importStaffFromExcel] Gửi email tới ${info.email} thất bại:`,
+                    err?.message || err
+                );
+            }
+        }
+
+        return {
+            message: `Import hoàn tất. Tạo thành công ${results.created} tài khoản, lỗi ${results.failed.length} dòng`,
+            created: results.created,
+            failed: results.failed
+        };
     }
 
     private generateRandomPassword(): string {
@@ -271,7 +397,6 @@ export class StationStaffService {
                 const historyData = {
                     stationStaffId: staff.id,
                     stationId: transferDto.newStationId,
-                    shift: transferDto.shift || StaffHistoryShift.MORNING,
                     status: true
                 };
 

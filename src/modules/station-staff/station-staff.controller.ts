@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     Body,
     Controller,
     ForbiddenException,
@@ -6,12 +7,16 @@ import {
     Post,
     Query,
     Req,
-    UseGuards
+    UploadedFile,
+    UseGuards,
+    UseInterceptors
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { StationStaffService } from './station-staff.service';
 import {
     ApiBearerAuth,
     ApiBody,
+    ApiConsumes,
     ApiOperation,
     ApiQuery,
     ApiTags
@@ -21,7 +26,6 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { RoleName } from 'src/enums';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TransferStationDto } from './dto/transferstation.dto';
-import { CreateStaffAccountDto } from './dto/create-staff-account.dto';
 
 @ApiTags('StationStaff')
 @ApiBearerAuth()
@@ -77,12 +81,6 @@ export class StationStaffController {
         @Query('search') search?: string,
         @Query('status') status?: boolean
     ) {
-        const staff = await this.stationStaffService.findByUserId(req.user.id);
-        if (!staff || !staff.isHead) {
-            throw new ForbiddenException(
-                'Bạn không phải trưởng trạm, không có quyền truy cập'
-            );
-        }
         return this.stationStaffService.getStationStaffByStation(
             req.user.stationId,
             page,
@@ -103,12 +101,30 @@ export class StationStaffController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(RoleName.ADMIN)
-    @Post('create-account')
+    @Post('import-excel')
     @ApiOperation({
         summary:
-            'Admin tạo tài khoản nhân viên mới (User + StationStaff + gửi email)'
+            'Admin import nhân viên từ file Excel (tạo User + StationStaff + gửi email)'
     })
-    async createStaffAccount(@Body() dto: CreateStaffAccountDto) {
-        return this.stationStaffService.createStaffAccount(dto);
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                    description:
+                        'File Excel với cột: username, email, fullName, stationId'
+                }
+            }
+        }
+    })
+    @UseInterceptors(FileInterceptor('file'))
+    async importStaffFromExcel(@UploadedFile() file: Express.Multer.File) {
+        if (!file) {
+            throw new BadRequestException('Vui lòng upload file Excel');
+        }
+        return this.stationStaffService.importStaffFromExcel(file);
     }
 }

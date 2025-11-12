@@ -118,11 +118,11 @@ export class DashboardController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(RoleName.ADMIN)
-    @Get('top-feedback-stations')
+    @Get('top-avg-rating-stations')
     @ApiOperation({
-        summary: 'Lấy top 3 trạm được feedback nhiều nhất (ADMIN)'
+        summary: 'Lấy trạm rating trung bình cao nhất và thấp nhất (ADMIN)'
     })
-    async getTopFeedbackStations() {
-        return await this.dashboardService.getTopFeedbackStations();
+    async getTopAvgRatingStations() {
+        return await this.dashboardService.getTopAvgRatingStations();
     }
 }

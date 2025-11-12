@@ -14,7 +14,13 @@ import {
     UserMembershipStatus,
     TransactionStatus
 } from 'src/enums';
-import { Between, DataSource, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+    Between,
+    DataSource,
+    LessThan,
+    MoreThanOrEqual,
+    Repository
+} from 'typeorm';
 
 @Injectable()
 export class DashboardService {
@@ -205,7 +211,8 @@ export class DashboardService {
                 id: item.station.id,
                 name: item.station.name,
                 address: item.station.address,
-                bookingCount: item.count
+                bookingCount: item.count,
+                image: item.station.image
             }));
 
             // Lấy top 3 ít nhất
@@ -216,7 +223,8 @@ export class DashboardService {
                     id: item.station.id,
                     name: item.station.name,
                     address: item.station.address,
-                    bookingCount: item.count
+                    bookingCount: item.count,
+                    image: item.station.image
                 }));
 
             return {
@@ -229,52 +237,67 @@ export class DashboardService {
         }
     }
 
-    async getTopFeedbackStations(): Promise<any> {
+    async getTopAvgRatingStations(): Promise<any> {
         try {
             // Lấy tất cả feedbacks có stationId
             const feedbacks = await this.dataSource
                 .getRepository(Feedback)
-                .find({
-                    relations: ['station']
-                });
+                .find({ relations: ['station'] });
 
-            // Đếm số lượng feedback theo từng station
-            const stationCount: Record<
+            // Gom feedback theo stationId
+            const stationRatings: Record<
                 number,
-                { station: any; count: number }
+                { station: Station; total: number; count: number }
             > = {};
             feedbacks.forEach((fb) => {
-                if (fb.stationId) {
-                    if (!stationCount[fb.stationId]) {
-                        stationCount[fb.stationId] = {
+                if (fb.stationId && fb.station) {
+                    if (!stationRatings[fb.stationId]) {
+                        stationRatings[fb.stationId] = {
                             station: fb.station,
+                            total: 0,
                             count: 0
                         };
                     }
-                    stationCount[fb.stationId].count++;
+                    stationRatings[fb.stationId].total += fb.rating;
+                    stationRatings[fb.stationId].count++;
                 }
             });
 
-            // Chuyển thành mảng và sắp xếp giảm dần
-            const sortedStations = Object.values(stationCount).sort(
-                (a, b) => b.count - a.count
-            );
+            // Tính trung bình rating cho từng station
+            const avgRatings = Object.values(stationRatings)
+                .map((item) => ({
+                    id: item.station.id,
+                    name: item.station.name,
+                    address: item.station.address,
+                    image: item.station.image,
+                    avgRating: item.count > 0 ? item.total / item.count : 0,
+                    feedbackCount: item.count
+                }))
+                .filter((item) => item.feedbackCount > 0);
 
-            // Lấy top 3 trạm được feedback nhiều nhất
-            const topFeedback = sortedStations.slice(0, 3).map((item) => ({
-                id: item.station.id,
-                name: item.station.name,
-                address: item.station.address,
-                feedbackCount: item.count
-            }));
+            if (avgRatings.length === 0) {
+                return {
+                    highest: null,
+                    lowest: null,
+                    message: 'Không có dữ liệu feedback'
+                };
+            }
+
+            // Sắp xếp giảm dần theo avgRating
+            avgRatings.sort((a, b) => b.avgRating - a.avgRating);
+
+            const highest = avgRatings[0];
+            const lowest = avgRatings[avgRatings.length - 1];
 
             return {
-                topFeedback,
-                message: 'Lấy top 3 trạm được feedback nhiều nhất thành công'
+                highest,
+                lowest,
+                message:
+                    'Lấy trạm rating trung bình cao nhất và thấp nhất thành công'
             };
         } catch (error) {
             throw new InternalServerErrorException(
-                'Lỗi khi lấy top feedback trạm'
+                'Lỗi khi lấy trạm rating trung bình cao/thấp nhất'
             );
         }
     }

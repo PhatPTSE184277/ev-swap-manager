@@ -156,9 +156,7 @@ export class StationStaffService {
         });
     }
 
-    async importStaffFromExcel(
-        file: Express.Multer.File
-    ): Promise<{
+    async importStaffFromExcel(file: Express.Multer.File): Promise<{
         message: string;
         created: number;
         failed: Array<{ row: number; reason: string; data: any }>;
@@ -197,12 +195,14 @@ export class StationStaffService {
         // Helper function để lấy field từ row (case-insensitive)
         const getField = (obj: any, candidates: string[]): string => {
             for (const key of candidates) {
-                if (
-                    Object.prototype.hasOwnProperty.call(obj, key) &&
-                    obj[key] !== ''
-                )
-                    return String(obj[key]).trim();
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const value = obj[key];
+                    if (value !== null && value !== undefined && value !== '') {
+                        return String(value).trim();
+                    }
+                }
             }
+
             const lowerMap = Object.keys(obj).reduce(
                 (acc, key) => {
                     acc[key.toLowerCase()] = obj[key];
@@ -210,10 +210,14 @@ export class StationStaffService {
                 },
                 {} as Record<string, any>
             );
+
             for (const candidate of candidates) {
                 const lower = candidate.toLowerCase();
-                if (lowerMap[lower] !== undefined && lowerMap[lower] !== '') {
-                    return String(lowerMap[lower]).trim();
+                if (Object.prototype.hasOwnProperty.call(lowerMap, lower)) {
+                    const value = lowerMap[lower];
+                    if (value !== null && value !== undefined && value !== '') {
+                        return String(value).trim();
+                    }
                 }
             }
             return '';
@@ -246,22 +250,52 @@ export class StationStaffService {
                 'StationId',
                 'Trạm',
                 'station',
-                'maTram'
+                'maTram',
+                'stationid'
             ]);
-            const stationId = Number(stationIdRaw);
 
             // Validate các trường bắt buộc
-            if (
-                !username ||
-                !email ||
-                !fullName ||
-                !stationIdRaw ||
-                Number.isNaN(stationId)
-            ) {
+            if (!username || username === '') {
                 results.failed.push({
                     row: rowIndex,
-                    reason:
-                        'Thiếu thông tin bắt buộc (username, email, fullName, stationId)',
+                    reason: 'Thiếu username',
+                    data: row
+                });
+                continue;
+            }
+
+            if (!email || email === '') {
+                results.failed.push({
+                    row: rowIndex,
+                    reason: 'Thiếu email',
+                    data: row
+                });
+                continue;
+            }
+
+            if (!fullName || fullName === '') {
+                results.failed.push({
+                    row: rowIndex,
+                    reason: 'Thiếu fullName',
+                    data: row
+                });
+                continue;
+            }
+
+            if (!stationIdRaw || stationIdRaw === '') {
+                results.failed.push({
+                    row: rowIndex,
+                    reason: 'Thiếu stationId',
+                    data: row
+                });
+                continue;
+            }
+
+            const stationId = Number(stationIdRaw);
+            if (Number.isNaN(stationId) || stationId <= 0) {
+                results.failed.push({
+                    row: rowIndex,
+                    reason: `stationId không hợp lệ: ${stationIdRaw}`,
                     data: row
                 });
                 continue;

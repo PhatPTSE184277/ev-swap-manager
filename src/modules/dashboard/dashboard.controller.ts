@@ -126,14 +126,21 @@ export class DashboardController {
         return await this.dashboardService.getTopAvgRatingStations();
     }
 
+    @Get('user-membership')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(RoleName.ADMIN)
-    @Get('user-membership-stats')
+    @ApiQuery({ name: 'month', required: true, type: Number })
+    @ApiQuery({ name: 'year', required: true, type: Number })
     @ApiOperation({
-        summary:
-            'Thống kê số người dùng chưa đăng ký gói và đã đăng ký từng gói (ADMIN)'
+        summary: 'Thống kê số người dùng đăng ký gói theo tháng/năm (ADMIN)'
     })
-    async getUserMembershipStats() {
-        return await this.dashboardService.getUserMembershipStats();
+    async getUserMembershipStatsByMonthYear(
+        @Query('month') month: number,
+        @Query('year') year: number
+    ) {
+        return await this.dashboardService.getUserMembershipStatsByMonthYear(
+            month,
+            year
+        );
     }
 }

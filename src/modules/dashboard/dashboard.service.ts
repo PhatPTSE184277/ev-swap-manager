@@ -305,13 +305,14 @@ export class DashboardService {
         }
     }
 
-    async getUserMembershipStats(): Promise<any> {
+    async getUserMembershipStatsByMonthYear(
+        month: number,
+        year: number
+    ): Promise<any> {
         try {
             // Lấy tất cả user có role USER
             const allUsers = await this.userRepository.find({
-                where: {
-                    role: { name: RoleName.USER }
-                },
+                where: { role: { name: RoleName.USER } },
                 relations: ['userMemberships', 'userMemberships.membership']
             });
 
@@ -320,23 +321,47 @@ export class DashboardService {
                 where: { status: true }
             });
 
-            // Đếm số user chưa đăng ký gói (không có userMembership ACTIVE nào)
-            const usersWithoutMembership = allUsers.filter((user) => {
-                const hasActiveMembership = user.userMemberships?.some(
-                    (um) => um.status === UserMembershipStatus.ACTIVE
-                );
-                return !hasActiveMembership;
+            // Xác định userMembership ACTIVE duy nhất theo tháng/năm (lấy bản ghi ACTIVE, createdAt trong tháng/năm)
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 1);
+
+            // Map userId -> membershipId (chỉ lấy bản ghi ACTIVE, createdAt trong tháng/năm, expiredDate chưa hết hạn)
+            const userMainMembership: Record<number, number | null> = {};
+
+            allUsers.forEach((user) => {
+                const activeMemberships = user.userMemberships
+                    ?.filter(
+                        (um) =>
+                            um.status === UserMembershipStatus.ACTIVE &&
+                            um.createdAt >= startDate &&
+                            um.createdAt < endDate
+                    )
+                    .sort((a, b) => {
+                        // Ưu tiên expiredDate xa nhất
+                        const aTime = a.expiredDate
+                            ? new Date(a.expiredDate).getTime()
+                            : 0;
+                        const bTime = b.expiredDate
+                            ? new Date(b.expiredDate).getTime()
+                            : 0;
+                        return bTime - aTime;
+                    });
+                userMainMembership[user.id] =
+                    activeMemberships && activeMemberships.length > 0
+                        ? activeMemberships[0].membershipId
+                        : null;
             });
 
-            // Đếm số user đăng ký từng loại gói
+            // Đếm số user chưa đăng ký gói (không có gói ACTIVE trong tháng/năm)
+            const usersWithoutMembership = Object.values(
+                userMainMembership
+            ).filter((mId) => mId === null).length;
+
+            // Đếm số user đăng ký từng loại gói (mỗi user chỉ tính 1 gói ACTIVE trong tháng/năm)
             const membershipStats = allMemberships.map((membership) => {
-                const count = allUsers.filter((user) => {
-                    return user.userMemberships?.some(
-                        (um) =>
-                            um.membershipId === membership.id &&
-                            um.status === UserMembershipStatus.ACTIVE
-                    );
-                }).length;
+                const count = Object.values(userMainMembership).filter(
+                    (mId) => mId === membership.id
+                ).length;
 
                 return {
                     membershipId: membership.id,
@@ -346,23 +371,21 @@ export class DashboardService {
                 };
             });
 
-            // Tính tổng user đã đăng ký (có ít nhất 1 gói ACTIVE)
-            const usersWithMembership = allUsers.filter((user) => {
-                return user.userMemberships?.some(
-                    (um) => um.status === UserMembershipStatus.ACTIVE
-                );
-            });
+            // Tổng user đã đăng ký (có 1 gói ACTIVE trong tháng/năm)
+            const usersWithMembership = Object.values(
+                userMainMembership
+            ).filter((mId) => mId !== null).length;
 
             return {
                 totalUsers: allUsers.length,
-                usersWithoutMembership: usersWithoutMembership.length,
-                usersWithMembership: usersWithMembership.length,
+                usersWithoutMembership,
+                usersWithMembership,
                 membershipStats,
-                message: 'Lấy thống kê gói thành viên thành công'
+                message: `Lấy thống kê gói thành viên tháng ${month}/${year} thành công`
             };
         } catch (error) {
             throw new InternalServerErrorException(
-                'Lỗi khi lấy thống kê gói thành viên'
+                'Lỗi khi lấy thống kê gói thành viên theo tháng/năm'
             );
         }
     }

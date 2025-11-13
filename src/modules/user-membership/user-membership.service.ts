@@ -6,16 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Membership, Transaction, User, UserMembership } from 'src/entities';
-import {
-    DataSource,
-    LessThan,
-    MoreThan,
-    Repository,
-} from 'typeorm';
+import { DataSource, LessThan, MoreThan, Repository } from 'typeorm';
 import { CreateUserMembershipDto } from './dto/create-user-membership.dto';
 import { TransactionStatus, UserMembershipStatus } from '../../enums';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TransactionService } from '../transaction/transaction.service';
+import { UpgradeUserMembershipDto } from './dto/upgrade-user-membership.dto';
 
 @Injectable()
 export class UserMembershipService {
@@ -142,9 +138,11 @@ export class UserMembershipService {
                         userId: user.id,
                         membershipId: membership.id,
                         remainingSwaps:
-                            typeof membership.swapLimit === 'number'
-                                ? membership.swapLimit + bonusSwaps
-                                : 1,
+                            membership.swapLimit === null
+                                ? null
+                                : typeof membership.swapLimit === 'number'
+                                  ? membership.swapLimit + bonusSwaps
+                                  : null,
                         paymentExpireAt: new Date(
                             now.getTime() + 20 * 60 * 1000
                         ),
@@ -313,6 +311,164 @@ export class UserMembershipService {
 
             throw new InternalServerErrorException(
                 'Lỗi hệ thống khi hủy gói thành viên'
+            );
+        }
+    }
+
+    async upgradeUserMembership(
+        userId: number,
+        dto: UpgradeUserMembershipDto
+    ): Promise<any> {
+        try {
+            const result = await this.dataSource.transaction(
+                async (manager) => {
+                    const currentUserMembership = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: {
+                                userId: userId,
+                                status: UserMembershipStatus.ACTIVE
+                            },
+                            relations: ['membership']
+                        }
+                    );
+
+                    if (!currentUserMembership) {
+                        throw new NotFoundException(
+                            'Không có gói thành viên nào đang hoạt động để nâng cấp'
+                        );
+                    }
+
+                    const oldMembership = currentUserMembership.membership;
+                    if (!oldMembership) {
+                        throw new BadRequestException(
+                            'Dữ liệu gói hiện tại không hợp lệ'
+                        );
+                    }
+
+                    if (
+                        oldMembership.swapLimit === null ||
+                        oldMembership.swapLimit === 0
+                    ) {
+                        throw new BadRequestException(
+                            'Bạn đang ở gói cao nhất, không thể nâng cấp thêm'
+                        );
+                    }
+
+                    const newMembership = await manager.findOne(Membership, {
+                        where: { id: dto.newMembershipId }
+                    });
+
+                    if (!newMembership) {
+                        throw new NotFoundException(
+                            'Gói thành viên mới không tồn tại'
+                        );
+                    }
+
+                    const oldPrice =
+                        typeof oldMembership.price === 'string'
+                            ? parseFloat(oldMembership.price)
+                            : Number(oldMembership.price);
+
+                    const newPrice =
+                        typeof newMembership.price === 'string'
+                            ? parseFloat(newMembership.price)
+                            : Number(newMembership.price);
+
+                    if (isNaN(oldPrice) || isNaN(newPrice)) {
+                        throw new BadRequestException('Giá gói không hợp lệ');
+                    }
+
+                    if (newPrice <= oldPrice) {
+                        throw new BadRequestException(
+                            'Chỉ được nâng cấp lên gói có giá cao hơn'
+                        );
+                    }
+
+                    const existingPending = await manager.findOne(
+                        UserMembership,
+                        {
+                            where: {
+                                userId,
+                                status: UserMembershipStatus.PENDING,
+                                membershipId: newMembership.id
+                            }
+                        }
+                    );
+
+                    if (existingPending) {
+                        throw new BadRequestException(
+                            'Bạn đã có gói mới đang chờ thanh toán'
+                        );
+                    }
+
+                    const remainingSwaps = Number(
+                        currentUserMembership.remainingSwaps || 0
+                    );
+                    const oldSwapLimit = Number(oldMembership.swapLimit || 0);
+
+                    let discountPercent = 0;
+                    if (oldSwapLimit > 0) {
+                        discountPercent = remainingSwaps / oldSwapLimit / 2;
+                        if (discountPercent < 0) discountPercent = 0;
+                        if (discountPercent > 1) discountPercent = 1;
+                    }
+
+                    const discountAmount = newPrice * discountPercent;
+                    const finalPrice = Number(
+                        (newPrice - discountAmount).toFixed(2)
+                    );
+
+                    currentUserMembership.status =
+                        UserMembershipStatus.CANCELLED;
+                    await manager.save(currentUserMembership);
+
+                    const now = new Date();
+                    const newUserMembership = manager.create(UserMembership, {
+                        userId,
+                        membershipId: newMembership.id,
+                        remainingSwaps:
+                            newMembership.swapLimit === null
+                                ? null
+                                : typeof newMembership.swapLimit === 'number'
+                                  ? newMembership.swapLimit
+                                  : null,
+                        paymentExpireAt: new Date(
+                            now.getTime() + 20 * 60 * 1000
+                        ),
+                        status: UserMembershipStatus.PENDING
+                    });
+
+                    await manager.save(newUserMembership);
+
+                    const transactionResult =
+                        await this.transactionService.createMembershipTransaction(
+                            {
+                                paymentId: dto.paymentId,
+                                userMembershipId: newUserMembership.id,
+                                totalPrice: finalPrice
+                            },
+                            manager
+                        );
+
+                    return {
+                        message:
+                            'Tạo yêu cầu nâng cấp gói thành công, vui lòng thanh toán để kích hoạt',
+                        paymentUrl: transactionResult.paymentUrl
+                    };
+                }
+            );
+            return result;
+        } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException(
+                'Lỗi hệ thống khi nâng cấp gói thành viên'
             );
         }
     }

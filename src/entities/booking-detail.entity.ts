@@ -5,11 +5,13 @@ import {
     ManyToOne,
     JoinColumn,
     BeforeInsert,
-    BeforeUpdate
+    BeforeUpdate,
+    OneToMany
 } from 'typeorm';
 import { Booking } from './booking.entity';
 import { BookingDetailStatus } from '../enums';
 import { Battery } from './battery.entity';
+import { Report } from './report.entity';
 
 @Entity('booking_details')
 export class BookingDetail {
@@ -49,6 +51,9 @@ export class BookingDetail {
     @ManyToOne(() => Battery)
     @JoinColumn({ name: 'batteryId' })
     battery: Battery;
+
+    @OneToMany(() => Report, (report) => report.bookingDetail)
+    reports: Report[];
 
     @BeforeInsert()
     setCreatedAtVN() {

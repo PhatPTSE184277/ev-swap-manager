@@ -24,9 +24,6 @@ export class StationStaff {
     stationId: number;
 
     @Column({ type: 'boolean', default: true })
-    isHead: boolean;
-
-    @Column({ type: 'boolean', default: true })
     status: boolean;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

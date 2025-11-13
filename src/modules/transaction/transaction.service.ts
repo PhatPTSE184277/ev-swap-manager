@@ -288,6 +288,7 @@ export class TransactionService {
                             booking.status === BookingStatus.PENDING_PAYMENT
                         ) {
                             booking.status = BookingStatus.IN_PROGRESS;
+                            booking.paymentExpireAt = null;
                             await manager.save(Booking, booking);
 
                             const bookingDetails = await manager.find(
@@ -454,13 +455,20 @@ export class TransactionService {
                     savedTransaction.orderCode = orderCode;
                     await mgr.save(Transaction, savedTransaction);
 
+                    const expiredAt = booking?.paymentExpireAt
+                        ? Math.floor(
+                              new Date(booking.paymentExpireAt).getTime() / 1000
+                          )
+                        : Math.floor((Date.now() + 20 * 60 * 1000) / 1000);
+
                     const paymentLinkRes =
                         await this.payosService.createPaymentLink({
                             orderCode,
                             amount: dto.totalPrice,
                             description: shortDescription,
-                            returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
-                            cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`
+                            returnUrl: `${process.env.SIMULATION_URL}/payment/success`,
+                            cancelUrl: `${process.env.SIMULATION_URL}/payment/cancel`,
+                            expiredAt
                         });
 
                     const paymentUrl =
@@ -785,103 +793,103 @@ export class TransactionService {
             );
         }
     }
-async handlePayOSCallbackForBooking(
-    dto: UpdateMembershipTransactionDto
-): Promise<any> {
-    const { orderCode, code, status } = dto;
 
-    const transaction = await this.transactionRepository.findOne({
-        where: { orderCode: Number(orderCode) },
-        relations: ['booking']
-    });
+    async handlePayOSCallbackForBooking(
+        dto: UpdateMembershipTransactionDto
+    ): Promise<any> {
+        const { orderCode, code, status } = dto;
 
-    if (!transaction) {
-        throw new NotFoundException('Giao dịch không tồn tại');
-    }
+        const transaction = await this.transactionRepository.findOne({
+            where: { orderCode: Number(orderCode) },
+            relations: ['booking']
+        });
 
-    await this.datasource.transaction(async (manager) => {
-        if (code === '00' || status === 'PAID') {
-            if (transaction.status !== TransactionStatus.SUCCESS) {
-                await manager.update(Transaction, transaction.id, {
-                    status: TransactionStatus.SUCCESS
-                });
-            }
-            const booking = await manager.findOne(Booking, {
-                where: { transactionId: transaction.id }
-            });
-
-            if (booking) {
-                if (booking.status === BookingStatus.PENDING_PAYMENT) {
-                    booking.status = BookingStatus.IN_PROGRESS;
-                    await manager.save(Booking, booking);
-                }
-
-
-                const bookingDetails = await manager.find(BookingDetail, {
-                    where: { bookingId: booking.id }
-                });
-
-                for (const detail of bookingDetails) {
-                    if (
-                        detail.status !== BookingDetailStatus.IN_PROGRESS &&
-                        detail.status !== BookingDetailStatus.COMPLETED &&
-                        detail.status !== BookingDetailStatus.CANCELLED
-                    ) {
-                        detail.status = BookingDetailStatus.IN_PROGRESS;
-                        await manager.save(BookingDetail, detail);
-                    }
-                }
-            }
-        } else {
-            if (transaction.status !== TransactionStatus.FAILED) {
-                await manager.update(Transaction, transaction.id, {
-                    status: TransactionStatus.FAILED
-                });
-            }
-
-            const booking = await manager.findOne(Booking, {
-                where: { transactionId: transaction.id }
-            });
-
-            if (booking && booking.status !== BookingStatus.CANCELLED) {
-                booking.status = BookingStatus.CANCELLED;
-                await manager.save(Booking, booking);
-
-                const bookingDetails = await manager.find(BookingDetail, {
-                    where: { bookingId: booking.id }
-                });
-
-                for (const detail of bookingDetails) {
-                    if (detail.status !== BookingDetailStatus.CANCELLED) {
-                        detail.status = BookingDetailStatus.CANCELLED;
-                        await manager.save(BookingDetail, detail);
-
-                        const battery = await manager.findOne(Battery, {
-                            where: { id: detail.batteryId }
-                        });
-                        if (
-                            battery &&
-                            battery.status === BatteryStatus.RESERVED
-                        ) {
-                            battery.status = BatteryStatus.AVAILABLE;
-                            await manager.save(Battery, battery);
-                        }
-
-                        const slot = await manager.findOne(Slot, {
-                            where: { batteryId: detail.batteryId }
-                        });
-                        if (slot && slot.status === SlotStatus.RESERVED) {
-                            slot.status = SlotStatus.AVAILABLE;
-                            await manager.save(Slot, slot);
-                        }
-                    }
-                }
-            }
+        if (!transaction) {
+            throw new NotFoundException('Giao dịch không tồn tại');
         }
-    });
 
-    return { message: 'Cập nhật trạng thái giao dịch booking thành công' };
-}
+        await this.datasource.transaction(async (manager) => {
+            if (code === '00' || status === 'PAID') {
+                if (transaction.status !== TransactionStatus.SUCCESS) {
+                    await manager.update(Transaction, transaction.id, {
+                        status: TransactionStatus.SUCCESS
+                    });
+                }
+                const booking = await manager.findOne(Booking, {
+                    where: { transactionId: transaction.id }
+                });
+
+                if (booking) {
+                    if (booking.status === BookingStatus.PENDING_PAYMENT) {
+                        booking.status = BookingStatus.IN_PROGRESS;
+                        await manager.save(Booking, booking);
+                    }
+
+                    const bookingDetails = await manager.find(BookingDetail, {
+                        where: { bookingId: booking.id }
+                    });
+
+                    for (const detail of bookingDetails) {
+                        if (
+                            detail.status !== BookingDetailStatus.IN_PROGRESS &&
+                            detail.status !== BookingDetailStatus.COMPLETED &&
+                            detail.status !== BookingDetailStatus.CANCELLED
+                        ) {
+                            detail.status = BookingDetailStatus.IN_PROGRESS;
+                            await manager.save(BookingDetail, detail);
+                        }
+                    }
+                }
+            } else {
+                if (transaction.status !== TransactionStatus.FAILED) {
+                    await manager.update(Transaction, transaction.id, {
+                        status: TransactionStatus.FAILED
+                    });
+                }
+
+                const booking = await manager.findOne(Booking, {
+                    where: { transactionId: transaction.id }
+                });
+
+                if (booking && booking.status !== BookingStatus.CANCELLED) {
+                    booking.status = BookingStatus.CANCELLED;
+                    await manager.save(Booking, booking);
+
+                    const bookingDetails = await manager.find(BookingDetail, {
+                        where: { bookingId: booking.id }
+                    });
+
+                    for (const detail of bookingDetails) {
+                        if (detail.status !== BookingDetailStatus.CANCELLED) {
+                            detail.status = BookingDetailStatus.CANCELLED;
+                            await manager.save(BookingDetail, detail);
+
+                            const battery = await manager.findOne(Battery, {
+                                where: { id: detail.batteryId }
+                            });
+                            if (
+                                battery &&
+                                battery.status === BatteryStatus.RESERVED
+                            ) {
+                                battery.status = BatteryStatus.AVAILABLE;
+                                await manager.save(Battery, battery);
+                            }
+
+                            const slot = await manager.findOne(Slot, {
+                                where: { batteryId: detail.batteryId }
+                            });
+                            if (slot && slot.status === SlotStatus.RESERVED) {
+                                slot.status = SlotStatus.AVAILABLE;
+                                await manager.save(Slot, slot);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        return { message: 'Cập nhật trạng thái giao dịch booking thành công' };
+    }
 
     async getTransactionsByStationForStaff(
         stationId: number,
@@ -959,6 +967,87 @@ async handlePayOSCallbackForBooking(
             throw new InternalServerErrorException(
                 error.message ||
                     'Lỗi hệ thống khi lấy danh sách transaction booking theo trạm'
+            );
+        }
+    }
+
+    async getTransactionsByUser(
+        userId: number,
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        order: 'ASC' | 'DESC' = 'DESC',
+        status?: TransactionStatus
+    ): Promise<any> {
+        try {
+            const where: any = {};
+            if (status) where.status = status;
+            if (search) where.orderCode = Number(search) || undefined;
+
+            // Lấy transaction theo userMembership hoặc booking của user
+            where.userMembership = { userId };
+            // Nếu có booking của user, có thể bổ sung thêm điều kiện booking.userId nếu cần
+
+            const [data, total] = await this.transactionRepository.findAndCount(
+                {
+                    where,
+                    relations: [
+                        'payment',
+                        'userMembership',
+                        'userMembership.membership',
+                        'booking'
+                    ],
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    order: { createdAt: order }
+                }
+            );
+
+            const mappedData = data.map((transaction) => ({
+                id: transaction.id,
+                orderCode: transaction.orderCode,
+                status: transaction.status,
+                totalPrice: transaction.totalPrice,
+                dateTime: transaction.dateTime,
+                payment: transaction.payment
+                    ? {
+                          id: transaction.payment.id,
+                          name: transaction.payment.name
+                      }
+                    : null,
+                paymentUrl: transaction.paymentUrl,
+                userMembership: transaction.userMembership
+                    ? {
+                          id: transaction.userMembership.id,
+                          membership: transaction.userMembership.membership
+                              ? {
+                                    id: transaction.userMembership.membership
+                                        .id,
+                                    name: transaction.userMembership.membership
+                                        .name
+                                }
+                              : null
+                      }
+                    : null,
+                booking: transaction.booking
+                    ? {
+                          id: transaction.booking.id,
+                          status: transaction.booking.status
+                      }
+                    : null
+            }));
+
+            return {
+                data: mappedData,
+                total,
+                page,
+                limit,
+                message: 'Lấy danh sách transaction theo user thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                error.message ||
+                    'Lỗi hệ thống khi lấy danh sách transaction theo user'
             );
         }
     }

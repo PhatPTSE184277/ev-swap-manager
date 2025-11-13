@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { StationStaff } from './station-staff.entity';
 import { Station } from './station.entity';
-import { StaffHistoryShift } from '../enums';
 
 @Entity('station_staff_histories')
 export class StationStaffHistory {
@@ -24,9 +23,6 @@ export class StationStaffHistory {
 
     @Column({ type: 'date' })
     date: Date;
-
-    @Column({ type: 'enum', enum: StaffHistoryShift })
-    shift: StaffHistoryShift;
 
     @Column({ type: 'boolean', default: true })
     status: boolean;

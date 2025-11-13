@@ -1,7 +1,6 @@
 import { RoleName } from '../../enums/role.enum';
 import { UserStatus } from '../../enums/user.enum';
 import { UserMembershipStatus } from '../../enums/membership.enum';
-import { StaffHistoryShift } from '../../enums/station.enum';
 import { BatteryStatus } from '../../enums/battery.enum';
 import { SlotStatus } from '../../enums/slot.enum';
 
@@ -117,10 +116,10 @@ export const seedData = {
         {
             id: 3,
             name: 'VIP',
-            description: 'Gói VIP - Không giới hạn đổi pin',
+            description: 'Gói VIP - 60 lần đổi pin/tháng',
             price: 20000,
             duration: 30,
-            swapLimit: null,
+            swapLimit: 60,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -238,8 +237,7 @@ export const seedData = {
             id: 1,
             stationStaffId: 1,
             stationId: 1,
-            date: new Date('2024-09-30'),
-            shift: StaffHistoryShift.MORNING,
+            date: new Date(),
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -248,8 +246,7 @@ export const seedData = {
             id: 2,
             stationStaffId: 1,
             stationId: 1,
-            date: new Date('2024-09-30'),
-            shift: StaffHistoryShift.AFTERNOON,
+            date: new Date(),
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()

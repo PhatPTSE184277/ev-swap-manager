@@ -31,8 +31,8 @@ export class UserMembership {
     @Column({ type: 'timestamp', nullable: true })
     paymentExpireAt: Date;
 
-    @Column({ type: 'int', default: 0 })
-    remainingSwaps: number;
+    @Column({ type: 'int', default: 0, nullable: true })
+    remainingSwaps: number | null;
 
     @Column({
         type: 'enum',

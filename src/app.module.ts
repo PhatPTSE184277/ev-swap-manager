@@ -29,6 +29,9 @@ import { PayOSModule } from './modules/pay-os/pay-os.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { TransactionGateway } from './gateways/transaction.gateway';
 import { CleanupModule } from './modules/cleanup/cleanup.module';
+import { ReportModule } from './modules/report/report.module';
+import { AnalyticModule } from './modules/analytic/analytic.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -65,6 +68,9 @@ import { CleanupModule } from './modules/cleanup/cleanup.module';
     PayOSModule,
     PaymentModule,
     FeedbackModule,
+    ReportModule,
+    AnalyticModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [BatteryGateway, TransactionGateway],

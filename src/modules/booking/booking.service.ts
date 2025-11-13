@@ -26,12 +26,13 @@ import {
 import { BatteryGateway } from 'src/gateways/battery.gateway';
 import { SlotGateway } from 'src/gateways/slot.gateway';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { SlotStatus, UserMembershipStatus } from 'src/enums';
+import { SlotStatus, TransactionStatus, UserMembershipStatus } from 'src/enums';
 import Helpers from '../../utils/helpers';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CreateOnsiteBookingDto } from './dto/create-onsite-booking.dto';
 import { TransactionService } from '../transaction/transaction.service';
-import { create } from 'domain';
+import { Report } from 'src/entities/report.entity';
+import { ReportStatus } from 'src/enums/report.enum';
 
 @Injectable()
 export class BookingService {
@@ -45,10 +46,56 @@ export class BookingService {
     ) {}
 
     @Cron(CronExpression.EVERY_MINUTE)
-    async expireBookings() {
+    async expirePaymentBookings() {
         const now = new Date();
 
-        const expiredBookings = await this.bookingRepository.find({
+        const expiredPaymentBookings = await this.bookingRepository.find({
+            where: {
+                paymentExpireAt: LessThan(now),
+                status: BookingStatus.PENDING_PAYMENT
+            },
+            relations: ['bookingDetails', 'transaction']
+        });
+
+        for (const booking of expiredPaymentBookings) {
+            await this.dataSource.transaction(async (manager) => {
+                booking.status = BookingStatus.CANCELLED;
+                await manager.save(Booking, booking);
+
+                for (const detail of booking.bookingDetails) {
+                    detail.status = BookingDetailStatus.CANCELLED;
+                    await manager.save('BookingDetail', detail);
+
+                    const battery = await manager.findOne(Battery, {
+                        where: { id: detail.batteryId }
+                    });
+                    if (battery && battery.status === BatteryStatus.RESERVED) {
+                        battery.status = BatteryStatus.AVAILABLE;
+                        await manager.save(Battery, battery);
+                    }
+
+                    const slot = await manager.findOne(Slot, {
+                        where: { batteryId: detail.batteryId }
+                    });
+                    if (slot && slot.status === SlotStatus.RESERVED) {
+                        slot.status = SlotStatus.AVAILABLE;
+                        await manager.save(Slot, slot);
+                    }
+                }
+
+                if (booking.transaction) {
+                    booking.transaction.status = TransactionStatus.FAILED;
+                    await manager.save('Transaction', booking.transaction);
+                }
+            });
+        }
+    }
+
+    @Cron(CronExpression.EVERY_MINUTE)
+    async expireReservedBookings() {
+        const now = new Date();
+
+        const expiredReservedBookings = await this.bookingRepository.find({
             where: {
                 expectedPickupTime: LessThan(now),
                 status: BookingStatus.RESERVED
@@ -56,33 +103,32 @@ export class BookingService {
             relations: ['bookingDetails']
         });
 
-        for (const booking of expiredBookings) {
-            booking.status = BookingStatus.EXPIRED;
-            await this.bookingRepository.save(booking);
+        for (const booking of expiredReservedBookings) {
+            await this.dataSource.transaction(async (manager) => {
+                booking.status = BookingStatus.EXPIRED;
+                await manager.save(Booking, booking);
 
-            for (const detail of booking.bookingDetails) {
-                detail.status = BookingDetailStatus.EXPIRED;
-                await this.dataSource
-                    .getRepository('BookingDetail')
-                    .save(detail);
+                for (const detail of booking.bookingDetails) {
+                    detail.status = BookingDetailStatus.EXPIRED;
+                    await manager.save('BookingDetail', detail);
 
-                const batteryRepo = this.dataSource.getRepository('Battery');
-                const battery = await batteryRepo.findOne({
-                    where: { id: detail.batteryId }
-                });
-                if (battery && battery.status === BatteryStatus.RESERVED) {
-                    battery.status = BatteryStatus.AVAILABLE;
-                    await batteryRepo.save(battery);
+                    const battery = await manager.findOne(Battery, {
+                        where: { id: detail.batteryId }
+                    });
+                    if (battery && battery.status === BatteryStatus.RESERVED) {
+                        battery.status = BatteryStatus.AVAILABLE;
+                        await manager.save(Battery, battery);
+                    }
+
+                    const slot = await manager.findOne(Slot, {
+                        where: { batteryId: detail.batteryId }
+                    });
+                    if (slot && slot.status === SlotStatus.RESERVED) {
+                        slot.status = SlotStatus.AVAILABLE;
+                        await manager.save(Slot, slot);
+                    }
                 }
-                const slotRepo = this.dataSource.getRepository('Slot');
-                const slot = await slotRepo.findOne({
-                    where: { batteryId: detail.batteryId }
-                });
-                if (slot && slot.status === SlotStatus.RESERVED) {
-                    slot.status = SlotStatus.AVAILABLE;
-                    await slotRepo.save(slot);
-                }
-            }
+            });
         }
     }
 
@@ -159,8 +205,10 @@ export class BookingService {
                             'Thời gian dự kiến lấy pin không nằm trong giờ hoạt động của trạm'
                         );
                     }
-
-                    if (userMembership) {
+                    if (
+                        userMembership &&
+                        userMembership.remainingSwaps !== null
+                    ) {
                         if (
                             userMembership.remainingSwaps <
                             createBookingDto.bookingDetails.length
@@ -291,7 +339,8 @@ export class BookingService {
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
                     'userMembership',
-                    'transaction'
+                    'transaction',
+                    'bookingDetails.reports'
                 ],
                 skip: (page - 1) * limit,
                 take: limit,
@@ -301,6 +350,7 @@ export class BookingService {
             const mappedData = data.map((booking) => ({
                 id: booking.id,
                 status: booking.status,
+                isFree: booking.isFree,
                 expectedPickupTime: booking.expectedPickupTime,
                 createdAt: booking.createdAt,
                 user: {
@@ -331,7 +381,15 @@ export class BookingService {
                     id: detail.id,
                     batteryId: detail.batteryId,
                     price: detail.price,
-                    status: detail.status
+                    status: detail.status,
+                    reports:
+                        detail.reports?.map((report) => ({
+                            id: report.id,
+                            description: report.description,
+                            status: report.status,
+                            faultyBatteryId: report.faultyBatteryId,
+                            createdAt: report.createdAt
+                        })) || []
                 })),
                 transaction: booking.transaction
                     ? {
@@ -411,7 +469,8 @@ export class BookingService {
                     'bookingDetails.battery',
                     'bookingDetails.battery.batteryType',
                     'userMembership',
-                    'transaction'
+                    'transaction',
+                    'bookingDetails.reports'
                 ],
                 skip: (page - 1) * limit,
                 take: limit,
@@ -421,6 +480,7 @@ export class BookingService {
             const mappedData = data.map((booking) => ({
                 id: booking.id,
                 status: booking.status,
+                isFree: booking.isFree,
                 expectedPickupTime: booking.expectedPickupTime,
                 createdAt: booking.createdAt,
                 user: {
@@ -451,7 +511,15 @@ export class BookingService {
                     id: detail.id,
                     batteryId: detail.batteryId,
                     price: detail.price,
-                    status: detail.status
+                    status: detail.status,
+                    reports:
+                        detail.reports?.map((report) => ({
+                            id: report.id,
+                            description: report.description,
+                            status: report.status,
+                            faultyBatteryId: report.faultyBatteryId,
+                            createdAt: report.createdAt
+                        })) || []
                 }))
             }));
 
@@ -477,6 +545,17 @@ export class BookingService {
         try {
             const result = await this.dataSource.transaction(
                 async (manager) => {
+                    // Kiểm tra report đã confirm chưa
+                    const confirmedReport = await manager.findOne(Report, {
+                        where: {
+                            userId,
+                            status: ReportStatus.CONFIRMED
+                        },
+                        order: { createdAt: 'DESC' }
+                    });
+
+                    const isFreeBooking = !!confirmedReport;
+
                     const userVehicle = await manager.findOne(UserVehicle, {
                         where: {
                             id: dto.userVehicleId,
@@ -512,7 +591,11 @@ export class BookingService {
                         }
                     );
 
-                    if (userMembership) {
+                    if (
+                        userMembership &&
+                        !isFreeBooking &&
+                        userMembership.remainingSwaps !== null
+                    ) {
                         if (
                             userMembership.remainingSwaps <
                             dto.bookingDetails.length
@@ -529,13 +612,21 @@ export class BookingService {
                     const bookingData: any = {
                         userVehicleId: dto.userVehicleId,
                         stationId: dto.stationId,
-                        expectedPickupTime: now,
-                        status: userMembership
-                            ? BookingStatus.IN_PROGRESS
-                            : BookingStatus.PENDING_PAYMENT
+                        expectedPickupTime: null,
+                        isFree: isFreeBooking,
+                        status:
+                            userMembership || isFreeBooking
+                                ? BookingStatus.IN_PROGRESS
+                                : BookingStatus.PENDING_PAYMENT
                     };
                     if (userMembership) {
                         bookingData.userMembershipId = userMembership.id;
+                    }
+
+                    if (!userMembership && !isFreeBooking) {
+                        bookingData.paymentExpireAt = new Date(
+                            now.getTime() + 20 * 60 * 1000
+                        );
                     }
 
                     const booking = manager.create(Booking, bookingData);
@@ -569,18 +660,21 @@ export class BookingService {
                             );
                         }
 
-                        const price = battery.batteryType?.pricePerSwap
-                            ? Number(battery.batteryType.pricePerSwap)
-                            : 0;
+                        const price = isFreeBooking
+                            ? 0
+                            : battery.batteryType?.pricePerSwap
+                              ? Number(battery.batteryType.pricePerSwap)
+                              : 0;
                         totalPrice += price;
 
                         const bookingDetail = manager.create('BookingDetail', {
                             bookingId: booking.id,
                             batteryId: d.batteryId,
                             price,
-                            status: userMembership
-                                ? BookingDetailStatus.IN_PROGRESS
-                                : BookingDetailStatus.PENDING_PAYMENT
+                            status:
+                                userMembership || isFreeBooking
+                                    ? BookingDetailStatus.IN_PROGRESS
+                                    : BookingDetailStatus.PENDING_PAYMENT
                         });
                         await manager.save('BookingDetail', bookingDetail);
 
@@ -601,8 +695,14 @@ export class BookingService {
                         });
                     }
 
+                    // Nếu là booking miễn phí, đổi trạng thái report sang COMPLETED
+                    if (isFreeBooking && confirmedReport) {
+                        confirmedReport.status = ReportStatus.COMPLETED;
+                        await manager.save(Report, confirmedReport);
+                    }
+
                     let transactionResult: any = null;
-                    if (!userMembership) {
+                    if (!userMembership && !isFreeBooking) {
                         if (!dto.paymentId) {
                             throw new BadRequestException(
                                 'Phương thức thanh toán là bắt buộc khi không có gói thành viên'
@@ -619,24 +719,30 @@ export class BookingService {
                                 manager
                             );
 
-                        booking.transactionId = transactionResult.transactionId;
+                        booking.transactionId =
+                            transactionResult.transaction.id;
                         await manager.save(Booking, booking);
                     }
 
                     return {
-                        message: userMembership
-                            ? 'Đặt lịch đổi pin tại chỗ thành công (sử dụng gói thành viên)'
-                            : transactionResult?.paymentMethod === 'CASH'
-                              ? `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán ${totalPrice} VND tiền mặt tại quầy`
-                              : `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán qua link dưới đây`,
+                        message: isFreeBooking
+                            ? 'Đặt lịch đổi pin miễn phí do báo cáo lỗi đã được xác nhận'
+                            : userMembership
+                              ? 'Đặt lịch đổi pin tại chỗ thành công (sử dụng gói thành viên)'
+                              : transactionResult?.paymentMethod === 'CASH'
+                                ? `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán ${totalPrice} VND tiền mặt tại quầy`
+                                : `Đặt lịch đổi pin tại chỗ thành công. Vui lòng thanh toán qua link dưới đây`,
                         bookingId: booking.id,
                         expectedPickupTime: now,
-                        totalPrice: userMembership ? 0 : totalPrice,
+                        totalPrice:
+                            userMembership || isFreeBooking ? 0 : totalPrice,
                         usedMembership: !!userMembership,
+                        isFreeBooking,
                         status: booking.status,
                         paymentUrl: transactionResult?.paymentUrl || null,
                         paymentMethod: transactionResult?.paymentMethod || null,
-                        transactionId: transactionResult?.transactionId || null
+                        transactionId:
+                            transactionResult?.transaction?.id || null
                     };
                 }
             );

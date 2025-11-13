@@ -5,6 +5,7 @@ import {
     Param,
     Post,
     Query,
+    Req,
     UseGuards
 } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
@@ -115,6 +116,36 @@ export class TransactionController {
     ) {
         return this.transactionService.getTransactionsByStationForStaff(
             Number(stationId),
+            Number(page) || 1,
+            Number(limit) || 10,
+            search,
+            order || 'DESC',
+            status
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get('by-user')
+    @ApiOperation({
+        summary: 'User lấy danh sách transaction của mình (phân trang, lọc)'
+    })
+    @ApiQuery({ name: 'page', required: false, type: Number })
+    @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'search', required: false, type: String })
+    @ApiQuery({ name: 'order', required: false, enum: ['ASC', 'DESC'] })
+    @ApiQuery({ name: 'status', required: false, enum: TransactionStatus })
+    async getTransactionsByUser(
+        @Req() req,
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
+        @Query('search') search?: string,
+        @Query('order') order?: 'ASC' | 'DESC',
+        @Query('status') status?: TransactionStatus
+    ) {
+        const userId = req.user.id;
+        return this.transactionService.getTransactionsByUser(
+            userId,
             Number(page) || 1,
             Number(limit) || 10,
             search,

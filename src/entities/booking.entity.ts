@@ -35,10 +35,10 @@ export class Booking {
     stationId: number;
 
     @Column({ type: 'timestamp', nullable: true })
-    expectedPickupTime: Date;
+    expectedPickupTime: Date | null;
 
     @Column({ type: 'timestamp', nullable: true })
-    paymentExpireAt: Date;
+    paymentExpireAt: Date | null;
 
     @Column({ type: 'boolean', default: false })
     isFree: boolean;

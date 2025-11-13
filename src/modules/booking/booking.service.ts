@@ -91,6 +91,47 @@ export class BookingService {
         }
     }
 
+    @Cron(CronExpression.EVERY_MINUTE)
+    async expireReservedBookings() {
+        const now = new Date();
+
+        const expiredReservedBookings = await this.bookingRepository.find({
+            where: {
+                expectedPickupTime: LessThan(now),
+                status: BookingStatus.RESERVED
+            },
+            relations: ['bookingDetails']
+        });
+
+        for (const booking of expiredReservedBookings) {
+            await this.dataSource.transaction(async (manager) => {
+                booking.status = BookingStatus.EXPIRED;
+                await manager.save(Booking, booking);
+
+                for (const detail of booking.bookingDetails) {
+                    detail.status = BookingDetailStatus.EXPIRED;
+                    await manager.save('BookingDetail', detail);
+
+                    const battery = await manager.findOne(Battery, {
+                        where: { id: detail.batteryId }
+                    });
+                    if (battery && battery.status === BatteryStatus.RESERVED) {
+                        battery.status = BatteryStatus.AVAILABLE;
+                        await manager.save(Battery, battery);
+                    }
+
+                    const slot = await manager.findOne(Slot, {
+                        where: { batteryId: detail.batteryId }
+                    });
+                    if (slot && slot.status === SlotStatus.RESERVED) {
+                        slot.status = SlotStatus.AVAILABLE;
+                        await manager.save(Slot, slot);
+                    }
+                }
+            });
+        }
+    }
+
     async createBooking(
         userId: number,
         createBookingDto: CreateBookingDto
@@ -571,7 +612,7 @@ export class BookingService {
                     const bookingData: any = {
                         userVehicleId: dto.userVehicleId,
                         stationId: dto.stationId,
-                        expectedPickupTime: now,
+                        expectedPickupTime: null,
                         isFree: isFreeBooking,
                         status:
                             userMembership || isFreeBooking

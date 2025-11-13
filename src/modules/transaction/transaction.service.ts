@@ -288,6 +288,7 @@ export class TransactionService {
                             booking.status === BookingStatus.PENDING_PAYMENT
                         ) {
                             booking.status = BookingStatus.IN_PROGRESS;
+                            booking.paymentExpireAt = null;
                             await manager.save(Booking, booking);
 
                             const bookingDetails = await manager.find(
@@ -792,6 +793,7 @@ export class TransactionService {
             );
         }
     }
+
     async handlePayOSCallbackForBooking(
         dto: UpdateMembershipTransactionDto
     ): Promise<any> {

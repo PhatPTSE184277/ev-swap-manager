@@ -454,13 +454,20 @@ export class TransactionService {
                     savedTransaction.orderCode = orderCode;
                     await mgr.save(Transaction, savedTransaction);
 
+                    const expiredAt = booking?.paymentExpireAt
+                        ? Math.floor(
+                              new Date(booking.paymentExpireAt).getTime() / 1000
+                          )
+                        : Math.floor((Date.now() + 20 * 60 * 1000) / 1000);
+
                     const paymentLinkRes =
                         await this.payosService.createPaymentLink({
                             orderCode,
                             amount: dto.totalPrice,
                             description: shortDescription,
                             returnUrl: `${process.env.SIMULATION_URL}/payment/success`,
-                            cancelUrl: `${process.env.SIMULATION_URL}/payment/cancel`
+                            cancelUrl: `${process.env.SIMULATION_URL}/payment/cancel`,
+                            expiredAt
                         });
 
                     const paymentUrl =

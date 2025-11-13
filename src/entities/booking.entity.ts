@@ -36,7 +36,13 @@ export class Booking {
 
     @Column({ type: 'timestamp', nullable: true })
     expectedPickupTime: Date;
-    
+
+    @Column({ type: 'timestamp', nullable: true })
+    paymentExpireAt: Date;
+
+    @Column({ type: 'boolean', default: false })
+    isFree: boolean;
+
     @Column({ type: 'timestamp', nullable: true })
     checkinTime: Date;
 
@@ -57,7 +63,6 @@ export class Booking {
     })
     updatedAt: Date;
 
-    
     @ManyToOne(() => Station)
     @JoinColumn({ name: 'stationId' })
     station: Station;

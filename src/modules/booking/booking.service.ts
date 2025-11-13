@@ -26,12 +26,11 @@ import {
 import { BatteryGateway } from 'src/gateways/battery.gateway';
 import { SlotGateway } from 'src/gateways/slot.gateway';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { SlotStatus, UserMembershipStatus } from 'src/enums';
+import { SlotStatus, TransactionStatus, UserMembershipStatus } from 'src/enums';
 import Helpers from '../../utils/helpers';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CreateOnsiteBookingDto } from './dto/create-onsite-booking.dto';
 import { TransactionService } from '../transaction/transaction.service';
-import { create } from 'domain';
 import { Report } from 'src/entities/report.entity';
 import { ReportStatus } from 'src/enums/report.enum';
 
@@ -47,44 +46,48 @@ export class BookingService {
     ) {}
 
     @Cron(CronExpression.EVERY_MINUTE)
-    async expireBookings() {
+    async expirePaymentBookings() {
         const now = new Date();
 
-        const expiredBookings = await this.bookingRepository.find({
+        const expiredPaymentBookings = await this.bookingRepository.find({
             where: {
-                expectedPickupTime: LessThan(now),
-                status: BookingStatus.RESERVED
+                paymentExpireAt: LessThan(now),
+                status: BookingStatus.PENDING_PAYMENT
             },
-            relations: ['bookingDetails']
+            relations: ['bookingDetails', 'transaction']
         });
 
-        for (const booking of expiredBookings) {
-            booking.status = BookingStatus.EXPIRED;
-            await this.bookingRepository.save(booking);
+        for (const booking of expiredPaymentBookings) {
+            await this.dataSource.transaction(async (manager) => {
+                booking.status = BookingStatus.CANCELLED;
+                await manager.save(Booking, booking);
 
-            for (const detail of booking.bookingDetails) {
-                detail.status = BookingDetailStatus.EXPIRED;
-                await this.dataSource
-                    .getRepository('BookingDetail')
-                    .save(detail);
+                for (const detail of booking.bookingDetails) {
+                    detail.status = BookingDetailStatus.CANCELLED;
+                    await manager.save('BookingDetail', detail);
 
-                const batteryRepo = this.dataSource.getRepository('Battery');
-                const battery = await batteryRepo.findOne({
-                    where: { id: detail.batteryId }
-                });
-                if (battery && battery.status === BatteryStatus.RESERVED) {
-                    battery.status = BatteryStatus.AVAILABLE;
-                    await batteryRepo.save(battery);
+                    const battery = await manager.findOne(Battery, {
+                        where: { id: detail.batteryId }
+                    });
+                    if (battery && battery.status === BatteryStatus.RESERVED) {
+                        battery.status = BatteryStatus.AVAILABLE;
+                        await manager.save(Battery, battery);
+                    }
+
+                    const slot = await manager.findOne(Slot, {
+                        where: { batteryId: detail.batteryId }
+                    });
+                    if (slot && slot.status === SlotStatus.RESERVED) {
+                        slot.status = SlotStatus.AVAILABLE;
+                        await manager.save(Slot, slot);
+                    }
                 }
-                const slotRepo = this.dataSource.getRepository('Slot');
-                const slot = await slotRepo.findOne({
-                    where: { batteryId: detail.batteryId }
-                });
-                if (slot && slot.status === SlotStatus.RESERVED) {
-                    slot.status = SlotStatus.AVAILABLE;
-                    await slotRepo.save(slot);
+
+                if (booking.transaction) {
+                    booking.transaction.status = TransactionStatus.FAILED;
+                    await manager.save('Transaction', booking.transaction);
                 }
-            }
+            });
         }
     }
 
@@ -161,8 +164,6 @@ export class BookingService {
                             'Thời gian dự kiến lấy pin không nằm trong giờ hoạt động của trạm'
                         );
                     }
-
-                    // Chỉ trừ lượt nếu remainingSwaps !== null (không phải VIP)
                     if (
                         userMembership &&
                         userMembership.remainingSwaps !== null
@@ -308,6 +309,7 @@ export class BookingService {
             const mappedData = data.map((booking) => ({
                 id: booking.id,
                 status: booking.status,
+                isFree: booking.isFree,
                 expectedPickupTime: booking.expectedPickupTime,
                 createdAt: booking.createdAt,
                 user: {
@@ -437,6 +439,7 @@ export class BookingService {
             const mappedData = data.map((booking) => ({
                 id: booking.id,
                 status: booking.status,
+                isFree: booking.isFree,
                 expectedPickupTime: booking.expectedPickupTime,
                 createdAt: booking.createdAt,
                 user: {
@@ -547,8 +550,6 @@ export class BookingService {
                         }
                     );
 
-                    // Nếu là booking miễn phí, không trừ lượt
-                    // Chỉ trừ lượt nếu remainingSwaps !== null (không phải VIP)
                     if (
                         userMembership &&
                         !isFreeBooking &&
@@ -571,6 +572,7 @@ export class BookingService {
                         userVehicleId: dto.userVehicleId,
                         stationId: dto.stationId,
                         expectedPickupTime: now,
+                        isFree: isFreeBooking,
                         status:
                             userMembership || isFreeBooking
                                 ? BookingStatus.IN_PROGRESS
@@ -578,6 +580,12 @@ export class BookingService {
                     };
                     if (userMembership) {
                         bookingData.userMembershipId = userMembership.id;
+                    }
+
+                    if (!userMembership && !isFreeBooking) {
+                        bookingData.paymentExpireAt = new Date(
+                            now.getTime() + 20 * 60 * 1000
+                        );
                     }
 
                     const booking = manager.create(Booking, bookingData);

@@ -116,10 +116,10 @@ export const seedData = {
         {
             id: 3,
             name: 'VIP',
-            description: 'Gói VIP - Không giới hạn đổi pin',
+            description: 'Gói VIP - 60 lần đổi pin/tháng',
             price: 20000,
             duration: 30,
-            swapLimit: null,
+            swapLimit: 60,
             status: true,
             createdAt: new Date(),
             updatedAt: new Date()

@@ -41,7 +41,7 @@ async function bootstrap() {
 
     //Swagger setup
     const config = new DocumentBuilder()
-        .setTitle('FastFood API')
+        .setTitle('Amply API')
         .setDescription('Xây dựng API cho hệ thống đổi pin xe điện')
         .setVersion('1.0')
         .addBearerAuth({

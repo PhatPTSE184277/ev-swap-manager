@@ -89,15 +89,7 @@ export class CabinetService {
                 } = slot;
                 return {
                     ...slotRest,
-                    battery: battery
-                        ? {
-                              id: battery.id,
-                              model: battery.model,
-                              status: battery.status,
-                              batteryTypeId: battery.batteryTypeId,
-                              inUse: battery.inUse
-                          }
-                        : null
+                    batteryInUse: battery ? battery.inUse : null
                 };
             });
 

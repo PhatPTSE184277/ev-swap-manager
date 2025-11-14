@@ -109,20 +109,42 @@ export class DashboardService {
         }
     }
 
-    async getTransactionChart(from: Date, to: Date): Promise<any[]> {
+    async getTransactionChart(
+        from: Date,
+        to: Date,
+        stationId?: number
+    ): Promise<any[]> {
         try {
-            // Lấy tất cả transaction SUCCESS trong khoảng thời gian
-            const transactions = await this.transactionRepository.find({
-                where: {
-                    status: TransactionStatus.SUCCESS,
-                    createdAt: Between(from, to)
-                }
-            });
+            let transactions;
+
+            if (stationId) {
+                // Filter theo stationId nếu có
+                transactions = await this.transactionRepository
+                    .createQueryBuilder('transaction')
+                    .innerJoin('transaction.booking', 'booking')
+                    .where('booking.stationId = :stationId', { stationId })
+                    .andWhere('transaction.status = :status', {
+                        status: TransactionStatus.SUCCESS
+                    })
+                    .andWhere('transaction.createdAt BETWEEN :from AND :to', {
+                        from,
+                        to
+                    })
+                    .getMany();
+            } else {
+                // Lấy tất cả transaction SUCCESS
+                transactions = await this.transactionRepository.find({
+                    where: {
+                        status: TransactionStatus.SUCCESS,
+                        createdAt: Between(from, to)
+                    }
+                });
+            }
 
             // Gom nhóm theo ngày
             const result: Record<string, number> = {};
             transactions.forEach((tran) => {
-                const date = tran.createdAt.toISOString().slice(0, 10); // YYYY-MM-DD
+                const date = tran.createdAt.toISOString().slice(0, 10);
                 result[date] = (result[date] || 0) + 1;
             });
 
@@ -135,7 +157,7 @@ export class DashboardService {
                 current.setDate(current.getDate() + 1);
             }
 
-            // Trả về mảng cho chart, ngày không có dữ liệu thì total = 0
+            // Trả về mảng cho chart
             return days.map((date) => ({
                 date,
                 total: result[date] || 0
@@ -147,19 +169,42 @@ export class DashboardService {
         }
     }
 
-    async getRevenueChart(year: number): Promise<any[]> {
+    async getRevenueChart(year: number, stationId?: number): Promise<any[]> {
         try {
             const result: { month: string; revenue: number }[] = [];
+
             for (let m = 0; m < 12; m++) {
                 const start = new Date(year, m, 1);
                 const end = new Date(year, m + 1, 1);
 
-                const transactions = await this.transactionRepository.find({
-                    where: {
-                        status: TransactionStatus.SUCCESS,
-                        createdAt: Between(start, end)
-                    }
-                });
+                let transactions;
+
+                if (stationId) {
+                    // Filter theo stationId nếu có
+                    transactions = await this.transactionRepository
+                        .createQueryBuilder('transaction')
+                        .innerJoin('transaction.booking', 'booking')
+                        .where('booking.stationId = :stationId', { stationId })
+                        .andWhere('transaction.status = :status', {
+                            status: TransactionStatus.SUCCESS
+                        })
+                        .andWhere(
+                            'transaction.createdAt BETWEEN :start AND :end',
+                            {
+                                start,
+                                end
+                            }
+                        )
+                        .getMany();
+                } else {
+                    // Lấy tất cả transaction SUCCESS
+                    transactions = await this.transactionRepository.find({
+                        where: {
+                            status: TransactionStatus.SUCCESS,
+                            createdAt: Between(start, end)
+                        }
+                    });
+                }
 
                 const revenue = transactions.reduce(
                     (sum, t) => sum + Number(t.totalPrice),
@@ -171,6 +216,7 @@ export class DashboardService {
                     revenue
                 });
             }
+
             return result;
         } catch (error) {
             throw new InternalServerErrorException(

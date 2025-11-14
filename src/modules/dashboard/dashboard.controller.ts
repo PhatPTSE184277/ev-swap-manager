@@ -70,7 +70,7 @@ export class DashboardController {
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @Roles(RoleName.ADMIN, RoleName.STAFF)
     @Get('transaction-chart')
     @ApiOperation({
         summary: 'Lấy tổng transaction theo ngày để vẽ chart (ADMIN)'
@@ -87,23 +87,43 @@ export class DashboardController {
         type: String,
         description: 'Ngày kết thúc (YYYY-MM-DD)'
     })
+    @ApiQuery({
+        name: 'stationId',
+        required: false,
+        type: Number,
+        description: 'ID trạm (tùy chọn)'
+    })
     async getTransactionChart(
         @Query('from') from: string,
-        @Query('to') to: string
+        @Query('to') to: string,
+        @Query('stationId') stationId?: number
     ) {
         return await this.dashboardService.getTransactionChart(
             new Date(from),
-            new Date(to)
+            new Date(to),
+            stationId ? Number(stationId) : undefined
         );
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN)
+    @Roles(RoleName.ADMIN, RoleName.STAFF)
     @Get('revenue-chart')
     @ApiOperation({ summary: 'Lấy doanh thu từng tháng trong năm (ADMIN)' })
     @ApiQuery({ name: 'year', required: true, type: Number })
-    async getRevenueChart(@Query('year') year: number) {
-        return await this.dashboardService.getRevenueChart(year);
+    @ApiQuery({
+        name: 'stationId',
+        required: false,
+        type: Number,
+        description: 'ID trạm (tùy chọn)'
+    })
+    async getRevenueChart(
+        @Query('year') year: number,
+        @Query('stationId') stationId?: number
+    ) {
+        return await this.dashboardService.getRevenueChart(
+            year,
+            stationId ? Number(stationId) : undefined
+        );
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)

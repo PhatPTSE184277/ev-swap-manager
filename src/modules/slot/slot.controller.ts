@@ -97,10 +97,10 @@ export class SlotController {
 
     @UseGuards(JwtAuthGuard)
     @Delete(':id')
-    @ApiOperation({ summary: 'Xóa mềm slot', description: 'Chỉ ADMIN' })
+    @ApiOperation({ summary: 'Chuyển slot sang trạng thái hỏng', description: 'Chỉ ADMIN' })
     @ApiParam({ name: 'id', type: Number, description: 'ID slot' })
-    async softDelete(@Param('id') id: number) {
-        return this.slotService.softDelete(id);
+    async damagedSlot(@Param('id') id: number) {
+        return this.slotService.damagedSlot(id);
     }
 
     @UseGuards(JwtAuthGuard)

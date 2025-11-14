@@ -240,14 +240,15 @@ export class BookingService {
                         const battery = await manager.findOne(Battery, {
                             where: {
                                 id: detail.batteryId,
-                                status: BatteryStatus.AVAILABLE
+                                status: BatteryStatus.AVAILABLE,
+                                inUse: true
                             },
                             relations: ['batteryType']
                         });
 
                         if (!battery) {
                             throw new BadRequestException(
-                                `Pin ${detail.batteryId} không khả dụng`
+                                `Pin ${detail.batteryId} không khả dụng hoặc chưa sẵn sàng sử dụng`
                             );
                         }
 
@@ -793,13 +794,14 @@ export class BookingService {
                         const battery = await manager.findOne(Battery, {
                             where: {
                                 id: d.batteryId,
-                                status: BatteryStatus.AVAILABLE
+                                status: BatteryStatus.AVAILABLE,
+                                inUse: true
                             },
                             relations: ['batteryType']
                         });
                         if (!battery) {
                             throw new BadRequestException(
-                                `Pin ${d.batteryId} không khả dụng`
+                                `Pin ${d.batteryId} không khả dụng hoặc chưa sẵn sàng sử dụng`
                             );
                         }
 

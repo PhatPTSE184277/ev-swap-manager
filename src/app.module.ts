@@ -33,6 +33,7 @@ import { ReportModule } from './modules/report/report.module';
 import { AnalyticModule } from './modules/analytic/analytic.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { RequestModule } from './modules/request/request.module';
+import { TransferBatteryModule } from './modules/transfer-battery/transfer-battery.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { RequestModule } from './modules/request/request.module';
     AnalyticModule,
     DashboardModule,
     RequestModule,
+    TransferBatteryModule,
   ],
   controllers: [],
   providers: [BatteryGateway, TransactionGateway],

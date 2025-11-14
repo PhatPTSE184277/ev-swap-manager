@@ -17,6 +17,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { RoleName } from 'src/enums/role.enum';
 import {
     ApiBearerAuth,
+    ApiBody,
     ApiOperation,
     ApiParam,
     ApiQuery,
@@ -69,7 +70,21 @@ export class UserVehicleController {
     @ApiOperation({
         summary: 'Staff tạo phương tiện cho user',
         description:
-            'Nhân viên tạo phương tiện cho user khác (bằng email hoặc username)'
+            'Nhân viên tạo phương tiện cho user khác (bằng email hoặc username) và gán đúng 2 cục pin cho xe. Pin phải phù hợp loại xe.'
+    })
+    @ApiBody({
+        type: CreateUserVehicleDto,
+        examples: {
+            example: {
+                summary: 'Tạo xe với 2 pin',
+                value: {
+                    userNameOrEmail: 'user@email.com',
+                    vehicleTypeId: 1,
+                    name: 'Xe máy điện ABC',
+                    batteries: [{ batteryId: 101 }, { batteryId: 102 }]
+                }
+            }
+        }
     })
     async staffCreate(@Body() createUserVehicleDto: CreateUserVehicleDto) {
         return this.userVehicleService.staffCreateUserVehicle(

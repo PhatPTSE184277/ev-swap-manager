@@ -7,7 +7,7 @@ import {
     NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User, UserVehicle } from 'src/entities';
+import { Battery, User, UserVehicle, VehicleType } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { CreateUserVehicleDto } from './dto/create-user-vehicle.dto';
 import { UpdateUserVehicleDto } from './dto/update-user-vehicle.dto';
@@ -163,19 +163,78 @@ export class UserVehicleService {
                             status: true
                         }
                     });
-                    
+
                     if (existingVehicle)
                         throw new BadRequestException('Phương tiện đã tồn tại');
 
+                    // Kiểm tra loại xe
+                    const vehicleType = await manager.findOne(VehicleType, {
+                        where: { id: dto.vehicleTypeId }
+                    });
+                    if (!vehicleType)
+                        throw new NotFoundException('Loại xe không tồn tại');
+
+                    // Kiểm tra 2 cục pin
+                    if (!dto.batteries || dto.batteries.length !== 2) {
+                        throw new BadRequestException(
+                            'Phải cung cấp đúng 2 cục pin'
+                        );
+                    }
+
+                    const batteryIds = dto.batteries.map((b) => b.batteryId);
+                    const batteries = await manager.findByIds(
+                        Battery,
+                        batteryIds
+                    );
+
+                    if (batteries.length !== 2) {
+                        throw new NotFoundException(
+                            'Một hoặc nhiều pin không tồn tại'
+                        );
+                    }
+
+                    // Kiểm tra loại pin có phù hợp với loại xe không
+                    for (const battery of batteries) {
+                        if (
+                            battery.batteryTypeId !== vehicleType.batteryTypeId
+                        ) {
+                            throw new BadRequestException(
+                                `Pin ${battery.model} (loại pin ${battery.batteryTypeId}) không phù hợp với loại xe (yêu cầu loại pin ${vehicleType.batteryTypeId})`
+                            );
+                        }
+
+                        // Kiểm tra pin đã được gán cho xe khác chưa
+                        if (battery.userVehicleId !== null) {
+                            throw new BadRequestException(
+                                `Pin ${battery.model} đã được gán cho xe khác`
+                            );
+                        }
+
+                        // Kiểm tra pin có đang trong slot không (inUse = true)
+                        if (battery.inUse === true) {
+                            throw new BadRequestException(
+                                `Pin ${battery.model} đang được sử dụng trong slot, không thể gán cho xe`
+                            );
+                        }
+                    }
+
+                    // Tạo xe mới
                     const newVehicle = manager.create(UserVehicle, {
-                        ...dto,
-                        userId: user.id
+                        userId: user.id,
+                        vehicleTypeId: dto.vehicleTypeId,
+                        name: dto.name
                     });
                     await manager.save(UserVehicle, newVehicle);
 
+                    // Gán 2 cục pin cho xe
+                    for (const battery of batteries) {
+                        battery.userVehicleId = newVehicle.id;
+                        await manager.save(Battery, battery);
+                    }
+
                     return {
                         message:
-                            'Nhân viên đã tạo phương tiện cho user thành công'
+                            'Nhân viên đã tạo phương tiện và gán 2 cục pin cho user thành công'
                     };
                 }
             );
@@ -191,7 +250,7 @@ export class UserVehicleService {
             );
         }
     }
-    
+
     async update(
         userId: number,
         id: number,

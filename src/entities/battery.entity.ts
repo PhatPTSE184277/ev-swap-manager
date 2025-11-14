@@ -39,10 +39,10 @@ export class Battery {
     healthScore: number;
 
     @Column({ type: 'timestamp', nullable: true })
-    lastChargeTime: Date;
+    lastChargeTime: Date | null;
 
     @Column({ type: 'timestamp', nullable: true })
-    estimatedFullChargeTime: Date;
+    estimatedFullChargeTime: Date | null;
 
     @Column({ type: 'boolean', default: true })
     inUse: boolean;

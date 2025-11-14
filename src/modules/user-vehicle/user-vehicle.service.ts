@@ -11,6 +11,7 @@ import { Battery, User, UserVehicle, VehicleType } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { CreateUserVehicleDto } from './dto/create-user-vehicle.dto';
 import { UpdateUserVehicleDto } from './dto/update-user-vehicle.dto';
+import { BatteryStatus } from 'src/enums';
 
 @Injectable()
 export class UserVehicleService {
@@ -169,54 +170,11 @@ export class UserVehicleService {
 
                     // Kiểm tra loại xe
                     const vehicleType = await manager.findOne(VehicleType, {
-                        where: { id: dto.vehicleTypeId }
+                        where: { id: dto.vehicleTypeId },
+                        relations: ['batteryType']
                     });
                     if (!vehicleType)
                         throw new NotFoundException('Loại xe không tồn tại');
-
-                    // Kiểm tra 2 cục pin
-                    if (!dto.batteries || dto.batteries.length !== 2) {
-                        throw new BadRequestException(
-                            'Phải cung cấp đúng 2 cục pin'
-                        );
-                    }
-
-                    const batteryIds = dto.batteries.map((b) => b.batteryId);
-                    const batteries = await manager.findByIds(
-                        Battery,
-                        batteryIds
-                    );
-
-                    if (batteries.length !== 2) {
-                        throw new NotFoundException(
-                            'Một hoặc nhiều pin không tồn tại'
-                        );
-                    }
-
-                    // Kiểm tra loại pin có phù hợp với loại xe không
-                    for (const battery of batteries) {
-                        if (
-                            battery.batteryTypeId !== vehicleType.batteryTypeId
-                        ) {
-                            throw new BadRequestException(
-                                `Pin ${battery.model} (loại pin ${battery.batteryTypeId}) không phù hợp với loại xe (yêu cầu loại pin ${vehicleType.batteryTypeId})`
-                            );
-                        }
-
-                        // Kiểm tra pin đã được gán cho xe khác chưa
-                        if (battery.userVehicleId !== null) {
-                            throw new BadRequestException(
-                                `Pin ${battery.model} đã được gán cho xe khác`
-                            );
-                        }
-
-                        // Kiểm tra pin có đang trong slot không (inUse = true)
-                        if (battery.inUse === true) {
-                            throw new BadRequestException(
-                                `Pin ${battery.model} đang được sử dụng trong slot, không thể gán cho xe`
-                            );
-                        }
-                    }
 
                     // Tạo xe mới
                     const newVehicle = manager.create(UserVehicle, {
@@ -226,15 +184,53 @@ export class UserVehicleService {
                     });
                     await manager.save(UserVehicle, newVehicle);
 
-                    // Gán 2 cục pin cho xe
-                    for (const battery of batteries) {
-                        battery.userVehicleId = newVehicle.id;
-                        await manager.save(Battery, battery);
+                    // Tạo 2 cục pin mới tự động
+                    const batteryType = vehicleType.batteryType;
+                    const batteryPrefix = batteryType.name.includes('48V')
+                        ? 'BAT48V'
+                        : batteryType.name.includes('60V')
+                          ? 'BAT60V'
+                          : 'BAT';
+
+                    // Lấy số thứ tự pin cuối cùng của loại pin này
+                    const lastBattery = await manager
+                        .createQueryBuilder(Battery, 'battery')
+                        .where('battery.batteryTypeId = :batteryTypeId', {
+                            batteryTypeId: batteryType.id
+                        })
+                        .orderBy('battery.id', 'DESC')
+                        .getOne();
+
+                    let nextNumber = 1;
+                    if (lastBattery && lastBattery.model) {
+                        const match = lastBattery.model.match(/\d+$/);
+                        if (match) {
+                            nextNumber = parseInt(match[0]) + 1;
+                        }
+                    }
+
+                    // Tạo 2 cục pin
+                    for (let i = 0; i < 2; i++) {
+                        const batteryModel = `${batteryPrefix}${String(nextNumber + i).padStart(3, '0')}`;
+
+                        const newBattery = new Battery();
+                        newBattery.batteryTypeId = batteryType.id;
+                        newBattery.model = batteryModel;
+                        newBattery.currentCycle = 0;
+                        newBattery.userVehicleId = newVehicle.id;
+                        newBattery.currentCapacity = 100;
+                        newBattery.healthScore = 100;
+                        newBattery.lastChargeTime = null;
+                        newBattery.estimatedFullChargeTime = null;
+                        newBattery.inUse = true;
+                        newBattery.status = BatteryStatus.IN_USE;
+
+                        await manager.save(Battery, newBattery);
                     }
 
                     return {
                         message:
-                            'Nhân viên đã tạo phương tiện và gán 2 cục pin cho user thành công'
+                            'Nhân viên đã tạo phương tiện và tự động tạo 2 cục pin mới cho user thành công'
                     };
                 }
             );

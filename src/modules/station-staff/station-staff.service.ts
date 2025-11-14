@@ -506,6 +506,8 @@ export class StationStaffService {
                     );
                 }
 
+                const oldStation = staff.station;
+
                 // Nếu là hôm nay, chuyển trạm ngay lập tức
                 const isToday = transferDate.getTime() === today.getTime();
                 if (isToday) {
@@ -533,6 +535,26 @@ export class StationStaffService {
                 const message = isToday
                     ? `Chuyển nhân viên ${staff.user?.fullName || 'N/A'} từ trạm ${oldStationId} sang trạm ${transferDto.newStationId} thành công`
                     : `Đã lên lịch chuyển nhân viên ${staff.user?.fullName || 'N/A'} từ trạm ${oldStationId} sang trạm ${transferDto.newStationId} vào ngày ${transferDate.toLocaleDateString('en-CA')}`;
+
+                try {
+                    await this.mailService.sendTransferStationNotification(
+                        staff.user.email,
+                        staff.user.fullName || 'Nhân viên',
+                        oldStation.id,
+                        oldStation.name,
+                        oldStation.address,
+                        newStation.id,
+                        newStation.name,
+                        newStation.address,
+                        transferDate.toLocaleDateString('vi-VN'),
+                        isToday
+                    );
+                } catch (emailError) {
+                    console.error(
+                        '[transferStation] Gửi email thất bại:',
+                        emailError?.message || emailError
+                    );
+                }
 
                 return { message };
             });

@@ -149,4 +149,52 @@ export class MailService {
     }
 }
 
+    async sendReportStatus(
+        email: string,
+        fullName: string,
+        isConfirmed: boolean,
+        message: string
+    ): Promise<void> {
+        try {
+            const templatePath = path.join(
+                process.cwd(),
+                'src',
+                'modules',
+                'mail',
+                'html',
+                'ReportStatus.html'
+            );
+            let html = await readFile(templatePath, 'utf-8');
+
+            const statusText = isConfirmed ? 'xác nhận' : 'từ chối';
+            const statusColor = isConfirmed ? '#d4edda' : '#f8d7da';
+            const borderColor = isConfirmed ? '#28a745' : '#dc3545';
+
+            html = html
+                .replace(/\$\{fullName\}/g, fullName)
+                .replace(/\$\{statusText\}/g, statusText)
+                .replace(/\$\{statusColor\}/g, statusColor)
+                .replace(/\$\{borderColor\}/g, borderColor)
+                .replace(/\$\{message\}/g, message)
+                .replace(/\$\{email\}/g, email)
+                .replace(
+                    /\$\{#dates.year\(date\)\}/g,
+                    new Date().getFullYear().toString()
+                );
+
+            const fromEmail = this.configService.get<string>('MAIL_FROM');
+            if (!fromEmail)
+                throw new InternalServerErrorException('MAIL_FROM is not set');
+
+            await sgMail.send({
+                to: email,
+                from: fromEmail,
+                subject: `Thông báo trạng thái báo cáo lỗi pin - amply`,
+                html: html
+            });
+        } catch (error) {
+            console.error('[sendReportStatus] error:', error);
+        }
+    }
+
 }

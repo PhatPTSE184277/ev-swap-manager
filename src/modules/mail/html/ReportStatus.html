@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Xác thực Email - amply</title>
+  <title>Thông báo trạng thái báo cáo - amply</title>
   <!--[if mso]>
   <style type="text/css">
     body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
@@ -27,22 +27,18 @@
           <!-- Main Content -->
           <tr>
             <td style="padding: 40px;">
-              <h2 style="margin: 0 0 20px; color: #2d3748; font-size: 24px; font-weight: 600;">Xin chào <span>${name}</span>,</h2>
+              <h2 style="margin: 0 0 20px; color: #2d3748; font-size: 24px; font-weight: 600;">Xin chào ${fullName},</h2>
               
               <p style="margin: 0 0 20px; color: #4a5568; font-size: 16px; line-height: 24px;">
-                Cảm ơn bạn đã đăng ký tài khoản tại <strong>amply</strong>! Vui lòng xác thực địa chỉ email của bạn để kích hoạt tài khoản và bắt đầu sử dụng dịch vụ.
+                Báo cáo lỗi pin của bạn đã được ${statusText}.
               </p>
               
-              <!-- Button -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td style="padding: 20px 0; text-align: center;">
-                    <a href="${link}" style="display: inline-block; padding: 14px 40px; background-color: #f1556c; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">
-                      ${button}
-                    </a>
-                  </td>
-                </tr>
-              </table>
+              <!-- Status Message -->
+              <div style="margin: 20px 0; padding: 20px; background-color: ${statusColor}; border-left: 4px solid ${borderColor}; border-radius: 6px;">
+                <p style="margin: 0; color: #2d3748; font-size: 15px; line-height: 22px;">
+                  ${message}
+                </p>
+              </div>
               
               <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e2e8f0;">
                 <p style="margin: 0; color: #4a5568; font-size: 16px; line-height: 24px;">
@@ -57,13 +53,7 @@
           <tr>
             <td style="padding: 30px 40px; background-color: #f7fafc; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
               <p style="margin: 0 0 15px; color: #718096; font-size: 13px; line-height: 20px;">
-                Email này được gửi tới <a href="#" style="color: #3b82f6; text-decoration: none;">${email}</a>. Nếu bạn không yêu cầu xác thực này, vui lòng bỏ qua email hoặc <a href="#" style="color: #3b82f6; text-decoration: none;">liên hệ hỗ trợ</a>.
-              </p>
-              
-              <p style="margin: 15px 0 0; color: #a0aec0; font-size: 12px; line-height: 18px;">
-                <a href="#" style="color: #718096; text-decoration: none; margin-right: 15px;">Hủy đăng ký</a>
-                <a href="#" style="color: #718096; text-decoration: none; margin-right: 15px;">Tùy chọn email</a>
-                <a href="#" style="color: #718096; text-decoration: none;">Chính sách bảo mật</a>
+                Email này được gửi tới <a href="#" style="color: #3b82f6; text-decoration: none;">${email}</a>. Nếu bạn có thắc mắc, vui lòng <a href="#" style="color: #3b82f6; text-decoration: none;">liên hệ hỗ trợ</a>.
               </p>
               
               <p style="margin: 20px 0 0; color: #a0aec0; font-size: 12px; line-height: 18px;">

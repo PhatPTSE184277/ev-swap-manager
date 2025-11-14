@@ -11,6 +11,7 @@ import { CreateReportDto } from './dto/create-report.dto';
 import { Battery, Booking, BookingDetail } from 'src/entities';
 import { ReportStatus } from 'src/enums/report.enum';
 import { BatteryStatus, RoleName } from 'src/enums';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class ReportService {
@@ -21,7 +22,8 @@ export class ReportService {
         private readonly bookingDetailRepository: Repository<BookingDetail>,
         @InjectRepository(Booking)
         private readonly bookingRepository: Repository<Booking>,
-        private readonly dataSource: DataSource
+        private readonly dataSource: DataSource,
+        private readonly mailService: MailService
     ) {}
 
     async createReport(userId: number, dto: CreateReportDto): Promise<any> {
@@ -231,7 +233,7 @@ export class ReportService {
             return await this.dataSource.transaction(async (manager) => {
                 const report = await manager.findOne(Report, {
                     where: { id: reportId },
-                    relations: ['bookingDetail']
+                    relations: ['bookingDetail', 'user']
                 });
                 if (!report) {
                     throw new NotFoundException('Báo cáo không tồn tại');
@@ -257,6 +259,16 @@ export class ReportService {
                 report.status = ReportStatus.CONFIRMED;
                 await manager.update(Report, report.id, report);
 
+                // Gửi email cho user
+                if (report.user?.email) {
+                    await this.mailService.sendReportStatus(
+                        report.user.email,
+                        report.user.fullName,
+                        true,
+                        'Báo cáo lỗi pin của bạn đã được xác nhận. Bạn được phép đổi pin miễn phí tại trạm. Vui lòng liên hệ nhân viên trạm để được hỗ trợ.'
+                    );
+                }
+
                 return {
                     message:
                         'Xác nhận báo cáo thành công. User được phép đổi pin miễn phí tại trạm.'
@@ -277,7 +289,8 @@ export class ReportService {
     async rejectReport(reportId: number): Promise<any> {
         try {
             const report = await this.reportRepository.findOne({
-                where: { id: reportId }
+                where: { id: reportId },
+                relations: ['user']
             });
             if (!report) {
                 throw new NotFoundException('Báo cáo không tồn tại');
@@ -290,6 +303,17 @@ export class ReportService {
             await this.reportRepository.update(reportId, {
                 status: ReportStatus.REJECTED
             });
+
+            // Gửi email cho user
+            if (report.user?.email) {
+                await this.mailService.sendReportStatus(
+                    report.user.email,
+                    report.user.fullName,
+                    false,
+                    'Báo cáo lỗi pin của bạn đã bị từ chối sau khi xem xét. Nếu bạn có thắc mắc, vui lòng liên hệ với nhân viên trạm để biết thêm chi tiết.'
+                );
+            }
+
             return { message: 'Từ chối báo cáo thành công' };
         } catch (error) {
             if (

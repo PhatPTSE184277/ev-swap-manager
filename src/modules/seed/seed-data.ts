@@ -41,6 +41,7 @@ export const seedData = {
             fullName: 'Quản trị viên',
             status: UserStatus.VERIFIED,
             roleId: 1,
+            avatar: 'https://tse4.mm.bing.net/th/id/OIP.kUUyYavHaSd1nxXBSsO1gQHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3',
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -50,6 +51,7 @@ export const seedData = {
             password: 'user123',
             email: 'user1@example.com',
             fullName: 'Nguyễn Văn A',
+            avatar: 'https://img.freepik.com/premium-vector/illustrations_995281-35700.jpg',
             status: UserStatus.VERIFIED,
             roleId: 2,
             createdAt: new Date(),
@@ -61,6 +63,7 @@ export const seedData = {
             password: 'user123',
             email: 'user2@example.com',
             fullName: 'Trần Thị B',
+            avatar: 'https://tse4.mm.bing.net/th/id/OIP.E7WvnoCNB1_hs6LYD1viUwHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3',
             status: UserStatus.VERIFIED,
             roleId: 2,
             createdAt: new Date(),
@@ -73,6 +76,7 @@ export const seedData = {
             email: 'staff1@evswap.com',
             fullName: 'Lê Văn C',
             status: UserStatus.VERIFIED,
+            avatar: 'https://img.freepik.com/premium-vector/illustrations_995281-35700.jpg',
             roleId: 3,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -83,6 +87,7 @@ export const seedData = {
             password: 'staff123',
             email: 'staff2@evswap.com',
             fullName: 'Phạm Thị D',
+            avatar: 'https://avatar.iran.liara.run/public/29',
             status: UserStatus.VERIFIED,
             roleId: 3,
             createdAt: new Date(),
@@ -498,7 +503,7 @@ export const seedData = {
         },
         {
             id: 7,
-            batteryTypeId: 2,
+            batteryTypeId: 1,
             model: 'BAT48V007',
             currentCycle: 80,
             currentCapacity: 98,
@@ -1173,7 +1178,7 @@ export const seedData = {
         },
         {
             id: 55,
-            batteryTypeId: 1,
+            batteryTypeId: 2,
             model: 'BAT60V025',
             currentCycle: 68,
             currentCapacity: 99,

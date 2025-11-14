@@ -10,6 +10,9 @@ import { BatteryStatus, SlotStatus } from 'src/enums';
 import { TakeBatteryDto } from './dto/take-battery.dto';
 import { PutBatteryDto } from './dto/put-battery.dto';
 
+import { Request } from 'src/entities/request.entity';
+import { RequestStatus } from 'src/enums';
+
 @Injectable()
 export class TransferBatteryService {
     constructor(
@@ -17,6 +20,8 @@ export class TransferBatteryService {
         private readonly slotRepository: Repository<Slot>,
         @InjectRepository(Battery)
         private readonly batteryRepository: Repository<Battery>,
+        @InjectRepository(Request)
+        private readonly requestRepository: Repository<Request>,
         private readonly dataSource: DataSource
     ) {}
 
@@ -43,14 +48,27 @@ export class TransferBatteryService {
                         throw new NotFoundException('Pin không tồn tại');
                     }
 
-                    if (
-                        battery.status !== BatteryStatus.DAMAGED
-                    ) {
+                    if (battery.status !== BatteryStatus.DAMAGED) {
                         if (battery.inUse !== false) {
                             throw new BadRequestException(
                                 'Chỉ được lấy pin không đang sử dụng (inUse = false)'
                             );
                         }
+                    }
+
+                    // Kiểm tra request của pin này
+                    const request = await manager.findOne(Request, {
+                        where: {
+                            batteryId: battery.id,
+                            status: RequestStatus.PENDING
+                        }
+                    });
+
+                    if (request) {
+                        // Cập nhật request sang TRANSFERRING
+                        await manager.update(Request, request.id, {
+                            status: RequestStatus.TRANSFERRING
+                        });
                     }
 
                     // Lưu slot history
@@ -70,7 +88,7 @@ export class TransferBatteryService {
                     await manager.update(Battery, battery.id, { inUse: false });
                     return {
                         message:
-                            'Lấy pin ra khỏi slot để chuyển trạm thành công',
+                            'Lấy pin ra khỏi slot để chuyển trạm thành công'
                     };
                 }
             );
@@ -96,7 +114,7 @@ export class TransferBatteryService {
                 async (manager) => {
                     const slot = await manager.findOne(Slot, {
                         where: { id: putBatteryDto.slotId },
-                        relations: ['cabinet']
+                        relations: ['cabinet', 'cabinet.station']
                     });
 
                     if (!slot) {
@@ -127,10 +145,11 @@ export class TransferBatteryService {
                     // Chỉ được bỏ pin AVAILABLE hoặc CHARGING
                     if (
                         battery.status !== BatteryStatus.AVAILABLE &&
-                        battery.status !== BatteryStatus.CHARGING
+                        battery.status !== BatteryStatus.CHARGING &&
+                        battery.status !== BatteryStatus.DAMAGED
                     ) {
                         throw new BadRequestException(
-                            'Chỉ được bỏ vào slot những pin ở trạng thái AVAILABLE hoặc CHARGING'
+                            'Chỉ được bỏ vào slot những pin ở trạng thái AVAILABLE, CHARGING hoặc DAMAGED'
                         );
                     }
 
@@ -142,6 +161,29 @@ export class TransferBatteryService {
                         throw new BadRequestException(
                             'Loại pin không phù hợp với tủ này'
                         );
+                    }
+
+                    // Kiểm tra request của pin này
+                    const request = await manager.findOne(Request, {
+                        where: {
+                            batteryId: battery.id,
+                            status: RequestStatus.TRANSFERRING
+                        }
+                    });
+
+                    if (request) {
+                        // Kiểm tra slot có thuộc trạm đích của request không
+                        const stationId = slot.cabinet?.stationId;
+                        if (stationId !== request.newStationId) {
+                            throw new BadRequestException(
+                                `Pin này cần được bỏ vào trạm ${request.newStationId}, không phải trạm ${stationId}`
+                            );
+                        }
+
+                        // Cập nhật request sang COMPLETED
+                        await manager.update(Request, request.id, {
+                            status: RequestStatus.COMPLETED
+                        });
                     }
 
                     // Lưu slot history
@@ -157,7 +199,9 @@ export class TransferBatteryService {
                     slot.status =
                         battery.status === BatteryStatus.CHARGING
                             ? SlotStatus.CHARGING
-                            : SlotStatus.AVAILABLE;
+                            : battery.status === BatteryStatus.DAMAGED
+                              ? SlotStatus.DAMAGED_BATTERY
+                              : SlotStatus.AVAILABLE;
                     await manager.save(Slot, slot);
 
                     // Cập nhật inUse thành true

@@ -89,7 +89,12 @@ export class BatteryService {
                 skip: (page - 1) * limit,
                 take: limit,
                 order: { model: order },
-                relations: ['batteryType', 'slots']
+                relations: [
+                    'batteryType',
+                    'slots',
+                    'slots.cabinet',
+                    'slots.cabinet.station'
+                ]
             });
 
             const mappedData = data.map(
@@ -100,11 +105,23 @@ export class BatteryService {
                     batteryType,
                     slots,
                     ...rest
-                }) => ({
-                    ...rest,
-                    batteryType: batteryType?.name || null,
-                    slotId: slots && slots.length > 0 ? slots[0].id : null
-                })
+                }) => {
+                    const slot = slots && slots.length > 0 ? slots[0] : null;
+                    const station =
+                        slot && slot.cabinet && slot.cabinet.station
+                            ? {
+                                  id: slot.cabinet.station.id,
+                                  name: slot.cabinet.station.name,
+                                  address: slot.cabinet.station.address
+                              }
+                            : null;
+                    return {
+                        ...rest,
+                        batteryType: batteryType?.name || null,
+                        slotId: slot ? slot.id : null,
+                        station: station
+                    };
+                }
             );
 
             return {
@@ -124,7 +141,12 @@ export class BatteryService {
         try {
             const battery = await this.batteryRepository.findOne({
                 where: { id },
-                relations: ['batteryType', 'slots']
+                relations: [
+                    'batteryType',
+                    'slots',
+                    'slots.cabinet',
+                    'slots.cabinet.station'
+                ]
             });
             if (!battery) {
                 throw new NotFoundException('Pin không tồn tại');
@@ -133,6 +155,14 @@ export class BatteryService {
                 battery;
 
             const slot = slots && slots.length > 0 ? slots[0] : null;
+            const station =
+                slot && slot.cabinet && slot.cabinet.station
+                    ? {
+                          id: slot.cabinet.station.id,
+                          name: slot.cabinet.station.name,
+                          address: slot.cabinet.station.address
+                      }
+                    : null;
 
             if (battery.batteryType) {
                 const { createdAt, updatedAt, ...batteryTypeRest } =
@@ -148,7 +178,8 @@ export class BatteryService {
                                   cabinetId: slot.cabinetId,
                                   status: slot.status
                               }
-                            : null
+                            : null,
+                        station: station
                     },
                     message: 'Lấy thông tin pin thành công'
                 };
@@ -163,7 +194,8 @@ export class BatteryService {
                               cabinetId: slot.cabinetId,
                               status: slot.status
                           }
-                        : null
+                        : null,
+                    station: station
                 },
                 message: 'Lấy thông tin pin thành công'
             };
@@ -192,7 +224,12 @@ export class BatteryService {
                 skip: (page - 1) * limit,
                 take: limit,
                 order: { model: 'ASC' },
-                relations: ['batteryType', 'slots']
+                relations: [
+                    'batteryType',
+                    'slots',
+                    'slots.cabinet',
+                    'slots.cabinet.station'
+                ]
             });
 
             const mappedData = data.map(
@@ -203,14 +240,26 @@ export class BatteryService {
                     batteryType,
                     slots,
                     ...rest
-                }) => ({
-                    ...rest,
-                    batteryType: {
-                        id: batteryType.id,
-                        name: batteryType.name
-                    },
-                    slotId: slots && slots.length > 0 ? slots[0].id : null
-                })
+                }) => {
+                    const slot = slots && slots.length > 0 ? slots[0] : null;
+                    const station =
+                        slot && slot.cabinet && slot.cabinet.station
+                            ? {
+                                  id: slot.cabinet.station.id,
+                                  name: slot.cabinet.station.name,
+                                  address: slot.cabinet.station.address
+                              }
+                            : null;
+                    return {
+                        ...rest,
+                        batteryType: {
+                            id: batteryType.id,
+                            name: batteryType.name
+                        },
+                        slotId: slot ? slot.id : null,
+                        station: station
+                    };
+                }
             );
 
             return {

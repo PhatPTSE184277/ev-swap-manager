@@ -21,7 +21,7 @@ export class StationStaffHistory {
     @Column()
     stationId: number;
 
-    @Column({ type: 'date' })
+    @Column({ type: 'timestamp', nullable: true })
     date: Date;
 
     @Column({ type: 'boolean', default: true })

@@ -44,6 +44,9 @@ export class Battery {
     @Column({ type: 'timestamp', nullable: true })
     estimatedFullChargeTime: Date;
 
+    @Column({ type: 'boolean', default: true })
+    inUse: boolean;
+
     @Column({
         type: 'enum',
         enum: BatteryStatus,

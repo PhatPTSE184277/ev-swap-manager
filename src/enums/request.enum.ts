@@ -1,0 +1,6 @@
+export enum RequestStatus {
+    PENDING = 'PENDING',
+    TRANSFERRING = 'TRANSFERRING',
+    COMPLETED = 'COMPLETED',
+    CANCELLED = 'CANCELLED'
+}

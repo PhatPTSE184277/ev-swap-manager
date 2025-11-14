@@ -32,6 +32,7 @@ import { CleanupModule } from './modules/cleanup/cleanup.module';
 import { ReportModule } from './modules/report/report.module';
 import { AnalyticModule } from './modules/analytic/analytic.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { RequestModule } from './modules/request/request.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     ReportModule,
     AnalyticModule,
     DashboardModule,
+    RequestModule,
   ],
   controllers: [],
   providers: [BatteryGateway, TransactionGateway],

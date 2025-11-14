@@ -48,7 +48,7 @@ export class MailService {
             const fromEmail = this.configService.get<string>('MAIL_FROM');
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
-            
+
             await sgMail.send({
                 to: email,
                 from: fromEmail,
@@ -90,7 +90,7 @@ export class MailService {
             const fromEmail = this.configService.get<string>('MAIL_FROM');
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
-            
+
             await sgMail.send({
                 to: email,
                 from: fromEmail,
@@ -106,47 +106,151 @@ export class MailService {
     }
 
     async sendStaffCredentials(
-    email: string,
-    fullName: string,
-    username: string,
-    password: string,
-    stationName: string
-): Promise<void> {
-    try {
-        const templatePath = path.join(
-            process.cwd(),
-            'src',
-            'modules',
-            'mail',
-            'html',
-            'StaffCredentials.html'
-        );
-        let html = await readFile(templatePath, 'utf-8');
-
-        html = html
-            .replace(/\$\{fullName\}/g, fullName)
-            .replace(/\$\{username\}/g, username)
-            .replace(/\$\{password\}/g, password)
-            .replace(/\$\{stationName\}/g, stationName)
-            .replace(/\$\{email\}/g, email)
-            .replace(
-                /\$\{#dates.year\(date\)\}/g,
-                new Date().getFullYear().toString()
+        email: string,
+        fullName: string,
+        username: string,
+        password: string,
+        stationName: string
+    ): Promise<void> {
+        try {
+            const templatePath = path.join(
+                process.cwd(),
+                'src',
+                'modules',
+                'mail',
+                'html',
+                'StaffCredentials.html'
             );
+            let html = await readFile(templatePath, 'utf-8');
 
-        const fromEmail = this.configService.get<string>('MAIL_FROM');
-        if (!fromEmail)
-            throw new InternalServerErrorException('MAIL_FROM is not set');
+            html = html
+                .replace(/\$\{fullName\}/g, fullName)
+                .replace(/\$\{username\}/g, username)
+                .replace(/\$\{password\}/g, password)
+                .replace(/\$\{stationName\}/g, stationName)
+                .replace(/\$\{email\}/g, email)
+                .replace(
+                    /\$\{#dates.year\(date\)\}/g,
+                    new Date().getFullYear().toString()
+                );
 
-        await sgMail.send({
-            to: email,
-            from: fromEmail,
-            subject: 'Thông tin tài khoản nhân viên - EV Swap Manager',
-            html: html
-        });
-    } catch (error) {
-        console.error('[sendStaffCredentials] error:', error);
+            const fromEmail = this.configService.get<string>('MAIL_FROM');
+            if (!fromEmail)
+                throw new InternalServerErrorException('MAIL_FROM is not set');
+
+            await sgMail.send({
+                to: email,
+                from: fromEmail,
+                subject: 'Thông tin tài khoản nhân viên - EV Swap Manager',
+                html: html
+            });
+        } catch (error) {
+            console.error('[sendStaffCredentials] error:', error);
+        }
     }
-}
 
+    async sendReportStatus(
+        email: string,
+        fullName: string,
+        isConfirmed: boolean,
+        message: string
+    ): Promise<void> {
+        try {
+            const templatePath = path.join(
+                process.cwd(),
+                'src',
+                'modules',
+                'mail',
+                'html',
+                'ReportStatus.html'
+            );
+            let html = await readFile(templatePath, 'utf-8');
+
+            const statusText = isConfirmed ? 'xác nhận' : 'từ chối';
+            const statusColor = isConfirmed ? '#d4edda' : '#f8d7da';
+            const borderColor = isConfirmed ? '#28a745' : '#dc3545';
+
+            html = html
+                .replace(/\$\{fullName\}/g, fullName)
+                .replace(/\$\{statusText\}/g, statusText)
+                .replace(/\$\{statusColor\}/g, statusColor)
+                .replace(/\$\{borderColor\}/g, borderColor)
+                .replace(/\$\{message\}/g, message)
+                .replace(/\$\{email\}/g, email)
+                .replace(
+                    /\$\{#dates.year\(date\)\}/g,
+                    new Date().getFullYear().toString()
+                );
+
+            const fromEmail = this.configService.get<string>('MAIL_FROM');
+            if (!fromEmail)
+                throw new InternalServerErrorException('MAIL_FROM is not set');
+
+            await sgMail.send({
+                to: email,
+                from: fromEmail,
+                subject: `Thông báo trạng thái báo cáo lỗi pin - amply`,
+                html: html
+            });
+        } catch (error) {
+            console.error('[sendReportStatus] error:', error);
+        }
+    }
+
+    async sendTransferStationNotification(
+        email: string,
+        fullName: string,
+        oldStationId: number,
+        oldStationName: string,
+        oldStationAddress: string,
+        newStationId: number,
+        newStationName: string,
+        newStationAddress: string,
+        transferDate: string,
+        isImmediate: boolean
+    ): Promise<void> {
+        try {
+            const templatePath = path.join(
+                process.cwd(),
+                'src',
+                'modules',
+                'mail',
+                'html',
+                'TransferStation.html'
+            );
+            let html = await readFile(templatePath, 'utf-8');
+
+            const message = isImmediate
+                ? `Bạn đã được chuyển sang trạm mới. Vui lòng liên hệ quản lý để biết thêm chi tiết.`
+                : `Bạn sẽ được chuyển sang trạm mới vào ngày ${transferDate}. Vui lòng chuẩn bị và liên hệ quản lý nếu có thắc mắc.`;
+
+            html = html
+                .replace(/\$\{fullName\}/g, fullName)
+                .replace(/\$\{message\}/g, message)
+                .replace(/\$\{oldStationId\}/g, oldStationId.toString())
+                .replace(/\$\{oldStationName\}/g, oldStationName)
+                .replace(/\$\{oldStationAddress\}/g, oldStationAddress)
+                .replace(/\$\{newStationId\}/g, newStationId.toString())
+                .replace(/\$\{newStationName\}/g, newStationName)
+                .replace(/\$\{newStationAddress\}/g, newStationAddress)
+                .replace(/\$\{transferDate\}/g, transferDate)
+                .replace(
+                    /\$\{#dates.year\(date\)\}/g,
+                    new Date().getFullYear().toString()
+                );
+
+            const fromEmail = this.configService.get<string>('MAIL_FROM');
+            if (!fromEmail)
+                throw new InternalServerErrorException('MAIL_FROM is not set');
+
+            await sgMail.send({
+                to: email,
+                from: fromEmail,
+                subject: 'Thông báo chuyển trạm - amply',
+                html: html
+            });
+        } catch (error) {
+            console.error('[sendTransferStationNotification] error:', error);
+        }
+    }
 }

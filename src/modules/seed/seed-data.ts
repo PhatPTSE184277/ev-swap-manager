@@ -41,6 +41,7 @@ export const seedData = {
             fullName: 'Quản trị viên',
             status: UserStatus.VERIFIED,
             roleId: 1,
+            avatar: 'https://tse4.mm.bing.net/th/id/OIP.kUUyYavHaSd1nxXBSsO1gQHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3',
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -48,8 +49,9 @@ export const seedData = {
             id: 2,
             username: 'user1',
             password: 'user123',
-            email: 'user1@example.com',
+            email: 'anhm250426@gmail.com',
             fullName: 'Nguyễn Văn A',
+            avatar: 'https://img.freepik.com/premium-vector/illustrations_995281-35700.jpg',
             status: UserStatus.VERIFIED,
             roleId: 2,
             createdAt: new Date(),
@@ -59,8 +61,9 @@ export const seedData = {
             id: 3,
             username: 'user2',
             password: 'user123',
-            email: 'user2@example.com',
+            email: 'ngoctran250426@gmail.com',
             fullName: 'Trần Thị B',
+            avatar: 'https://tse4.mm.bing.net/th/id/OIP.E7WvnoCNB1_hs6LYD1viUwHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3',
             status: UserStatus.VERIFIED,
             roleId: 2,
             createdAt: new Date(),
@@ -70,9 +73,10 @@ export const seedData = {
             id: 4,
             username: 'staff1',
             password: 'staff123',
-            email: 'staff1@evswap.com',
+            email: 'nguyenngocthach2301@gmail.com',
             fullName: 'Lê Văn C',
             status: UserStatus.VERIFIED,
+            avatar: 'https://img.freepik.com/premium-vector/illustrations_995281-35700.jpg',
             roleId: 3,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -83,6 +87,7 @@ export const seedData = {
             password: 'staff123',
             email: 'staff2@evswap.com',
             fullName: 'Phạm Thị D',
+            avatar: 'https://avatar.iran.liara.run/public/29',
             status: UserStatus.VERIFIED,
             roleId: 3,
             createdAt: new Date(),
@@ -424,7 +429,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 2,
@@ -438,7 +444,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 3,
@@ -452,7 +459,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 4,
@@ -466,7 +474,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 5,
@@ -480,7 +489,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 6,
@@ -494,11 +504,12 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 7,
-            batteryTypeId: 2,
+            batteryTypeId: 1,
             model: 'BAT48V007',
             currentCycle: 80,
             currentCapacity: 98,
@@ -508,7 +519,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 8,
@@ -519,10 +531,11 @@ export const seedData = {
             healthScore: 65,
             lastChargeTime: new Date('2025-10-26T22:00:00'),
             estimatedFullChargeTime: null,
-            status: BatteryStatus.MAINTENANCE,
+            status: BatteryStatus.DAMAGED,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 9,
@@ -536,7 +549,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 10,
@@ -550,7 +564,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 11,
@@ -564,7 +579,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 12,
@@ -578,7 +594,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 13,
@@ -592,7 +609,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 14,
@@ -606,7 +624,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 15,
@@ -620,7 +639,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 16,
@@ -631,10 +651,11 @@ export const seedData = {
             healthScore: 58,
             lastChargeTime: new Date('2025-10-26T20:00:00'),
             estimatedFullChargeTime: null,
-            status: BatteryStatus.MAINTENANCE,
+            status: BatteryStatus.DAMAGED,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 17,
@@ -648,7 +669,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 18,
@@ -662,7 +684,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 19,
@@ -676,7 +699,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 20,
@@ -690,7 +714,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 21,
@@ -704,7 +729,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 22,
@@ -718,7 +744,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 23,
@@ -732,7 +759,8 @@ export const seedData = {
             status: BatteryStatus.IN_USE,
             userVehicleId: 1,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 24,
@@ -746,7 +774,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 25,
@@ -760,7 +789,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 26,
@@ -774,7 +804,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 27,
@@ -785,10 +816,11 @@ export const seedData = {
             healthScore: 70,
             lastChargeTime: new Date('2025-10-26T22:00:00'),
             estimatedFullChargeTime: null,
-            status: BatteryStatus.MAINTENANCE,
+            status: BatteryStatus.DAMAGED,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 28,
@@ -802,7 +834,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 29,
@@ -816,7 +849,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 30,
@@ -830,7 +864,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
 
         {
@@ -845,7 +880,8 @@ export const seedData = {
             status: BatteryStatus.IN_USE,
             userVehicleId: 1,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 32,
@@ -859,7 +895,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 33,
@@ -873,7 +910,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 34,
@@ -884,10 +922,11 @@ export const seedData = {
             healthScore: 64,
             lastChargeTime: new Date('2025-10-27T05:30:00'),
             estimatedFullChargeTime: new Date('2025-10-27T08:30:00'),
-            status: BatteryStatus.MAINTENANCE,
+            status: BatteryStatus.DAMAGED,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 35,
@@ -901,7 +940,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 36,
@@ -915,7 +955,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 37,
@@ -929,7 +970,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 38,
@@ -943,7 +985,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 39,
@@ -957,7 +1000,8 @@ export const seedData = {
             status: BatteryStatus.IN_USE,
             userVehicleId: 2,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 40,
@@ -968,10 +1012,11 @@ export const seedData = {
             healthScore: 68,
             lastChargeTime: new Date('2025-10-26T23:00:00'),
             estimatedFullChargeTime: null,
-            status: BatteryStatus.MAINTENANCE,
+            status: BatteryStatus.DAMAGED,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 41,
@@ -985,7 +1030,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 42,
@@ -999,7 +1045,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 43,
@@ -1013,7 +1060,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 44,
@@ -1027,7 +1075,8 @@ export const seedData = {
             status: BatteryStatus.IN_USE,
             userVehicleId: 2,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 45,
@@ -1041,7 +1090,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 46,
@@ -1055,7 +1105,8 @@ export const seedData = {
             status: BatteryStatus.IN_USE,
             userVehicleId: 4,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 47,
@@ -1069,7 +1120,8 @@ export const seedData = {
             status: BatteryStatus.IN_USE,
             userVehicleId: 4,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 48,
@@ -1083,7 +1135,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 49,
@@ -1094,10 +1147,11 @@ export const seedData = {
             healthScore: 60,
             lastChargeTime: new Date('2025-10-26T21:00:00'),
             estimatedFullChargeTime: null,
-            status: BatteryStatus.MAINTENANCE,
+            status: BatteryStatus.DAMAGED,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 50,
@@ -1111,7 +1165,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 51,
@@ -1125,7 +1180,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 52,
@@ -1139,7 +1195,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
 
         // Batteries cho Cabinet 6 (batteryTypeId: 2, stationId: 3) - 12 batteries
@@ -1155,7 +1212,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 54,
@@ -1166,14 +1224,15 @@ export const seedData = {
             healthScore: 69,
             lastChargeTime: new Date('2025-10-27T05:15:00'),
             estimatedFullChargeTime: new Date('2025-10-27T08:15:00'),
-            status: BatteryStatus.MAINTENANCE,
+            status: BatteryStatus.DAMAGED,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 55,
-            batteryTypeId: 1,
+            batteryTypeId: 2,
             model: 'BAT60V025',
             currentCycle: 68,
             currentCapacity: 99,
@@ -1183,7 +1242,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 56,
@@ -1197,7 +1257,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 57,
@@ -1211,7 +1272,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 58,
@@ -1225,7 +1287,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 59,
@@ -1236,10 +1299,11 @@ export const seedData = {
             healthScore: 66,
             lastChargeTime: new Date('2025-10-26T23:30:00'),
             estimatedFullChargeTime: null,
-            status: BatteryStatus.MAINTENANCE,
+            status: BatteryStatus.DAMAGED,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 60,
@@ -1253,7 +1317,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 61,
@@ -1267,7 +1332,8 @@ export const seedData = {
             status: BatteryStatus.CHARGING,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 62,
@@ -1281,7 +1347,8 @@ export const seedData = {
             status: BatteryStatus.IN_USE,
             userVehicleId: 3,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 63,
@@ -1295,7 +1362,8 @@ export const seedData = {
             status: BatteryStatus.IN_USE,
             userVehicleId: 3,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         },
         {
             id: 64,
@@ -1309,7 +1377,8 @@ export const seedData = {
             status: BatteryStatus.AVAILABLE,
             userVehicleId: null,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            inUse: true
         }
     ],
 
@@ -1383,7 +1452,7 @@ export const seedData = {
             cabinetId: 1,
             name: 'Slot 1-8',
             batteryId: 8,
-            status: SlotStatus.MAINTENANCE,
+            status: SlotStatus.DAMAGED_BATTERY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1502,7 +1571,7 @@ export const seedData = {
             cabinetId: 2,
             name: 'Slot 2-9',
             batteryId: 27,
-            status: SlotStatus.MAINTENANCE,
+            status: SlotStatus.DAMAGED_BATTERY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1585,7 +1654,7 @@ export const seedData = {
             cabinetId: 3,
             name: 'Slot 3-6',
             batteryId: 16,
-            status: SlotStatus.MAINTENANCE,
+            status: SlotStatus.DAMAGED_BATTERY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1677,7 +1746,7 @@ export const seedData = {
             cabinetId: 4,
             name: 'Slot 4-4',
             batteryId: 34,
-            status: SlotStatus.MAINTENANCE,
+            status: SlotStatus.DAMAGED_BATTERY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1731,7 +1800,7 @@ export const seedData = {
             cabinetId: 4,
             name: 'Slot 4-10',
             batteryId: 40,
-            status: SlotStatus.MAINTENANCE,
+            status: SlotStatus.DAMAGED_BATTERY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1832,7 +1901,7 @@ export const seedData = {
             cabinetId: 5,
             name: 'Slot 5-9',
             batteryId: 49,
-            status: SlotStatus.MAINTENANCE,
+            status: SlotStatus.DAMAGED_BATTERY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1879,7 +1948,7 @@ export const seedData = {
             cabinetId: 6,
             name: 'Slot 6-2',
             batteryId: 54,
-            status: SlotStatus.MAINTENANCE,
+            status: SlotStatus.DAMAGED_BATTERY,
             createdAt: new Date(),
             updatedAt: new Date()
         },
@@ -1924,7 +1993,7 @@ export const seedData = {
             cabinetId: 6,
             name: 'Slot 6-7',
             batteryId: 59,
-            status: SlotStatus.MAINTENANCE,
+            status: SlotStatus.DAMAGED_BATTERY,
             createdAt: new Date(),
             updatedAt: new Date()
         },

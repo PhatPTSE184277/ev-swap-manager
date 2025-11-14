@@ -2,40 +2,40 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Thông tin tài khoản nhân viên - amply</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Thông báo trạng thái báo cáo - amply</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
+  </style>
+  <![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
     <tr>
       <td style="padding: 40px 20px;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <!-- Header with Logo -->
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-              <h1 style="margin: 0; color: #2d3748; font-size: 28px; font-weight: 700;">amply</h1>
+              <h1 style="margin: 0; color: #2d3748; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">amply</h1>
             </td>
           </tr>
           
+          <!-- Main Content -->
           <tr>
             <td style="padding: 40px;">
               <h2 style="margin: 0 0 20px; color: #2d3748; font-size: 24px; font-weight: 600;">Xin chào ${fullName},</h2>
               
               <p style="margin: 0 0 20px; color: #4a5568; font-size: 16px; line-height: 24px;">
-                Tài khoản nhân viên của bạn đã được tạo thành công tại trạm <strong>${stationName}</strong>.
+                Báo cáo lỗi pin của bạn đã được ${statusText}.
               </p>
               
-              <div style="margin: 20px 0; padding: 20px; background-color: #f7fafc; border-radius: 6px;">
-                <p style="margin: 0 0 10px; color: #2d3748; font-size: 14px;"><strong>Thông tin đăng nhập:</strong></p>
-                <p style="margin: 0 0 8px; color: #4a5568; font-size: 14px;">
-                  <strong>Username:</strong> <span style="color: #3b82f6;">${username}</span>
-                </p>
-                <p style="margin: 0; color: #4a5568; font-size: 14px;">
-                  <strong>Mật khẩu:</strong> <span style="color: #3b82f6;">${password}</span>
-                </p>
-              </div>
-              
-              <div style="margin: 20px 0; padding: 15px; background-color: #fef3cd; border-left: 4px solid #f1c40f; border-radius: 4px;">
-                <p style="margin: 0; color: #856404; font-size: 14px; line-height: 20px;">
-                  <strong>⚠️ Lưu ý:</strong> Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu để đảm bảo an toàn tài khoản.
+              <!-- Status Message -->
+              <div style="margin: 20px 0; padding: 20px; background-color: ${statusColor}; border-left: 4px solid ${borderColor}; border-radius: 6px;">
+                <p style="margin: 0; color: #2d3748; font-size: 15px; line-height: 22px;">
+                  ${message}
                 </p>
               </div>
               
@@ -48,9 +48,14 @@
             </td>
           </tr>
           
+          <!-- Footer -->
           <tr>
             <td style="padding: 30px 40px; background-color: #f7fafc; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-              <p style="margin: 0; color: #a0aec0; font-size: 12px; line-height: 18px;">
+              <p style="margin: 0 0 15px; color: #718096; font-size: 13px; line-height: 20px;">
+                Email này được gửi tới <a href="#" style="color: #3b82f6; text-decoration: none;">${email}</a>. Nếu bạn có thắc mắc, vui lòng <a href="#" style="color: #3b82f6; text-decoration: none;">liên hệ hỗ trợ</a>.
+              </p>
+              
+              <p style="margin: 20px 0 0; color: #a0aec0; font-size: 12px; line-height: 18px;">
                 © ${#dates.year(date)} amply. Đã đăng ký bản quyền.
               </p>
             </td>

@@ -174,7 +174,8 @@ export class UserService {
                     role: role?.name || null,
                     ...(role?.name === RoleName.USER
                         ? { memberships: activeMemberships }
-                        : {})
+                        : {}),
+                    ...(stationId !== null ? { stationId } : {})
                 },
                 message: 'Lấy thông tin người dùng thành công'
             };

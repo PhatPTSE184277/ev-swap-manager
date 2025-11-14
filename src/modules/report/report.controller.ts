@@ -39,7 +39,7 @@ export class ReportController {
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.STAFF)
+    @Roles(RoleName.STAFF, RoleName.ADMIN)
     @Get('station/:stationId')
     @ApiOperation({ summary: 'Lấy danh sách báo cáo theo trạm (ADMIN)' })
     @ApiParam({ name: 'stationId', type: Number })

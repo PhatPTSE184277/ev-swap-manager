@@ -32,6 +32,10 @@ import { CleanupModule } from './modules/cleanup/cleanup.module';
 import { ReportModule } from './modules/report/report.module';
 import { AnalyticModule } from './modules/analytic/analytic.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { RequestModule } from './modules/request/request.module';
+import { TransferBatteryModule } from './modules/transfer-battery/transfer-battery.module';
+import { HistoryModule } from './modules/history/history.module';
+import { StaffDashboardModule } from './modules/staff-dashboard/staff-dashboard.module';
 
 @Module({
   imports: [
@@ -71,6 +75,10 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     ReportModule,
     AnalyticModule,
     DashboardModule,
+    RequestModule,
+    TransferBatteryModule,
+    HistoryModule,
+    StaffDashboardModule,
   ],
   controllers: [],
   providers: [BatteryGateway, TransactionGateway],

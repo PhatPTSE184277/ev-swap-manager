@@ -220,24 +220,46 @@ export class SimulationService {
                         throw new NotFoundException('Không tìm thấy pin');
                     }
 
-                    if (battery.userVehicleId !== booking.userVehicle.id) {
-                        throw new BadRequestException(
-                            'Pin này không phải là pin của xe trong booking'
-                        );
-                    }
-
-                    if (battery.status !== BatteryStatus.IN_USE) {
-                        throw new BadRequestException(
-                            `Pin đang ở trạng thái ${battery.status}, không thể bỏ vào slot`
-                        );
-                    }
-
                     if (
                         slot.cabinet &&
                         slot.cabinet.batteryTypeId !== battery.batteryTypeId
                     ) {
                         throw new BadRequestException(
                             'Loại pin không phù hợp với tủ này'
+                        );
+                    }
+
+                    if (battery.userVehicleId !== booking.userVehicle.id) {
+                        throw new BadRequestException(
+                            'Pin này không phải là pin của xe trong booking'
+                        );
+                    }
+
+                    if (booking.isFree) {
+                        slot.batteryId = battery.id;
+                        slot.status = SlotStatus.DAMAGED_BATTERY;
+                        await manager.save(Slot, slot);
+
+                        battery.status = BatteryStatus.DAMAGED;
+                        battery.userVehicleId = null;
+                        await manager.save(Battery, battery);
+
+                        const slotHistory = manager.create(SlotHistory, {
+                            slotId: slot.id,
+                            batteryId: battery.id,
+                            status: true
+                        });
+                        await manager.save(SlotHistory, slotHistory);
+
+                        return {
+                            message:
+                                'Bỏ pin lỗi vào slot, slot chuyển sang trạng thái MAINTENANCE'
+                        };
+                    }
+
+                    if (battery.status !== BatteryStatus.IN_USE) {
+                        throw new BadRequestException(
+                            `Pin đang ở trạng thái ${battery.status}, không thể bỏ vào slot`
                         );
                     }
 

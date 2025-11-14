@@ -7,10 +7,11 @@ import {
     NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User, UserVehicle } from 'src/entities';
+import { Battery, User, UserVehicle, VehicleType } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { CreateUserVehicleDto } from './dto/create-user-vehicle.dto';
 import { UpdateUserVehicleDto } from './dto/update-user-vehicle.dto';
+import { BatteryStatus } from 'src/enums';
 
 @Injectable()
 export class UserVehicleService {
@@ -163,19 +164,73 @@ export class UserVehicleService {
                             status: true
                         }
                     });
-                    
+
                     if (existingVehicle)
                         throw new BadRequestException('Phương tiện đã tồn tại');
 
+                    // Kiểm tra loại xe
+                    const vehicleType = await manager.findOne(VehicleType, {
+                        where: { id: dto.vehicleTypeId },
+                        relations: ['batteryType']
+                    });
+                    if (!vehicleType)
+                        throw new NotFoundException('Loại xe không tồn tại');
+
+                    // Tạo xe mới
                     const newVehicle = manager.create(UserVehicle, {
-                        ...dto,
-                        userId: user.id
+                        userId: user.id,
+                        vehicleTypeId: dto.vehicleTypeId,
+                        name: dto.name
                     });
                     await manager.save(UserVehicle, newVehicle);
 
+                    // Tạo 2 cục pin mới tự động
+                    const batteryType = vehicleType.batteryType;
+                    const batteryPrefix = batteryType.name.includes('48V')
+                        ? 'BAT48V'
+                        : batteryType.name.includes('60V')
+                          ? 'BAT60V'
+                          : 'BAT';
+
+                    // Lấy số thứ tự pin cuối cùng của loại pin này
+                    const lastBattery = await manager
+                        .createQueryBuilder(Battery, 'battery')
+                        .where('battery.batteryTypeId = :batteryTypeId', {
+                            batteryTypeId: batteryType.id
+                        })
+                        .orderBy('battery.id', 'DESC')
+                        .getOne();
+
+                    let nextNumber = 1;
+                    if (lastBattery && lastBattery.model) {
+                        const match = lastBattery.model.match(/\d+$/);
+                        if (match) {
+                            nextNumber = parseInt(match[0]) + 1;
+                        }
+                    }
+
+                    // Tạo 2 cục pin
+                    for (let i = 0; i < 2; i++) {
+                        const batteryModel = `${batteryPrefix}${String(nextNumber + i).padStart(3, '0')}`;
+
+                        const newBattery = new Battery();
+                        newBattery.batteryTypeId = batteryType.id;
+                        newBattery.model = batteryModel;
+                        newBattery.currentCycle = 0;
+                        newBattery.userVehicleId = newVehicle.id;
+                        newBattery.currentCapacity = 100;
+                        newBattery.healthScore = 100;
+                        newBattery.lastChargeTime = null;
+                        newBattery.estimatedFullChargeTime = null;
+                        newBattery.inUse = true;
+                        newBattery.status = BatteryStatus.IN_USE;
+
+                        await manager.save(Battery, newBattery);
+                    }
+
                     return {
                         message:
-                            'Nhân viên đã tạo phương tiện cho user thành công'
+                            'Nhân viên đã tạo phương tiện cho người dùng thành công'
                     };
                 }
             );
@@ -191,7 +246,7 @@ export class UserVehicleService {
             );
         }
     }
-    
+
     async update(
         userId: number,
         id: number,

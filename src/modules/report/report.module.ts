@@ -5,9 +5,13 @@ import { BookingDetail } from 'src/entities/booking-detail.entity';
 import { Booking } from 'src/entities/booking.entity';
 import { ReportService } from './report.service';
 import { ReportController } from './report.controller';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Report, BookingDetail, Booking])],
+    imports: [
+        TypeOrmModule.forFeature([Report, BookingDetail, Booking]),
+        MailModule
+    ],
     providers: [ReportService],
     controllers: [ReportController],
     exports: [ReportService]

@@ -6,11 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Station, StationStaff, StationStaffHistory } from 'src/entities';
-import { DataSource, Like, Repository } from 'typeorm';
+import { DataSource, Like, MoreThanOrEqual, Repository } from 'typeorm';
 import { TransferStationDto } from './dto/transferstation.dto';
 import { UserService } from '../user/user.service';
 import { MailService } from '../mail/mail.service';
 import * as XLSX from 'xlsx';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class StationStaffService {
@@ -25,6 +26,56 @@ export class StationStaffService {
         private readonly userService: UserService,
         private readonly mailService: MailService
     ) {}
+
+    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    async autoTransferStation() {
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Lấy các lịch sử chuyển trạm chưa thực hiện (status = false) và đến ngày hôm nay
+            const pendingTransfers =
+                await this.stationStaffHistoryRepository.find({
+                    where: {
+                        status: false
+                    },
+                    relations: ['stationStaff']
+                });
+
+            for (const transfer of pendingTransfers) {
+                const transferDate = new Date(transfer.date);
+                transferDate.setHours(0, 0, 0, 0);
+
+                // Nếu đến ngày chuyển trạm
+                if (transferDate.getTime() <= today.getTime()) {
+                    await this.dataSource.transaction(async (manager) => {
+                        // Cập nhật stationId cho staff
+                        await manager.update(
+                            StationStaff,
+                            { id: transfer.stationStaffId },
+                            { stationId: transfer.stationId }
+                        );
+
+                        // Cập nhật trạng thái history
+                        await manager.update(
+                            StationStaffHistory,
+                            { id: transfer.id },
+                            { status: true }
+                        );
+                    });
+
+                    console.log(
+                        `[AutoTransferStation] Đã chuyển nhân viên ${transfer.stationStaffId} sang trạm ${transfer.stationId}`
+                    );
+                }
+            }
+        } catch (error) {
+            console.error(
+                '[AutoTransferStation] Lỗi:',
+                error?.message || error
+            );
+        }
+    }
 
     async getAllStationStaff(
         page: number = 1,
@@ -393,13 +444,16 @@ export class StationStaffService {
     ): Promise<{ message: string }> {
         try {
             return await this.dataSource.transaction(async (manager) => {
+                // Kiểm tra user có phải staff không
                 const staff = await manager.findOne(StationStaff, {
-                    where: { id: transferDto.staffId },
+                    where: { userId: transferDto.userId, status: true },
                     relations: ['user', 'station']
                 });
 
                 if (!staff) {
-                    throw new NotFoundException('Nhân viên không tồn tại');
+                    throw new NotFoundException(
+                        'User này không phải nhân viên trạm hoặc đã bị vô hiệu hóa'
+                    );
                 }
 
                 const newStation = await manager.findOne(Station, {
@@ -416,15 +470,70 @@ export class StationStaffService {
                     );
                 }
 
+                // Kiểm tra đã có lịch chuyển trạm chưa thực hiện
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const pendingHistory = await manager.findOne(
+                    StationStaffHistory,
+                    {
+                        where: {
+                            stationStaffId: staff.id,
+                            status: false,
+                            date: MoreThanOrEqual(today)
+                        }
+                    }
+                );
+                if (pendingHistory) {
+                    throw new BadRequestException(
+                        'Nhân viên này đã có lịch chuyển trạm chưa thực hiện hoặc đang chờ chuyển, không thể tạo thêm!'
+                    );
+                }
+
                 const oldStationId = staff.stationId;
 
-                staff.stationId = transferDto.newStationId;
-                await manager.save(StationStaff, staff);
+                // Xác định ngày chuyển trạm
+                const transferDate = transferDto.date
+                    ? new Date(transferDto.date)
+                    : new Date();
 
+                // Kiểm tra ngày không được trong quá khứ
+                transferDate.setHours(0, 0, 0, 0);
+
+                if (transferDate < today) {
+                    throw new BadRequestException(
+                        'Ngày chuyển trạm không được trong quá khứ'
+                    );
+                }
+
+                // Kiểm tra ngày không được quá 3 ngày kể từ hiện tại
+                const maxDate = new Date(today);
+                maxDate.setDate(maxDate.getDate() + 3);
+
+                if (transferDate > maxDate) {
+                    throw new BadRequestException(
+                        'Ngày chuyển trạm không được quá 3 ngày kể từ hiện tại'
+                    );
+                }
+
+                const oldStation = staff.station;
+
+                // Nếu là hôm nay, chuyển trạm ngay lập tức
+                const isToday = transferDate.getTime() === today.getTime();
+                if (isToday) {
+                    await manager.update(
+                        StationStaff,
+                        { id: staff.id },
+                        { stationId: transferDto.newStationId }
+                    );
+                }
+
+                // Lưu lịch sử chuyển trạm
                 const historyData = {
                     stationStaffId: staff.id,
                     stationId: transferDto.newStationId,
-                    status: true
+                    date: transferDate,
+                    status: isToday
                 };
 
                 const staffHistory = manager.create(
@@ -433,9 +542,31 @@ export class StationStaffService {
                 );
                 await manager.save(StationStaffHistory, staffHistory);
 
-                return {
-                    message: `Chuyển nhân viên ${staff.user?.fullName || 'N/A'} từ trạm ${oldStationId} sang trạm ${transferDto.newStationId} thành công`
-                };
+                const message = isToday
+                    ? `Chuyển nhân viên ${staff.user?.fullName || 'N/A'} từ trạm ${oldStationId} sang trạm ${transferDto.newStationId} thành công`
+                    : `Đã lên lịch chuyển nhân viên ${staff.user?.fullName || 'N/A'} từ trạm ${oldStationId} sang trạm ${transferDto.newStationId} vào ngày ${transferDate.toLocaleDateString('en-CA')}`;
+
+                try {
+                    await this.mailService.sendTransferStationNotification(
+                        staff.user.email,
+                        staff.user.fullName || 'Nhân viên',
+                        oldStation.id,
+                        oldStation.name,
+                        oldStation.address,
+                        newStation.id,
+                        newStation.name,
+                        newStation.address,
+                        transferDate.toLocaleDateString('vi-VN'),
+                        isToday
+                    );
+                } catch (emailError) {
+                    console.error(
+                        '[transferStation] Gửi email thất bại:',
+                        emailError?.message || emailError
+                    );
+                }
+
+                return { message };
             });
         } catch (error) {
             if (
@@ -444,8 +575,9 @@ export class StationStaffService {
             ) {
                 throw error;
             }
+            console.log(error);
             throw new InternalServerErrorException(
-                'Chuyển trạm cho nhân viên thất bại'
+                error?.message || 'Chuyển trạm cho nhân viên thất bại'
             );
         }
     }

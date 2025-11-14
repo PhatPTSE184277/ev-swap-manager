@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Thông tin tài khoản nhân viên - amply</title>
+  <title>Thông báo chuyển trạm - amply</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
@@ -20,22 +20,40 @@
               <h2 style="margin: 0 0 20px; color: #2d3748; font-size: 24px; font-weight: 600;">Xin chào ${fullName},</h2>
               
               <p style="margin: 0 0 20px; color: #4a5568; font-size: 16px; line-height: 24px;">
-                Tài khoản nhân viên của bạn đã được tạo thành công tại trạm <strong>${stationName}</strong>.
+                ${message}
               </p>
               
-              <div style="margin: 20px 0; padding: 20px; background-color: #f7fafc; border-radius: 6px;">
-                <p style="margin: 0 0 10px; color: #2d3748; font-size: 14px;"><strong>Thông tin đăng nhập:</strong></p>
-                <p style="margin: 0 0 8px; color: #4a5568; font-size: 14px;">
-                  <strong>Username:</strong> <span style="color: #3b82f6;">${username}</span>
+              <div style="margin: 20px 0; padding: 20px; background-color: #fef3cd; border-left: 4px solid #f1c40f; border-radius: 6px;">
+                <p style="margin: 0 0 15px; color: #2d3748; font-size: 14px;"><strong>📍 Trạm cũ:</strong></p>
+                <p style="margin: 0 0 5px; color: #4a5568; font-size: 14px;">
+                  <strong>ID:</strong> <span style="color: #3b82f6;">#${oldStationId}</span>
+                </p>
+                <p style="margin: 0 0 5px; color: #4a5568; font-size: 14px;">
+                  <strong>Tên:</strong> <span style="color: #3b82f6;">${oldStationName}</span>
+                </p>
+                <p style="margin: 0 0 15px; color: #4a5568; font-size: 14px;">
+                  <strong>Địa chỉ:</strong> <span style="color: #718096;">${oldStationAddress}</span>
+                </p>
+                
+                <div style="text-align: center; margin: 15px 0;">
+                  <span style="font-size: 24px;">⬇️</span>
+                </div>
+                
+                <p style="margin: 0 0 15px; color: #2d3748; font-size: 14px;"><strong>📍 Trạm mới:</strong></p>
+                <p style="margin: 0 0 5px; color: #4a5568; font-size: 14px;">
+                  <strong>ID:</strong> <span style="color: #10b981;">#${newStationId}</span>
+                </p>
+                <p style="margin: 0 0 5px; color: #4a5568; font-size: 14px;">
+                  <strong>Tên:</strong> <span style="color: #10b981;">${newStationName}</span>
                 </p>
                 <p style="margin: 0; color: #4a5568; font-size: 14px;">
-                  <strong>Mật khẩu:</strong> <span style="color: #3b82f6;">${password}</span>
+                  <strong>Địa chỉ:</strong> <span style="color: #718096;">${newStationAddress}</span>
                 </p>
               </div>
               
-              <div style="margin: 20px 0; padding: 15px; background-color: #fef3cd; border-left: 4px solid #f1c40f; border-radius: 4px;">
-                <p style="margin: 0; color: #856404; font-size: 14px; line-height: 20px;">
-                  <strong>⚠️ Lưu ý:</strong> Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu để đảm bảo an toàn tài khoản.
+              <div style="margin: 20px 0; padding: 15px; background-color: #f7fafc; border-radius: 6px; text-align: center;">
+                <p style="margin: 0; color: #2d3748; font-size: 16px;">
+                  <strong>📅 Ngày chuyển trạm:</strong> <span style="color: #3b82f6; font-size: 18px;">${transferDate}</span>
                 </p>
               </div>
               

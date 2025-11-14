@@ -2,6 +2,7 @@ export enum SlotStatus {
     EMPTY = 'EMPTY',
     AVAILABLE = 'AVAILABLE',
     CHARGING = 'CHARGING',
-    MAINTENANCE = 'MAINTENANCE',
-    RESERVED = 'RESERVED'
+    DAMAGED = 'DAMAGED',
+    RESERVED = 'RESERVED',
+    DAMAGED_BATTERY = 'DAMAGED_BATTERY' // slot chứa pin bị hư
 }

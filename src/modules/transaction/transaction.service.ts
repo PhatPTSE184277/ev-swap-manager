@@ -687,6 +687,13 @@ export class TransactionService {
                         );
                     }
                 }
+
+                this.transactionGateway.emitPaymentConfirmed({
+                    transactionId: transaction.id,
+                    userMembershipId: transaction.userMembershipId,
+                    status: TransactionStatus.SUCCESS,
+                    totalPrice: Number(transaction.totalPrice)
+                });
             } else {
                 await manager.update(Transaction, transaction.id, {
                     status: TransactionStatus.FAILED
@@ -840,6 +847,13 @@ export class TransactionService {
                         }
                     }
                 }
+
+                this.transactionGateway.emitPaymentConfirmed({
+                    transactionId: transaction.id,
+                    bookingId: booking?.id,
+                    status: TransactionStatus.SUCCESS,
+                    totalPrice: Number(transaction.totalPrice)
+                });
             } else {
                 if (transaction.status !== TransactionStatus.FAILED) {
                     await manager.update(Transaction, transaction.id, {

@@ -48,17 +48,36 @@ export class MailService {
             const fromEmail = this.configService.get<string>('MAIL_FROM');
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
-            
+
+            const logoPath = path.join(
+                process.cwd(),
+                'src',
+                'constants',
+                'images',
+                'amply-logo.jpg'
+            );
+            const logoBuffer = await readFile(logoPath);
+            const logoBase64 = logoBuffer.toString('base64');
+
             await sgMail.send({
                 to: email,
                 from: fromEmail,
-                subject: 'Xác thực email tài khoản',
-                html: html
+                subject: 'Đặt lại mật khẩu',
+                html: html,
+                attachments: [
+                    {
+                        filename: 'amply-logo.jpg',
+                        content: logoBase64,
+                        type: 'image/jpeg',
+                        disposition: 'inline',
+                        contentId: 'amply-logo'
+                    }
+                ]
             });
         } catch (error) {
             console.error('MAIL ERROR:', error);
             throw new InternalServerErrorException(
-                error?.message || 'Lỗi hệ thống khi gửi email xác thực'
+                error?.message || 'Lỗi hệ thống khi gửi email đặt lại mật khẩu'
             );
         }
     }
@@ -90,12 +109,31 @@ export class MailService {
             const fromEmail = this.configService.get<string>('MAIL_FROM');
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
-            
+
+            const logoPath = path.join(
+                process.cwd(),
+                'src',
+                'constants',
+                'images',
+                'amply-logo.jpg'
+            );
+            const logoBuffer = await readFile(logoPath);
+            const logoBase64 = logoBuffer.toString('base64');
+
             await sgMail.send({
                 to: email,
                 from: fromEmail,
                 subject: 'Đặt lại mật khẩu',
-                html: html
+                html: html,
+                attachments: [
+                    {
+                        filename: 'amply-logo.jpg',
+                        content: logoBase64,
+                        type: 'image/jpeg',
+                        disposition: 'inline',
+                        contentId: 'amply-logo'
+                    }
+                ]
             });
         } catch (error) {
             console.error('MAIL ERROR:', error);
@@ -106,48 +144,67 @@ export class MailService {
     }
 
     async sendStaffCredentials(
-    email: string,
-    fullName: string,
-    username: string,
-    password: string,
-    stationName: string
-): Promise<void> {
-    try {
-        const templatePath = path.join(
-            process.cwd(),
-            'src',
-            'modules',
-            'mail',
-            'html',
-            'StaffCredentials.html'
-        );
-        let html = await readFile(templatePath, 'utf-8');
-
-        html = html
-            .replace(/\$\{fullName\}/g, fullName)
-            .replace(/\$\{username\}/g, username)
-            .replace(/\$\{password\}/g, password)
-            .replace(/\$\{stationName\}/g, stationName)
-            .replace(/\$\{email\}/g, email)
-            .replace(
-                /\$\{#dates.year\(date\)\}/g,
-                new Date().getFullYear().toString()
+        email: string,
+        fullName: string,
+        username: string,
+        password: string,
+        stationName: string
+    ): Promise<void> {
+        try {
+            const templatePath = path.join(
+                process.cwd(),
+                'src',
+                'modules',
+                'mail',
+                'html',
+                'StaffCredentials.html'
             );
+            let html = await readFile(templatePath, 'utf-8');
 
-        const fromEmail = this.configService.get<string>('MAIL_FROM');
-        if (!fromEmail)
-            throw new InternalServerErrorException('MAIL_FROM is not set');
+            html = html
+                .replace(/\$\{fullName\}/g, fullName)
+                .replace(/\$\{username\}/g, username)
+                .replace(/\$\{password\}/g, password)
+                .replace(/\$\{stationName\}/g, stationName)
+                .replace(/\$\{email\}/g, email)
+                .replace(
+                    /\$\{#dates.year\(date\)\}/g,
+                    new Date().getFullYear().toString()
+                );
 
-        await sgMail.send({
-            to: email,
-            from: fromEmail,
-            subject: 'Thông tin tài khoản nhân viên - EV Swap Manager',
-            html: html
-        });
-    } catch (error) {
-        console.error('[sendStaffCredentials] error:', error);
+            const fromEmail = this.configService.get<string>('MAIL_FROM');
+            if (!fromEmail)
+                throw new InternalServerErrorException('MAIL_FROM is not set');
+
+            const logoPath = path.join(
+                process.cwd(),
+                'src',
+                'constants',
+                'images',
+                'amply-logo.jpg'
+            );
+            const logoBuffer = await readFile(logoPath);
+            const logoBase64 = logoBuffer.toString('base64');
+
+            await sgMail.send({
+                to: email,
+                from: fromEmail,
+                subject: 'Thông tin tài khoản nhân viên - EV Swap Manager',
+                html: html,
+                attachments: [
+                    {
+                        filename: 'amply-logo.jpg',
+                        content: logoBase64,
+                        type: 'image/jpeg',
+                        disposition: 'inline',
+                        contentId: 'amply-logo'
+                    }
+                ]
+            });
+        } catch (error) {
+            console.error('[sendStaffCredentials] error:', error);
+        }
     }
-}
 
     async sendReportStatus(
         email: string,
@@ -186,15 +243,34 @@ export class MailService {
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
 
+            // Đọc file logo và chuyển sang base64
+            const logoPath = path.join(
+                process.cwd(),
+                'src',
+                'constants',
+                'images',
+                'amply-logo.jpg'
+            );
+            const logoBuffer = await readFile(logoPath);
+            const logoBase64 = logoBuffer.toString('base64');
+
             await sgMail.send({
                 to: email,
                 from: fromEmail,
                 subject: `Thông báo trạng thái báo cáo lỗi pin - amply`,
-                html: html
+                html: html,
+                attachments: [
+                    {
+                        filename: 'amply-logo.jpg',
+                        content: logoBase64,
+                        type: 'image/jpeg',
+                        disposition: 'inline',
+                        contentId: 'amply-logo'
+                    }
+                ]
             });
         } catch (error) {
             console.error('[sendReportStatus] error:', error);
         }
     }
-
 }

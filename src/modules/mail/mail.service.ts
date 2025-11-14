@@ -49,35 +49,16 @@ export class MailService {
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
 
-            const logoPath = path.join(
-                process.cwd(),
-                'src',
-                'constants',
-                'images',
-                'amply-logo.jpg'
-            );
-            const logoBuffer = await readFile(logoPath);
-            const logoBase64 = logoBuffer.toString('base64');
-
             await sgMail.send({
                 to: email,
                 from: fromEmail,
-                subject: 'Đặt lại mật khẩu',
-                html: html,
-                attachments: [
-                    {
-                        filename: 'amply-logo.jpg',
-                        content: logoBase64,
-                        type: 'image/jpeg',
-                        disposition: 'inline',
-                        contentId: 'amply-logo'
-                    }
-                ]
+                subject: 'Xác thực email tài khoản',
+                html: html
             });
         } catch (error) {
             console.error('MAIL ERROR:', error);
             throw new InternalServerErrorException(
-                error?.message || 'Lỗi hệ thống khi gửi email đặt lại mật khẩu'
+                error?.message || 'Lỗi hệ thống khi gửi email xác thực'
             );
         }
     }
@@ -110,30 +91,11 @@ export class MailService {
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
 
-            const logoPath = path.join(
-                process.cwd(),
-                'src',
-                'constants',
-                'images',
-                'amply-logo.jpg'
-            );
-            const logoBuffer = await readFile(logoPath);
-            const logoBase64 = logoBuffer.toString('base64');
-
             await sgMail.send({
                 to: email,
                 from: fromEmail,
                 subject: 'Đặt lại mật khẩu',
-                html: html,
-                attachments: [
-                    {
-                        filename: 'amply-logo.jpg',
-                        content: logoBase64,
-                        type: 'image/jpeg',
-                        disposition: 'inline',
-                        contentId: 'amply-logo'
-                    }
-                ]
+                html: html
             });
         } catch (error) {
             console.error('MAIL ERROR:', error);
@@ -176,30 +138,11 @@ export class MailService {
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
 
-            const logoPath = path.join(
-                process.cwd(),
-                'src',
-                'constants',
-                'images',
-                'amply-logo.jpg'
-            );
-            const logoBuffer = await readFile(logoPath);
-            const logoBase64 = logoBuffer.toString('base64');
-
             await sgMail.send({
                 to: email,
                 from: fromEmail,
                 subject: 'Thông tin tài khoản nhân viên - EV Swap Manager',
-                html: html,
-                attachments: [
-                    {
-                        filename: 'amply-logo.jpg',
-                        content: logoBase64,
-                        type: 'image/jpeg',
-                        disposition: 'inline',
-                        contentId: 'amply-logo'
-                    }
-                ]
+                html: html
             });
         } catch (error) {
             console.error('[sendStaffCredentials] error:', error);
@@ -243,31 +186,11 @@ export class MailService {
             if (!fromEmail)
                 throw new InternalServerErrorException('MAIL_FROM is not set');
 
-            // Đọc file logo và chuyển sang base64
-            const logoPath = path.join(
-                process.cwd(),
-                'src',
-                'constants',
-                'images',
-                'amply-logo.jpg'
-            );
-            const logoBuffer = await readFile(logoPath);
-            const logoBase64 = logoBuffer.toString('base64');
-
             await sgMail.send({
                 to: email,
                 from: fromEmail,
                 subject: `Thông báo trạng thái báo cáo lỗi pin - amply`,
-                html: html,
-                attachments: [
-                    {
-                        filename: 'amply-logo.jpg',
-                        content: logoBase64,
-                        type: 'image/jpeg',
-                        disposition: 'inline',
-                        contentId: 'amply-logo'
-                    }
-                ]
+                html: html
             });
         } catch (error) {
             console.error('[sendReportStatus] error:', error);

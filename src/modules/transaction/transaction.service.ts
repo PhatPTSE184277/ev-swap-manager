@@ -688,7 +688,6 @@ export class TransactionService {
                     }
                 }
 
-                // Emit socket khi thanh toán membership thành công
                 this.transactionGateway.emitPaymentConfirmed({
                     transactionId: transaction.id,
                     userMembershipId: transaction.userMembershipId,
@@ -849,7 +848,6 @@ export class TransactionService {
                     }
                 }
 
-                // Emit socket khi thanh toán booking thành công
                 this.transactionGateway.emitPaymentConfirmed({
                     transactionId: transaction.id,
                     bookingId: booking?.id,

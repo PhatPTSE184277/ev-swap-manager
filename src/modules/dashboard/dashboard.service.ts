@@ -15,13 +15,7 @@ import {
     UserMembershipStatus,
     TransactionStatus
 } from 'src/enums';
-import {
-    Between,
-    DataSource,
-    LessThan,
-    MoreThanOrEqual,
-    Repository
-} from 'typeorm';
+import { Between, DataSource, Repository } from 'typeorm';
 
 @Injectable()
 export class DashboardService {
@@ -132,13 +126,20 @@ export class DashboardService {
                 result[date] = (result[date] || 0) + 1;
             });
 
-            // Trả về mảng cho chart
-            return Object.keys(result)
-                .sort()
-                .map((date) => ({
-                    date,
-                    total: result[date]
-                }));
+            // Tạo mảng tất cả ngày trong khoảng
+            const days: string[] = [];
+            const current = new Date(from);
+            while (current <= to) {
+                const dayStr = current.toISOString().slice(0, 10);
+                days.push(dayStr);
+                current.setDate(current.getDate() + 1);
+            }
+
+            // Trả về mảng cho chart, ngày không có dữ liệu thì total = 0
+            return days.map((date) => ({
+                date,
+                total: result[date] || 0
+            }));
         } catch (error) {
             throw new InternalServerErrorException(
                 'Lỗi khi lấy dữ liệu transaction chart'

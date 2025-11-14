@@ -77,9 +77,24 @@ export class BookingController {
     @ApiOperation({ summary: 'Lấy danh sách booking của user đang đăng nhập' })
     @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
     @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-    @ApiQuery({ name: 'search', required: false, type: String, description: 'Tìm kiếm theo tên xe' })
-    @ApiQuery({ name: 'month', required: false, type: Number, description: 'Lọc theo tháng (1-12)' })
-    @ApiQuery({ name: 'year', required: false, type: Number, description: 'Lọc theo năm (vd: 2025)' })
+    @ApiQuery({
+        name: 'search',
+        required: false,
+        type: String,
+        description: 'Tìm kiếm theo tên xe'
+    })
+    @ApiQuery({
+        name: 'month',
+        required: false,
+        type: Number,
+        description: 'Lọc theo tháng (1-12)'
+    })
+    @ApiQuery({
+        name: 'year',
+        required: false,
+        type: Number,
+        description: 'Lọc theo năm (vd: 2025)'
+    })
     async getMyBookings(
         @Req() req,
         @Query('page') page: number = 1,
@@ -110,7 +125,7 @@ export class BookingController {
         return this.bookingService.createBooking(userId, createBookingDto);
     }
 
-     @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Post('onsite')
     @ApiOperation({ summary: 'Tạo booking đổi pin tại chỗ (onsite)' })
     async createOnsiteBooking(
@@ -118,6 +133,17 @@ export class BookingController {
         @Body() createOnsiteBookingDto: CreateOnsiteBookingDto
     ) {
         const userId = req.user.id;
-        return this.bookingService.createOnsiteBooking(userId, createOnsiteBookingDto);
+        return this.bookingService.createOnsiteBooking(
+            userId,
+            createOnsiteBookingDto
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id')
+    @ApiOperation({ summary: 'Lấy chi tiết booking theo id' })
+    @ApiParam({ name: 'id', required: true, type: Number })
+    async getBookingById(@Param('id') id: number) {
+        return this.bookingService.getBookingById(id);
     }
 }

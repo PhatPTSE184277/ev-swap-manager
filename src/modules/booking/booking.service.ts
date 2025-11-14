@@ -33,6 +33,7 @@ import { CreateOnsiteBookingDto } from './dto/create-onsite-booking.dto';
 import { TransactionService } from '../transaction/transaction.service';
 import { Report } from 'src/entities/report.entity';
 import { ReportStatus } from 'src/enums/report.enum';
+import { stat } from 'fs';
 
 @Injectable()
 export class BookingService {
@@ -340,6 +341,7 @@ export class BookingService {
                     'bookingDetails.battery.batteryType',
                     'userMembership',
                     'transaction',
+                    'transaction.payment',
                     'bookingDetails.reports'
                 ],
                 skip: (page - 1) * limit,
@@ -350,6 +352,7 @@ export class BookingService {
             const mappedData = data.map((booking) => ({
                 id: booking.id,
                 status: booking.status,
+                station: booking.stationId,
                 isFree: booking.isFree,
                 expectedPickupTime: booking.expectedPickupTime,
                 createdAt: booking.createdAt,
@@ -397,7 +400,15 @@ export class BookingService {
                           status: booking.transaction.status,
                           totalPrice: booking.transaction.totalPrice,
                           paymentMethod: booking.transaction.paymentId,
-                          paymentUrl: booking.transaction.paymentUrl
+                          paymentUrl: booking.transaction.paymentUrl,
+                          payment: booking.transaction.payment
+                              ? {
+                                    id: booking.transaction.payment.id,
+                                    name: booking.transaction.payment.name,
+                                    description:
+                                        booking.transaction.payment.description
+                                }
+                              : undefined
                       }
                     : undefined,
                 userMembership: booking.userMembership
@@ -470,6 +481,7 @@ export class BookingService {
                     'bookingDetails.battery.batteryType',
                     'userMembership',
                     'transaction',
+                    'transaction.payment',
                     'bookingDetails.reports'
                 ],
                 skip: (page - 1) * limit,
@@ -480,6 +492,124 @@ export class BookingService {
             const mappedData = data.map((booking) => ({
                 id: booking.id,
                 status: booking.status,
+                isFree: booking.isFree,
+                station: booking.stationId,
+                expectedPickupTime: booking.expectedPickupTime,
+                createdAt: booking.createdAt,
+                user: {
+                    id: booking.userVehicle?.user?.id,
+                    username: booking.userVehicle?.user?.username,
+                    email: booking.userVehicle?.user?.email
+                },
+                userVehicle: {
+                    id: booking.userVehicle?.id,
+                    name: booking.userVehicle?.name,
+                    batteries: booking.userVehicle?.batteries.map(
+                        (battery) => ({
+                            id: battery.id,
+                            model: battery.model,
+                            currentCycle: battery.currentCycle,
+                            healthScore: battery.healthScore,
+                            status: battery.status,
+                            batteryType: battery.batteryTypeId
+                                ? {
+                                      id: battery.batteryType?.id,
+                                      name: battery.batteryType.name
+                                  }
+                                : null
+                        })
+                    )
+                },
+                bookingDetails: booking.bookingDetails?.map((detail) => ({
+                    id: detail.id,
+                    batteryId: detail.batteryId,
+                    price: detail.price,
+                    status: detail.status,
+                    reports:
+                        detail.reports?.map((report) => ({
+                            id: report.id,
+                            description: report.description,
+                            status: report.status,
+                            faultyBatteryId: report.faultyBatteryId,
+                            createdAt: report.createdAt
+                        })) || []
+                })),
+                transaction: booking.transaction
+                    ? {
+                          id: booking.transaction.id,
+                          status: booking.transaction.status,
+                          totalPrice: booking.transaction.totalPrice,
+                          paymentMethod: booking.transaction.paymentId,
+                          paymentUrl: booking.transaction.paymentUrl,
+                          payment: booking.transaction.payment
+                              ? {
+                                    id: booking.transaction.payment.id,
+                                    name: booking.transaction.payment.name,
+                                    description:
+                                        booking.transaction.payment.description
+                                }
+                              : undefined
+                      }
+                    : undefined,
+                userMembership: booking.userMembership
+                    ? {
+                          id: booking.userMembership.id,
+                          membershipId: booking.userMembership.membershipId
+                      }
+                    : undefined
+            }));
+
+            return {
+                data: mappedData,
+                total,
+                page,
+                limit,
+                message: 'Lấy danh sách booking thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                error.message ||
+                    'Lỗi hệ thống xảy ra khi lấy danh sách booking của người dùng'
+            );
+        }
+    }
+
+    async getBookingById(id: number): Promise<any> {
+        try {
+            const booking = await this.bookingRepository.findOne({
+                where: { id },
+                relations: [
+                    'userVehicle',
+                    'userVehicle.user',
+                    'userVehicle.batteries',
+                    'userVehicle.batteries.batteryType',
+                    'bookingDetails',
+                    'bookingDetails.battery',
+                    'bookingDetails.battery.batteryType',
+                    'userMembership',
+                    'transaction',
+                    'transaction.payment',
+                    'bookingDetails.reports',
+                    'station'
+                ]
+            });
+
+            if (!booking) {
+                throw new NotFoundException('Không tìm thấy booking');
+            }
+
+            const mapped = {
+                id: booking.id,
+                status: booking.status,
+                station: booking.station
+                    ? {
+                          id: booking.station.id,
+                          name: booking.station.name,
+                          address: booking.station.address,
+                          latitude: booking.station.latitude,
+                          longitude: booking.station.longitude
+                      }
+                    : booking.stationId,
                 isFree: booking.isFree,
                 expectedPickupTime: booking.expectedPickupTime,
                 createdAt: booking.createdAt,
@@ -520,20 +650,45 @@ export class BookingService {
                             faultyBatteryId: report.faultyBatteryId,
                             createdAt: report.createdAt
                         })) || []
-                }))
-            }));
+                })),
+                transaction: booking.transaction
+                    ? {
+                          id: booking.transaction.id,
+                          status: booking.transaction.status,
+                          totalPrice: booking.transaction.totalPrice,
+                          paymentMethod: booking.transaction.paymentId,
+                          paymentUrl: booking.transaction.paymentUrl,
+                          payment: booking.transaction.payment
+                              ? {
+                                    id: booking.transaction.payment.id,
+                                    name: booking.transaction.payment.name,
+                                    description:
+                                        booking.transaction.payment.description
+                                }
+                              : undefined
+                      }
+                    : undefined,
+                userMembership: booking.userMembership
+                    ? {
+                          id: booking.userMembership.id,
+                          membershipId: booking.userMembership.membershipId
+                      }
+                    : undefined
+            };
 
             return {
-                data: mappedData,
-                total,
-                page,
-                limit,
-                message: 'Lấy danh sách booking thành công'
+                data: mapped,
+                message: 'Lấy thông tin booking thành công'
             };
         } catch (error) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
             throw new InternalServerErrorException(
-                error.message ||
-                    'Lỗi hệ thống xảy ra khi lấy danh sách booking của người dùng'
+                error.message || 'Lỗi hệ thống xảy ra khi lấy thông tin booking'
             );
         }
     }

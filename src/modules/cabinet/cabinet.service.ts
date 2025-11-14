@@ -70,7 +70,7 @@ export class CabinetService {
         try {
             const cabinet = await this.cabinetRepository.findOne({
                 where: { id },
-                relations: ['slots']
+                relations: ['slots', 'slots.battery']
             });
             if (!cabinet) {
                 throw new NotFoundException('Tủ không tồn tại');
@@ -80,10 +80,24 @@ export class CabinetService {
                 cabinet;
 
             const slotsData = (slots || []).map((slot) => {
-                const { createdAt, updatedAt, cabinetId, ...slotRest } = slot;
-
-                return {
+                const {
+                    createdAt,
+                    updatedAt,
+                    cabinetId,
+                    battery,
                     ...slotRest
+                } = slot;
+                return {
+                    ...slotRest,
+                    battery: battery
+                        ? {
+                              id: battery.id,
+                              model: battery.model,
+                              status: battery.status,
+                              batteryTypeId: battery.batteryTypeId,
+                              inUse: battery.inUse
+                          }
+                        : null
                 };
             });
 
@@ -135,7 +149,8 @@ export class CabinetService {
                     else if (slot.status === SlotStatus.EMPTY) empty++;
                 });
 
-                const { createdAt, updatedAt, slots, status, ...rest } = cabinet;
+                const { createdAt, updatedAt, slots, status, ...rest } =
+                    cabinet;
                 return {
                     ...rest,
                     availablePins: available,
@@ -166,7 +181,7 @@ export class CabinetService {
         search?: string,
         order: 'ASC' | 'DESC' = 'ASC'
     ): Promise<any> {
-         try {
+        try {
             let where: any = { stationId, status: true, batteryTypeId };
             if (search) {
                 where.name = Like(`%${search}%`);
@@ -192,7 +207,8 @@ export class CabinetService {
                     else if (slot.status === SlotStatus.EMPTY) empty++;
                 });
 
-                const { createdAt, updatedAt, slots, status, ...rest } = cabinet;
+                const { createdAt, updatedAt, slots, status, ...rest } =
+                    cabinet;
                 return {
                     ...rest,
                     availablePins: available,
@@ -206,11 +222,13 @@ export class CabinetService {
                 total,
                 page,
                 limit,
-                message: 'Lấy danh sách tủ đang hoạt động theo loại pin tại trạm thành công'
+                message:
+                    'Lấy danh sách tủ đang hoạt động theo loại pin tại trạm thành công'
             };
         } catch (error) {
             throw new InternalServerErrorException(
-                error?.message || 'Lỗi hệ thống khi lấy danh sách tủ theo trạm và loại pin'
+                error?.message ||
+                    'Lỗi hệ thống khi lấy danh sách tủ theo trạm và loại pin'
             );
         }
     }

@@ -35,6 +35,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { RequestModule } from './modules/request/request.module';
 import { TransferBatteryModule } from './modules/transfer-battery/transfer-battery.module';
 import { HistoryModule } from './modules/history/history.module';
+import { StaffDashboardModule } from './modules/staff-dashboard/staff-dashboard.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { HistoryModule } from './modules/history/history.module';
     RequestModule,
     TransferBatteryModule,
     HistoryModule,
+    StaffDashboardModule,
   ],
   controllers: [],
   providers: [BatteryGateway, TransactionGateway],

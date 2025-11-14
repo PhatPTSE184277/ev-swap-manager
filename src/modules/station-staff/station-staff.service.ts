@@ -506,6 +506,16 @@ export class StationStaffService {
                     );
                 }
 
+                // Kiểm tra ngày không được quá 3 ngày kể từ hiện tại
+                const maxDate = new Date(today);
+                maxDate.setDate(maxDate.getDate() + 3);
+
+                if (transferDate > maxDate) {
+                    throw new BadRequestException(
+                        'Ngày chuyển trạm không được quá 3 ngày kể từ hiện tại'
+                    );
+                }
+
                 const oldStation = staff.station;
 
                 // Nếu là hôm nay, chuyển trạm ngay lập tức

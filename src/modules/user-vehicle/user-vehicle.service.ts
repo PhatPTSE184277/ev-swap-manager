@@ -230,7 +230,7 @@ export class UserVehicleService {
 
                     return {
                         message:
-                            'Nhân viên đã tạo phương tiện và tự động tạo 2 cục pin mới cho user thành công'
+                            'Nhân viên đã tạo phương tiện cho người dùng thành công'
                     };
                 }
             );

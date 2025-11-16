@@ -180,7 +180,6 @@ export class BatteryController {
     return this.batteryService.update(id, updateBatteryDto);
   }
 
-<<<<<<< HEAD
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(RoleName.STAFF, RoleName.ADMIN)
     @Post('staff-create')
@@ -240,17 +239,4 @@ export class BatteryController {
             batteryTypeId
         );
     }
-=======
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.STAFF, RoleName.ADMIN)
-  @Post('staff-create')
-  @ApiOperation({
-    summary: 'Staff tạo pin và gắn vào xe của user',
-    description:
-      'Nhân viên ghi nhận tình trạng pin thực tế và gắn vào xe người dùng',
-  })
-  async staffCreateBatteryForUserVehicle(@Body() dto: CreateUserBatteryDto) {
-    return this.batteryService.staffCreateBatteryForUserVehicle(dto);
-  }
->>>>>>> 381f706b87970096a7d46f941c6da049f239fe82
 }

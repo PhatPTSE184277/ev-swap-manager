@@ -96,12 +96,11 @@ export class BatteryController {
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(RoleName.ADMIN, RoleName.STAFF)
+    @Roles(RoleName.ADMIN)
     @Get('warehouse')
     @ApiOperation({
-        summary:
-            'Lấy danh sách pin trong kho (inUse = false, không thuộc request TRANSFERRING)',
-        description: 'ADMIN và STAFF'
+        summary: 'Lấy danh sách pin trong kho (inUse = false, filter)',
+        description: 'ADMIN'
     })
     @ApiQuery({
         name: 'page',
@@ -129,17 +128,25 @@ export class BatteryController {
         type: Number,
         description: 'Lọc theo loại pin'
     })
+    @ApiQuery({
+        name: 'status',
+        required: false,
+        enum: BatteryStatus,
+        description: 'Lọc theo trạng thái pin'
+    })
     async getBatteriesInWarehouse(
         @Query('page') page?: number,
         @Query('limit') limit?: number,
         @Query('search') search?: string,
-        @Query('batteryTypeId') batteryTypeId?: number
+        @Query('batteryTypeId') batteryTypeId?: number,
+        @Query('status') status?: BatteryStatus
     ) {
         return this.batteryService.getBatteriesInWarehouse(
             page,
             limit,
             search,
-            batteryTypeId
+            batteryTypeId,
+            status
         );
     }
 

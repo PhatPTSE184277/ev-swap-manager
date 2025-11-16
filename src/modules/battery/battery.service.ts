@@ -442,7 +442,8 @@ export class BatteryService {
         page: number = 1,
         limit: number = 10,
         search?: string,
-        batteryTypeId?: number
+        batteryTypeId?: number,
+        status?: BatteryStatus
     ): Promise<any> {
         try {
             // Lấy danh sách batteryId đang trong request TRANSFERRING
@@ -460,28 +461,16 @@ export class BatteryService {
                 (rd) => rd.rd_batteryId
             );
 
-            // Tạo điều kiện where
-            const where: any = {
-                inUse: false,
-                status: BatteryStatus.AVAILABLE
-            };
-
-            if (batteryTypeId) {
-                where.batteryTypeId = batteryTypeId;
-            }
-
-            if (search) {
-                where.model = Like(`%${search}%`);
-            }
-
             // Query builder để loại trừ pin đang transferring
             const queryBuilder = this.batteryRepository
                 .createQueryBuilder('battery')
                 .leftJoinAndSelect('battery.batteryType', 'batteryType')
-                .where('battery.inUse = :inUse', { inUse: false })
-                .andWhere('battery.status = :status', {
-                    status: BatteryStatus.AVAILABLE
-                });
+                .where('battery.inUse = :inUse', { inUse: false });
+
+            // Filter theo status (nếu có)
+            if (status) {
+                queryBuilder.andWhere('battery.status = :status', { status });
+            }
 
             if (excludedBatteryIds.length > 0) {
                 queryBuilder.andWhere('battery.id NOT IN (:...excludedIds)', {

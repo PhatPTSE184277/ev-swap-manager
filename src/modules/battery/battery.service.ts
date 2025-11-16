@@ -1,9 +1,9 @@
 /* eslint-disable prefer-const */
 import {
-    BadRequestException,
-    Injectable,
-    InternalServerErrorException,
-    NotFoundException
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Battery, BatteryType, Slot, UserVehicle } from 'src/entities';
@@ -17,415 +17,414 @@ import { RequestDetail } from 'src/entities/request-detail.entity';
 
 @Injectable()
 export class BatteryService {
-    constructor(
-        @InjectRepository(Battery)
-        private readonly batteryRepository: Repository<Battery>,
-        private readonly dataSource: DataSource
-    ) {}
+  constructor(
+    @InjectRepository(Battery)
+    private readonly batteryRepository: Repository<Battery>,
+    private readonly dataSource: DataSource,
+  ) {}
 
-    @Cron(CronExpression.EVERY_MINUTE)
-    async chargeBatteries() {
-        const chargingBatteries = await this.batteryRepository.find({
-            where: { status: BatteryStatus.CHARGING },
-            relations: ['batteryType']
+  @Cron(CronExpression.EVERY_MINUTE)
+  async chargeBatteries() {
+    const chargingBatteries = await this.batteryRepository.find({
+      where: { status: BatteryStatus.CHARGING },
+      relations: ['batteryType'],
+    });
+
+    for (const battery of chargingBatteries) {
+      if (!battery.batteryType?.chargeRate) continue;
+
+      const now = new Date();
+      const lastCharge = battery.lastChargeTime || now;
+      const minutesCharged = Math.floor(
+        (now.getTime() - lastCharge.getTime()) / 60000,
+      );
+
+      const totalMinutesToFull = battery.batteryType.chargeRate * 60;
+      const percentIncrease = (minutesCharged / totalMinutesToFull) * 100;
+      let newCapacity = Math.min(
+        100,
+        Math.round(battery.currentCapacity + percentIncrease),
+      );
+
+      // Lấy slot chứa pin này
+      const slot = await this.dataSource.getRepository(Slot).findOne({
+        where: { batteryId: battery.id },
+      });
+
+      if (newCapacity >= 100) {
+        newCapacity = 100;
+        battery.status = BatteryStatus.AVAILABLE;
+        if (slot) {
+          slot.status = SlotStatus.AVAILABLE;
+          await this.dataSource.getRepository(Slot).save(slot);
+        }
+      } else {
+        // Nếu có slot, cập nhật trạng thái slot về CHARGING (nếu có)
+        if (slot && slot.status === SlotStatus.CHARGING) {
+          slot.status = SlotStatus.CHARGING;
+          await this.dataSource.getRepository(Slot).save(slot);
+        }
+      }
+
+      battery.currentCapacity = newCapacity;
+      battery.lastChargeTime = now;
+
+      await this.batteryRepository.save(battery);
+    }
+  }
+
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    order: 'ASC' | 'DESC' = 'ASC',
+    status?: string,
+    inUse?: string | boolean,
+  ): Promise<any> {
+    try {
+      let where: any = {};
+      if (status) where.status = status;
+      // Filter by inUse when provided. Accepts boolean or string 'true'/'false'.
+      if (inUse !== undefined) {
+        if (typeof inUse === 'boolean') {
+          where.inUse = inUse;
+        } else if (inUse === 'true') {
+          where.inUse = true;
+        } else if (inUse === 'false') {
+          where.inUse = false;
+        }
+      }
+      if (search) where.model = Like(`%${search}%`);
+
+      const [data, total] = await this.batteryRepository.findAndCount({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        order: { model: order },
+        relations: [
+          'batteryType',
+          'slots',
+          'slots.cabinet',
+          'slots.cabinet.station',
+        ],
+      });
+
+      const mappedData = data.map(
+        ({
+          createdAt,
+          updatedAt,
+          batteryTypeId,
+          batteryType,
+          slots,
+          ...rest
+        }) => {
+          const slot = slots && slots.length > 0 ? slots[0] : null;
+          const station =
+            slot && slot.cabinet && slot.cabinet.station
+              ? {
+                  id: slot.cabinet.station.id,
+                  name: slot.cabinet.station.name,
+                  address: slot.cabinet.station.address,
+                }
+              : null;
+          return {
+            ...rest,
+            batteryType: batteryType?.name || null,
+            slotId: slot ? slot.id : null,
+            station: station,
+          };
+        },
+      );
+
+      return {
+        data: mappedData,
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi lấy danh sách pin',
+      );
+    }
+  }
+
+  async findById(id: number): Promise<any> {
+    try {
+      const battery = await this.batteryRepository.findOne({
+        where: { id },
+        relations: [
+          'batteryType',
+          'slots',
+          'slots.cabinet',
+          'slots.cabinet.station',
+        ],
+      });
+      if (!battery) {
+        throw new NotFoundException('Pin không tồn tại');
+      }
+      const { createdAt, updatedAt, batteryTypeId, slots, ...rest } = battery;
+
+      const slot = slots && slots.length > 0 ? slots[0] : null;
+      const station =
+        slot && slot.cabinet && slot.cabinet.station
+          ? {
+              id: slot.cabinet.station.id,
+              name: slot.cabinet.station.name,
+              address: slot.cabinet.station.address,
+            }
+          : null;
+
+      if (battery.batteryType) {
+        const { createdAt, updatedAt, ...batteryTypeRest } =
+          battery.batteryType;
+        return {
+          data: {
+            ...rest,
+            batteryType: batteryTypeRest,
+            slot: slot
+              ? {
+                  id: slot.id,
+                  name: slot.name,
+                  cabinetId: slot.cabinetId,
+                  status: slot.status,
+                }
+              : null,
+            station: station,
+          },
+          message: 'Lấy thông tin pin thành công',
+        };
+      }
+      return {
+        data: {
+          ...rest,
+          slot: slot
+            ? {
+                id: slot.id,
+                name: slot.name,
+                cabinetId: slot.cabinetId,
+                status: slot.status,
+              }
+            : null,
+          station: station,
+        },
+        message: 'Lấy thông tin pin thành công',
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi lấy thông tin pin',
+      );
+    }
+  }
+
+  async getBatteryByType(
+    batteryTypeId: number,
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    status?: string,
+  ): Promise<any> {
+    try {
+      const where: any = { batteryTypeId };
+      if (status) where.status = status;
+      if (search) where.model = Like(`%${search}%`);
+
+      const [data, total] = await this.batteryRepository.findAndCount({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        order: { model: 'ASC' },
+        relations: [
+          'batteryType',
+          'slots',
+          'slots.cabinet',
+          'slots.cabinet.station',
+        ],
+      });
+
+      const mappedData = data.map(
+        ({
+          createdAt,
+          updatedAt,
+          batteryTypeId,
+          batteryType,
+          slots,
+          ...rest
+        }) => {
+          const slot = slots && slots.length > 0 ? slots[0] : null;
+          const station =
+            slot && slot.cabinet && slot.cabinet.station
+              ? {
+                  id: slot.cabinet.station.id,
+                  name: slot.cabinet.station.name,
+                  address: slot.cabinet.station.address,
+                }
+              : null;
+          return {
+            ...rest,
+            batteryType: {
+              id: batteryType.id,
+              name: batteryType.name,
+            },
+            slotId: slot ? slot.id : null,
+            station: station,
+          };
+        },
+      );
+
+      return {
+        data: mappedData,
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi lấy pin theo loại',
+      );
+    }
+  }
+
+  async create(createBatteryDto: CreateBatteryDto): Promise<any> {
+    try {
+      const result = await this.dataSource.transaction(async (manager) => {
+        const existingBattery = await manager.findOne(Battery, {
+          where: { model: createBatteryDto.model },
+        });
+        if (existingBattery) {
+          throw new BadRequestException('Pin đã tồn tại');
+        }
+
+        const batteryType = await manager.findOne(BatteryType, {
+          where: { id: createBatteryDto.batteryTypeId },
         });
 
-        for (const battery of chargingBatteries) {
-            if (!battery.batteryType?.chargeRate) continue;
-
-            const now = new Date();
-            const lastCharge = battery.lastChargeTime || now;
-            const minutesCharged = Math.floor(
-                (now.getTime() - lastCharge.getTime()) / 60000
-            );
-
-            const totalMinutesToFull = battery.batteryType.chargeRate * 60;
-            const percentIncrease = (minutesCharged / totalMinutesToFull) * 100;
-            let newCapacity = Math.min(
-                100,
-                Math.round(battery.currentCapacity + percentIncrease)
-            );
-
-            // Lấy slot chứa pin này
-            const slot = await this.dataSource.getRepository(Slot).findOne({
-                where: { batteryId: battery.id }
-            });
-
-            if (newCapacity >= 100) {
-                newCapacity = 100;
-                battery.status = BatteryStatus.AVAILABLE;
-                if (slot) {
-                    slot.status = SlotStatus.AVAILABLE;
-                    await this.dataSource.getRepository(Slot).save(slot);
-                }
-            } else {
-                // Nếu có slot, cập nhật trạng thái slot về CHARGING (nếu có)
-                if (slot && slot.status === SlotStatus.CHARGING) {
-                    slot.status = SlotStatus.CHARGING;
-                    await this.dataSource.getRepository(Slot).save(slot);
-                }
-            }
-
-            battery.currentCapacity = newCapacity;
-            battery.lastChargeTime = now;
-
-            await this.batteryRepository.save(battery);
+        if (!batteryType) {
+          throw new BadRequestException('Loại pin không tồn tại');
         }
+
+        const newBattery = manager.create(Battery, {
+          ...createBatteryDto,
+          currentCycle: 0,
+          currentCapacity: 100,
+          healthScore: 100,
+          status: createBatteryDto.status ?? BatteryStatus.AVAILABLE,
+        });
+        await manager.save(Battery, newBattery);
+        const { createdAt, updatedAt, batteryTypeId, ...rest } = newBattery;
+        return {
+          message: 'Tạo pin thành công',
+        };
+      });
+      return result;
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi tạo pin',
+      );
     }
+  }
 
-    async findAll(
-        page: number = 1,
-        limit: number = 10,
-        search?: string,
-        order: 'ASC' | 'DESC' = 'ASC',
-        status?: string
-    ): Promise<any> {
-        try {
-            let where: any = {};
-            if (status) where.status = status;
-            if (search) where.model = Like(`%${search}%`);
-
-            const [data, total] = await this.batteryRepository.findAndCount({
-                where,
-                skip: (page - 1) * limit,
-                take: limit,
-                order: { model: order },
-                relations: [
-                    'batteryType',
-                    'slots',
-                    'slots.cabinet',
-                    'slots.cabinet.station'
-                ]
-            });
-
-            const mappedData = data.map(
-                ({
-                    createdAt,
-                    updatedAt,
-                    batteryTypeId,
-                    batteryType,
-                    slots,
-                    ...rest
-                }) => {
-                    const slot = slots && slots.length > 0 ? slots[0] : null;
-                    const station =
-                        slot && slot.cabinet && slot.cabinet.station
-                            ? {
-                                  id: slot.cabinet.station.id,
-                                  name: slot.cabinet.station.name,
-                                  address: slot.cabinet.station.address
-                              }
-                            : null;
-                    return {
-                        ...rest,
-                        batteryType: batteryType?.name || null,
-                        slotId: slot ? slot.id : null,
-                        station: station
-                    };
-                }
-            );
-
-            return {
-                data: mappedData,
-                total,
-                page,
-                limit
-            };
-        } catch (error) {
-            throw new InternalServerErrorException(
-                error?.message || 'Lỗi hệ thống khi lấy danh sách pin'
-            );
+  async update(id: number, updateBatteryDto: UpdateBatteryDto): Promise<any> {
+    try {
+      const battery = await this.batteryRepository.findOne({
+        where: { id },
+      });
+      if (!battery) {
+        throw new NotFoundException('Pin không tồn tại');
+      }
+      if (updateBatteryDto.model && updateBatteryDto.model !== battery.model) {
+        const existingBattery = await this.batteryRepository.findOne({
+          where: { model: updateBatteryDto.model },
+        });
+        if (existingBattery) {
+          throw new BadRequestException('Pin đã tồn tại');
         }
+      }
+      Object.assign(battery, updateBatteryDto);
+      await this.batteryRepository.update(id, battery);
+      return {
+        message: 'Cập nhật pin thành công',
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      )
+        throw error;
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi cập nhật pin',
+      );
     }
+  }
 
-    async findById(id: number): Promise<any> {
-        try {
-            const battery = await this.batteryRepository.findOne({
-                where: { id },
-                relations: [
-                    'batteryType',
-                    'slots',
-                    'slots.cabinet',
-                    'slots.cabinet.station'
-                ]
-            });
-            if (!battery) {
-                throw new NotFoundException('Pin không tồn tại');
-            }
-            const { createdAt, updatedAt, batteryTypeId, slots, ...rest } =
-                battery;
+  async staffCreateBatteryForUserVehicle(
+    dto: CreateUserBatteryDto,
+  ): Promise<any> {
+    try {
+      const result = await this.dataSource.transaction(async (manager) => {
+        const userVehicle = await manager.findOne(UserVehicle, {
+          where: { id: dto.userVehicleId, status: true },
+          relations: ['vehicleType'],
+        });
 
-            const slot = slots && slots.length > 0 ? slots[0] : null;
-            const station =
-                slot && slot.cabinet && slot.cabinet.station
-                    ? {
-                          id: slot.cabinet.station.id,
-                          name: slot.cabinet.station.name,
-                          address: slot.cabinet.station.address
-                      }
-                    : null;
-
-            if (battery.batteryType) {
-                const { createdAt, updatedAt, ...batteryTypeRest } =
-                    battery.batteryType;
-                return {
-                    data: {
-                        ...rest,
-                        batteryType: batteryTypeRest,
-                        slot: slot
-                            ? {
-                                  id: slot.id,
-                                  name: slot.name,
-                                  cabinetId: slot.cabinetId,
-                                  status: slot.status
-                              }
-                            : null,
-                        station: station
-                    },
-                    message: 'Lấy thông tin pin thành công'
-                };
-            }
-            return {
-                data: {
-                    ...rest,
-                    slot: slot
-                        ? {
-                              id: slot.id,
-                              name: slot.name,
-                              cabinetId: slot.cabinetId,
-                              status: slot.status
-                          }
-                        : null,
-                    station: station
-                },
-                message: 'Lấy thông tin pin thành công'
-            };
-        } catch (error) {
-            if (error instanceof NotFoundException) throw error;
-            throw new InternalServerErrorException(
-                error?.message || 'Lỗi hệ thống khi lấy thông tin pin'
-            );
+        if (!userVehicle) {
+          throw new NotFoundException(
+            'Phương tiện người dùng không tồn tại hoặc không hoạt động',
+          );
         }
-    }
 
-    async getBatteryByType(
-        batteryTypeId: number,
-        page: number = 1,
-        limit: number = 10,
-        search?: string,
-        status?: string
-    ): Promise<any> {
-        try {
-            const where: any = { batteryTypeId };
-            if (status) where.status = status;
-            if (search) where.model = Like(`%${search}%`);
-
-            const [data, total] = await this.batteryRepository.findAndCount({
-                where,
-                skip: (page - 1) * limit,
-                take: limit,
-                order: { model: 'ASC' },
-                relations: [
-                    'batteryType',
-                    'slots',
-                    'slots.cabinet',
-                    'slots.cabinet.station'
-                ]
-            });
-
-            const mappedData = data.map(
-                ({
-                    createdAt,
-                    updatedAt,
-                    batteryTypeId,
-                    batteryType,
-                    slots,
-                    ...rest
-                }) => {
-                    const slot = slots && slots.length > 0 ? slots[0] : null;
-                    const station =
-                        slot && slot.cabinet && slot.cabinet.station
-                            ? {
-                                  id: slot.cabinet.station.id,
-                                  name: slot.cabinet.station.name,
-                                  address: slot.cabinet.station.address
-                              }
-                            : null;
-                    return {
-                        ...rest,
-                        batteryType: {
-                            id: batteryType.id,
-                            name: batteryType.name
-                        },
-                        slotId: slot ? slot.id : null,
-                        station: station
-                    };
-                }
-            );
-
-            return {
-                data: mappedData,
-                total,
-                page,
-                limit
-            };
-        } catch (error) {
-            if (
-                error instanceof BadRequestException ||
-                error instanceof NotFoundException
-            ) {
-                throw error;
-            }
-
-            throw new InternalServerErrorException(
-                error?.message || 'Lỗi hệ thống khi lấy pin theo loại'
-            );
+        const batteryTypeId = userVehicle.vehicleType?.batteryTypeId;
+        if (!batteryTypeId) {
+          throw new BadRequestException(
+            'Loại pin cho phương tiện này không xác định',
+          );
         }
-    }
 
-    async create(createBatteryDto: CreateBatteryDto): Promise<any> {
-        try {
-            const result = await this.dataSource.transaction(
-                async (manager) => {
-                    const existingBattery = await manager.findOne(Battery, {
-                        where: { model: createBatteryDto.model }
-                    });
-                    if (existingBattery) {
-                        throw new BadRequestException('Pin đã tồn tại');
-                    }
-
-                    const batteryType = await manager.findOne(BatteryType, {
-                        where: { id: createBatteryDto.batteryTypeId }
-                    });
-
-                    if (!batteryType) {
-                        throw new BadRequestException('Loại pin không tồn tại');
-                    }
-
-                    const newBattery = manager.create(Battery, {
-                        ...createBatteryDto,
-                        currentCycle: 0,
-                        currentCapacity: 100,
-                        healthScore: 100,
-                        status:
-                            createBatteryDto.status ?? BatteryStatus.AVAILABLE
-                    });
-                    await manager.save(Battery, newBattery);
-                    const { createdAt, updatedAt, batteryTypeId, ...rest } =
-                        newBattery;
-                    return {
-                        message: 'Tạo pin thành công'
-                    };
-                }
-            );
-            return result;
-        } catch (error) {
-            if (error instanceof BadRequestException) throw error;
-            throw new InternalServerErrorException(
-                error?.message || 'Lỗi hệ thống khi tạo pin'
-            );
+        const existingBattery = await manager.findOne(Battery, {
+          where: { model: dto.model },
+        });
+        if (existingBattery) {
+          throw new BadRequestException('Pin đã tồn tại');
         }
+
+        const newBattery = manager.create(Battery, {
+          batteryTypeId: batteryTypeId,
+          model: dto.model,
+          currentCapacity: dto.currentCapacity ?? 100,
+          currentCycle: dto.currentCycle ?? 0,
+          healthScore: dto.healthScore ?? 100,
+          status: BatteryStatus.IN_USE,
+          userVehicleId: dto.userVehicleId,
+        });
+        await manager.save(Battery, newBattery);
+
+        return {
+          message: 'Tạo pin cho phương tiện người dùng thành công',
+        };
+      });
+      return result;
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        error?.message || 'Lỗi hệ thống khi tạo pin cho phương tiện người dùng',
+      );
     }
-
-    async update(id: number, updateBatteryDto: UpdateBatteryDto): Promise<any> {
-        try {
-            const battery = await this.batteryRepository.findOne({
-                where: { id }
-            });
-            if (!battery) {
-                throw new NotFoundException('Pin không tồn tại');
-            }
-            if (
-                updateBatteryDto.model &&
-                updateBatteryDto.model !== battery.model
-            ) {
-                const existingBattery = await this.batteryRepository.findOne({
-                    where: { model: updateBatteryDto.model }
-                });
-                if (existingBattery) {
-                    throw new BadRequestException('Pin đã tồn tại');
-                }
-            }
-            Object.assign(battery, updateBatteryDto);
-            await this.batteryRepository.update(id, battery);
-            return {
-                message: 'Cập nhật pin thành công'
-            };
-        } catch (error) {
-            if (
-                error instanceof BadRequestException ||
-                error instanceof NotFoundException
-            )
-                throw error;
-            throw new InternalServerErrorException(
-                error?.message || 'Lỗi hệ thống khi cập nhật pin'
-            );
-        }
-    }
-
-    async staffCreateBatteryForUserVehicle(
-        dto: CreateUserBatteryDto
-    ): Promise<any> {
-        try {
-            const result = await this.dataSource.transaction(
-                async (manager) => {
-                    const userVehicle = await manager.findOne(UserVehicle, {
-                        where: { id: dto.userVehicleId, status: true },
-                        relations: ['vehicleType']
-                    });
-
-                    if (!userVehicle) {
-                        throw new NotFoundException(
-                            'Phương tiện người dùng không tồn tại hoặc không hoạt động'
-                        );
-                    }
-
-                    const batteryTypeId =
-                        userVehicle.vehicleType?.batteryTypeId;
-                    if (!batteryTypeId) {
-                        throw new BadRequestException(
-                            'Loại pin cho phương tiện này không xác định'
-                        );
-                    }
-
-                    const existingBattery = await manager.findOne(Battery, {
-                        where: { model: dto.model }
-                    });
-                    if (existingBattery) {
-                        throw new BadRequestException('Pin đã tồn tại');
-                    }
-
-                    const newBattery = manager.create(Battery, {
-                        batteryTypeId: batteryTypeId,
-                        model: dto.model,
-                        currentCapacity: dto.currentCapacity ?? 100,
-                        currentCycle: dto.currentCycle ?? 0,
-                        healthScore: dto.healthScore ?? 100,
-                        status: BatteryStatus.IN_USE,
-                        userVehicleId: dto.userVehicleId
-                    });
-                    await manager.save(Battery, newBattery);
-
-                    return {
-                        message: 'Tạo pin cho phương tiện người dùng thành công'
-                    };
-                }
-            );
-            return result;
-        } catch (error) {
-            if (
-                error instanceof BadRequestException ||
-                error instanceof NotFoundException
-            ) {
-                throw error;
-            }
-
-            throw new InternalServerErrorException(
-                error?.message ||
-                    'Lỗi hệ thống khi tạo pin cho phương tiện người dùng'
-            );
-        }
-    }
+<<<<<<< HEAD
 
     async getBatteriesInWarehouse(
         page: number = 1,
@@ -530,4 +529,7 @@ export class BatteryService {
             );
         }
     }
+=======
+  }
+>>>>>>> 381f706b87970096a7d46f941c6da049f239fe82
 }

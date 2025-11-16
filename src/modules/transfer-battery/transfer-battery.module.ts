@@ -4,9 +4,10 @@ import { TransferBatteryController } from './transfer-battery.controller';
 import { Battery, Slot, SlotHistory } from 'src/entities';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Request } from 'src/entities/request.entity';
+import { RequestDetail } from 'src/entities/request-detail.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Slot, Battery, SlotHistory, Request])],
+  imports: [TypeOrmModule.forFeature([Slot, Battery, SlotHistory, Request, RequestDetail])],
   controllers: [TransferBatteryController],
   providers: [TransferBatteryService],
 })

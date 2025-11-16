@@ -177,4 +177,52 @@ export class BatteryController {
     async staffCreateBatteryForUserVehicle(@Body() dto: CreateUserBatteryDto) {
         return this.batteryService.staffCreateBatteryForUserVehicle(dto);
     }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleName.ADMIN)
+    @Get('warehouse')
+    @ApiOperation({
+        summary:
+            'Lấy danh sách pin trong kho (inUse = false, không thuộc request TRANSFERRING)',
+        description: 'ADMIN'
+    })
+    @ApiQuery({
+        name: 'page',
+        required: false,
+        type: Number,
+        example: 1,
+        description: 'Trang hiện tại'
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        type: Number,
+        example: 10,
+        description: 'Số lượng mỗi trang'
+    })
+    @ApiQuery({
+        name: 'search',
+        required: false,
+        type: String,
+        description: 'Tìm kiếm theo model pin'
+    })
+    @ApiQuery({
+        name: 'batteryTypeId',
+        required: false,
+        type: Number,
+        description: 'Lọc theo loại pin'
+    })
+    async getBatteriesInWarehouse(
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
+        @Query('search') search?: string,
+        @Query('batteryTypeId') batteryTypeId?: number
+    ) {
+        return this.batteryService.getBatteriesInWarehouse(
+            page,
+            limit,
+            search,
+            batteryTypeId
+        );
+    }
 }

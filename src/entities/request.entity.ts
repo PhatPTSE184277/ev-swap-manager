@@ -5,11 +5,14 @@ import {
     ManyToOne,
     JoinColumn,
     CreateDateColumn,
-    UpdateDateColumn
+    UpdateDateColumn,
+    OneToMany
 } from 'typeorm';
 import { Station } from './station.entity';
-import { Battery } from './battery.entity';
+import { BatteryType } from './battery-type.entity';
 import { RequestStatus } from '../enums';
+import { User } from './user.entity';
+import { RequestDetail } from './request-detail.entity';
 
 @Entity('requests')
 export class Request {
@@ -17,13 +20,19 @@ export class Request {
     id: number;
 
     @Column()
-    batteryId: number;
+    stationId: number;
 
     @Column()
-    currentStationId: number;
+    batteryTypeId: number;
 
     @Column()
-    newStationId: number;
+    requestedBy: number;
+
+    @Column({ type: 'int' })
+    requestedQuantity: number;
+
+    @Column({ type: 'int', default: 0 })
+    approvedQuantity: number;
 
     @Column({
         type: 'enum',
@@ -41,15 +50,18 @@ export class Request {
     @UpdateDateColumn()
     updatedAt: Date;
 
-    @ManyToOne(() => Battery)
-    @JoinColumn({ name: 'batteryId' })
-    battery: Battery;
-
     @ManyToOne(() => Station)
-    @JoinColumn({ name: 'currentStationId' })
-    currentStation: Station;
+    @JoinColumn({ name: 'stationId' })
+    station: Station;
 
-    @ManyToOne(() => Station)
-    @JoinColumn({ name: 'newStationId' })
-    newStation: Station;
+    @ManyToOne(() => BatteryType)
+    @JoinColumn({ name: 'batteryTypeId' })
+    batteryType: BatteryType;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: 'requestedBy' })
+    requester: User;
+
+    @OneToMany(() => RequestDetail, (detail) => detail.request)
+    requestDetails: RequestDetail[];
 }

@@ -12,6 +12,7 @@ import { PutBatteryDto } from './dto/put-battery.dto';
 
 import { Request } from 'src/entities/request.entity';
 import { RequestStatus } from 'src/enums';
+import { RequestDetail } from 'src/entities/request-detail.entity';
 
 @Injectable()
 export class TransferBatteryService {
@@ -48,27 +49,11 @@ export class TransferBatteryService {
                         throw new NotFoundException('Pin không tồn tại');
                     }
 
+                    // Chỉ cho phép lấy pin ở trạng thái AVAILABLE hoặc DAMAGED
                     if (battery.status !== BatteryStatus.DAMAGED) {
-                        if (battery.inUse !== false) {
-                            throw new BadRequestException(
-                                'Chỉ được lấy pin không đang sử dụng (inUse = false)'
-                            );
-                        }
-                    }
-
-                    // Kiểm tra request của pin này
-                    const request = await manager.findOne(Request, {
-                        where: {
-                            batteryId: battery.id,
-                            status: RequestStatus.PENDING
-                        }
-                    });
-
-                    if (request) {
-                        // Cập nhật request sang TRANSFERRING
-                        await manager.update(Request, request.id, {
-                            status: RequestStatus.TRANSFERRING
-                        });
+                        throw new BadRequestException(
+                            'Chỉ được lấy pin ở trạng thái AVAILABLE hoặc DAMAGED'
+                        );
                     }
 
                     // Lưu slot history
@@ -85,10 +70,11 @@ export class TransferBatteryService {
                         status: SlotStatus.EMPTY
                     });
 
+                    // Cập nhật pin: inUse = false
                     await manager.update(Battery, battery.id, { inUse: false });
+
                     return {
-                        message:
-                            'Lấy pin ra khỏi slot để chuyển trạm thành công'
+                        message: 'Lấy pin ra khỏi slot thành công'
                     };
                 }
             );
@@ -102,8 +88,7 @@ export class TransferBatteryService {
                 throw error;
             }
             throw new BadRequestException(
-                error?.message ||
-                    'Lỗi hệ thống khi lấy pin từ slot để chuyển trạm'
+                error?.message || 'Lỗi hệ thống khi lấy pin từ slot'
             );
         }
     }
@@ -142,14 +127,10 @@ export class TransferBatteryService {
                         throw new NotFoundException('Pin không tồn tại');
                     }
 
-                    // Chỉ được bỏ pin AVAILABLE hoặc CHARGING
-                    if (
-                        battery.status !== BatteryStatus.AVAILABLE &&
-                        battery.status !== BatteryStatus.CHARGING &&
-                        battery.status !== BatteryStatus.DAMAGED
-                    ) {
+                    // Chỉ được bỏ pin AVAILABLE, CHARGING hoặc DAMAGED
+                    if (battery.status !== BatteryStatus.AVAILABLE) {
                         throw new BadRequestException(
-                            'Chỉ được bỏ vào slot những pin ở trạng thái AVAILABLE, CHARGING hoặc DAMAGED'
+                            'Chỉ được bỏ vào slot những pin ở trạng thái AVAILABLE'
                         );
                     }
 
@@ -163,27 +144,54 @@ export class TransferBatteryService {
                         );
                     }
 
-                    // Kiểm tra request của pin này
-                    const request = await manager.findOne(Request, {
-                        where: {
-                            batteryId: battery.id,
+                    // Kiểm tra pin có thuộc request TRANSFERRING không
+                    const requestDetail = await manager
+                        .createQueryBuilder(RequestDetail, 'rd')
+                        .innerJoinAndSelect('rd.request', 'r')
+                        .where('rd.batteryId = :batteryId', {
+                            batteryId: battery.id
+                        })
+                        .andWhere('r.status = :status', {
                             status: RequestStatus.TRANSFERRING
-                        }
-                    });
+                        })
+                        .getOne();
 
-                    if (request) {
+                    let completedRequest = false;
+
+                    if (requestDetail) {
+                        const request = requestDetail.request;
+
                         // Kiểm tra slot có thuộc trạm đích của request không
                         const stationId = slot.cabinet?.stationId;
-                        if (stationId !== request.newStationId) {
+                        if (stationId !== request.stationId) {
                             throw new BadRequestException(
-                                `Pin này cần được bỏ vào trạm ${request.newStationId}, không phải trạm ${stationId}`
+                                `Pin này cần được bỏ vào trạm ${request.stationId}, không phải trạm ${stationId}`
                             );
                         }
 
-                        // Cập nhật request sang COMPLETED
-                        await manager.update(Request, request.id, {
-                            status: RequestStatus.COMPLETED
-                        });
+                        // Kiểm tra tất cả pin trong request đã được bỏ vào slot chưa
+                        const allRequestDetails = await manager.find(
+                            RequestDetail,
+                            {
+                                where: { requestId: request.id },
+                                relations: ['battery']
+                            }
+                        );
+
+                        // Đếm số pin đã bỏ vào slot (inUse = true) + pin hiện tại
+                        const deliveredCount = allRequestDetails.filter(
+                            (rd) =>
+                                rd.battery.inUse === true ||
+                                rd.batteryId === battery.id
+                        ).length;
+
+                        // Nếu tất cả pin đã được bỏ vào slot → COMPLETED
+                        if (deliveredCount === allRequestDetails.length) {
+                            await manager.update(Request, request.id, {
+                                status: RequestStatus.COMPLETED
+                            });
+                            completedRequest = true;
+                        }
                     }
 
                     // Lưu slot history
@@ -196,19 +204,16 @@ export class TransferBatteryService {
 
                     // Cập nhật slot với pin và trạng thái theo pin
                     slot.batteryId = battery.id;
-                    slot.status =
-                        battery.status === BatteryStatus.CHARGING
-                            ? SlotStatus.CHARGING
-                            : battery.status === BatteryStatus.DAMAGED
-                              ? SlotStatus.DAMAGED_BATTERY
-                              : SlotStatus.AVAILABLE;
+                    slot.status = SlotStatus.AVAILABLE;
                     await manager.save(Slot, slot);
 
                     // Cập nhật inUse thành true
                     await manager.update(Battery, battery.id, { inUse: true });
 
                     return {
-                        message: 'Bỏ pin vào slot thành công'
+                        message: completedRequest
+                            ? 'Bỏ pin vào slot thành công. Request đã hoàn thành.'
+                            : 'Bỏ pin vào slot thành công'
                     };
                 }
             );

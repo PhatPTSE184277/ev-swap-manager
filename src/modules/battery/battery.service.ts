@@ -10,9 +10,10 @@ import { Battery, BatteryType, Slot, UserVehicle } from 'src/entities';
 import { DataSource, Like, Repository } from 'typeorm';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
 import { CreateBatteryDto } from './dto/create-battery.dto';
-import { BatteryStatus, SlotStatus } from 'src/enums';
+import { BatteryStatus, RequestStatus, SlotStatus } from 'src/enums';
 import { CreateUserBatteryDto } from './dto/create-user-battery.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { RequestDetail } from 'src/entities/request-detail.entity';
 
 @Injectable()
 export class BatteryService {
@@ -77,11 +78,22 @@ export class BatteryService {
         limit: number = 10,
         search?: string,
         order: 'ASC' | 'DESC' = 'ASC',
-        status?: string
+        status?: string,
+        inUse?: string | boolean
     ): Promise<any> {
         try {
             let where: any = {};
             if (status) where.status = status;
+            // Filter by inUse when provided. Accepts boolean or string 'true'/'false'.
+            if (inUse !== undefined) {
+                if (typeof inUse === 'boolean') {
+                    where.inUse = inUse;
+                } else if (inUse === 'true') {
+                    where.inUse = true;
+                } else if (inUse === 'false') {
+                    where.inUse = false;
+                }
+            }
             if (search) where.model = Like(`%${search}%`);
 
             const [data, total] = await this.batteryRepository.findAndCount({
@@ -422,6 +434,110 @@ export class BatteryService {
             throw new InternalServerErrorException(
                 error?.message ||
                     'Lỗi hệ thống khi tạo pin cho phương tiện người dùng'
+            );
+        }
+    }
+
+    async getBatteriesInWarehouse(
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        batteryTypeId?: number
+    ): Promise<any> {
+        try {
+            // Lấy danh sách batteryId đang trong request TRANSFERRING
+            const transferringRequestDetails = await this.dataSource
+                .getRepository(RequestDetail)
+                .createQueryBuilder('rd')
+                .innerJoin('rd.request', 'r')
+                .where('r.status = :status', {
+                    status: RequestStatus.TRANSFERRING
+                })
+                .select('rd.batteryId')
+                .getRawMany();
+
+            const excludedBatteryIds = transferringRequestDetails.map(
+                (rd) => rd.rd_batteryId
+            );
+
+            // Tạo điều kiện where
+            const where: any = {
+                inUse: false,
+                status: BatteryStatus.AVAILABLE
+            };
+
+            if (batteryTypeId) {
+                where.batteryTypeId = batteryTypeId;
+            }
+
+            if (search) {
+                where.model = Like(`%${search}%`);
+            }
+
+            // Query builder để loại trừ pin đang transferring
+            const queryBuilder = this.batteryRepository
+                .createQueryBuilder('battery')
+                .leftJoinAndSelect('battery.batteryType', 'batteryType')
+                .where('battery.inUse = :inUse', { inUse: false })
+                .andWhere('battery.status = :status', {
+                    status: BatteryStatus.AVAILABLE
+                });
+
+            if (excludedBatteryIds.length > 0) {
+                queryBuilder.andWhere('battery.id NOT IN (:...excludedIds)', {
+                    excludedIds: excludedBatteryIds
+                });
+            }
+
+            if (batteryTypeId) {
+                queryBuilder.andWhere(
+                    'battery.batteryTypeId = :batteryTypeId',
+                    {
+                        batteryTypeId
+                    }
+                );
+            }
+
+            if (search) {
+                queryBuilder.andWhere('battery.model LIKE :search', {
+                    search: `%${search}%`
+                });
+            }
+
+            const [data, total] = await queryBuilder
+                .skip((page - 1) * limit)
+                .take(limit)
+                .orderBy('battery.model', 'ASC')
+                .getManyAndCount();
+
+            const mappedData = data.map(
+                ({
+                    createdAt,
+                    updatedAt,
+                    batteryTypeId,
+                    batteryType,
+                    ...rest
+                }) => ({
+                    ...rest,
+                    batteryType: batteryType
+                        ? {
+                              id: batteryType.id,
+                              name: batteryType.name
+                          }
+                        : null
+                })
+            );
+
+            return {
+                data: mappedData,
+                total,
+                page,
+                limit,
+                message: 'Lấy danh sách pin trong kho thành công'
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(
+                error?.message || 'Lỗi hệ thống khi lấy danh sách pin trong kho'
             );
         }
     }

@@ -1,9 +1,12 @@
 import { NumberRequired } from "src/common/decorators";
 
 export class CreateRequestDto {
-    @NumberRequired('Pin')
-    batteryId: number;
+    @NumberRequired('Loại pin')
+    batteryTypeId: number;
 
-    @NumberRequired('Trạm mới')
-    newStationId: number;
+    @NumberRequired('Số lượng')
+    quantity: number;
+
+    @NumberRequired('Trạm')
+    stationId: number;
 }

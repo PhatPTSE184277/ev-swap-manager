@@ -6,7 +6,7 @@ import {
     IsString
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { StringNotRequired } from 'src/common/decorators';
+import { NumberRequired, StringNotRequired } from 'src/common/decorators';
 
 export class AcceptRequestDto {
     @ApiProperty({

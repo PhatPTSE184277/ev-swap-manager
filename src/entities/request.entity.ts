@@ -25,8 +25,8 @@ export class Request {
     @Column()
     batteryTypeId: number;
 
-    @Column()
-    requestedBy: number;
+    @Column({ type: 'int', nullable: true })
+    requestedBy: number | null;
 
     @Column({ type: 'int' })
     requestedQuantity: number;

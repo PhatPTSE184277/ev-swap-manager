@@ -15,6 +15,7 @@ import { BatteryStatus, RequestStatus } from 'src/enums';
 import { Request } from 'src/entities/request.entity';
 import { RequestDetail } from 'src/entities/request-detail.entity';
 import { RequestGateway } from 'src/gateways/request.gateway';
+import { StationStaff } from 'src/entities';
 
 @Injectable()
 export class RequestService {
@@ -42,6 +43,22 @@ export class RequestService {
                 });
             if (!station) {
                 throw new NotFoundException('Trạm không tồn tại');
+            }
+
+             // Kiểm tra staff có thuộc trạm này không
+            const staff = await this.dataSource
+                .getRepository(StationStaff)
+                .findOne({
+                    where: {
+                        userId: userId,
+                        stationId: dto.stationId,
+                        status: true
+                    }
+                });
+            if (!staff) {
+                throw new BadRequestException(
+                    'Bạn không có quyền tạo request cho trạm này'
+                );
             }
 
             const batteryType = await this.dataSource
@@ -299,7 +316,9 @@ export class RequestService {
                     request.requestDetails?.map((detail) => ({
                         id: detail.battery.id,
                         model: detail.battery.model,
-                        healthScore: detail.battery.healthScore
+                        healthScore: detail.battery.healthScore,
+                        inUse: detail.battery.inUse,
+                        status: detail.battery.status
                     })) || []
             }));
 
@@ -320,12 +339,29 @@ export class RequestService {
     // STAFF xem request của trạm mình
     async getRequestsByStation(
         stationId: number,
+        userId: number,
         page: number = 1,
         limit: number = 10,
         status?: RequestStatus,
         order: 'ASC' | 'DESC' = 'DESC'
     ): Promise<any> {
         try {
+            // Kiểm tra staff có thuộc trạm này không
+            const staff = await this.dataSource
+                .getRepository(StationStaff)
+                .findOne({
+                    where: {
+                        userId: userId,
+                        stationId: stationId,
+                        status: true
+                    }
+                });
+            if (!staff) {
+                throw new BadRequestException(
+                    'Bạn không có quyền xem request của trạm này'
+                );
+            }
+
             const where: any = { stationId };
             if (status) where.status = status;
 
@@ -361,7 +397,9 @@ export class RequestService {
                     request.requestDetails?.map((detail) => ({
                         id: detail.battery.id,
                         model: detail.battery.model,
-                        healthScore: detail.battery.healthScore
+                        healthScore: detail.battery.healthScore,
+                        inUse: detail.battery.inUse,
+                        status: detail.battery.status
                     })) || []
             }));
 

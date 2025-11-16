@@ -317,6 +317,7 @@ export class BatteryService {
                         ...createBatteryDto,
                         currentCycle: 0,
                         currentCapacity: 100,
+                        inUse: false,
                         healthScore: 100,
                         status:
                             createBatteryDto.status ?? BatteryStatus.AVAILABLE

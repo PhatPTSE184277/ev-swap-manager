@@ -4,3 +4,9 @@ export enum RequestStatus {
     COMPLETED = 'COMPLETED',
     CANCELLED = 'CANCELLED'
 }
+
+export enum RequestDetailStatus {
+    TRANSFERRING = 'TRANSFERRING',
+    COMPLETED = 'COMPLETED',
+    CANCELLED = 'CANCELLED'
+}

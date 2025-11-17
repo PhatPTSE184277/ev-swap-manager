@@ -45,7 +45,7 @@ export class RequestService {
                 throw new NotFoundException('Trạm không tồn tại');
             }
 
-             // Kiểm tra staff có thuộc trạm này không
+            // Kiểm tra staff có thuộc trạm này không
             const staff = await this.dataSource
                 .getRepository(StationStaff)
                 .findOne({
@@ -125,8 +125,19 @@ export class RequestService {
                         throw new NotFoundException('Request không tồn tại');
                     }
 
-                    if (request.status !== RequestStatus.PENDING) {
-                        throw new BadRequestException('Request đã được xử lý');
+                    if (request.isClosed) {
+                        throw new BadRequestException(
+                            'Request đã được đóng, không thể cấp thêm pin'
+                        );
+                    }
+
+                    if (
+                        request.status !== RequestStatus.PENDING &&
+                        request.status !== RequestStatus.TRANSFERRING
+                    ) {
+                        throw new BadRequestException(
+                            'Request không ở trạng thái phù hợp để cấp pin'
+                        );
                     }
 
                     // Kiểm tra batteryIds truyền lên
@@ -137,6 +148,18 @@ export class RequestService {
                     ) {
                         throw new BadRequestException(
                             'Vui lòng chọn pin để cấp'
+                        );
+                    }
+
+                    // Kiểm tra tổng số pin đã cấp + pin sắp cấp có vượt quá yêu cầu không
+                    const currentApprovedQuantity =
+                        request.approvedQuantity || 0;
+                    const newTotalQuantity =
+                        currentApprovedQuantity + dto.batteryIds.length;
+
+                    if (newTotalQuantity > request.requestedQuantity) {
+                        throw new BadRequestException(
+                            `Không thể cấp ${dto.batteryIds.length} pin. Đã cấp ${currentApprovedQuantity}/${request.requestedQuantity}. Chỉ cần thêm ${request.requestedQuantity - currentApprovedQuantity} pin.`
                         );
                     }
 
@@ -159,7 +182,7 @@ export class RequestService {
                         );
                     }
 
-                    // Tạo RequestDetail cho từng pin được cấp (chưa cập nhật inUse)
+                    // Tạo RequestDetail cho từng pin được cấp
                     const requestDetails = dto.batteryIds.map((batteryId) =>
                         manager.create(RequestDetail, {
                             requestId: request.id,
@@ -168,28 +191,41 @@ export class RequestService {
                     );
                     await manager.save(RequestDetail, requestDetails);
 
-                    // Cập nhật request sang TRANSFERRING
-                    let note = dto.note || '';
-                    if (dto.batteryIds.length < request.requestedQuantity) {
-                        note = `Chỉ cấp được ${dto.batteryIds.length}/${request.requestedQuantity} pin. Kho hết pin hoặc admin cấp thiếu.${note ? ' ' + note : ''}`;
+                    // Cập nhật số lượng đã cấp
+                    const updatedApprovedQuantity =
+                        currentApprovedQuantity + dto.batteryIds.length;
+
+                    // Kiểm tra đã cấp đủ chưa
+                    const isFulfilled =
+                        updatedApprovedQuantity >= request.requestedQuantity;
+
+                    // Cập nhật request
+                    let note = '';
+                    if (isFulfilled) {
+                        note = `Đã cấp đủ ${updatedApprovedQuantity}/${request.requestedQuantity} pin.`;
+                    } else {
+                        note = `Đã cấp ${updatedApprovedQuantity}/${request.requestedQuantity} pin. Còn thiếu ${request.requestedQuantity - updatedApprovedQuantity} pin.`;
                     }
 
                     await manager.update(Request, requestId, {
                         status: RequestStatus.TRANSFERRING,
-                        approvedQuantity: dto.batteryIds.length,
+                        approvedQuantity: updatedApprovedQuantity,
+                        isClosed: isFulfilled, // Đóng request nếu đã cấp đủ
                         note
                     });
 
                     this.requestGateway.emitRequestAccepted({
                         requestId: request.id,
                         stationId: request.stationId,
-                        approvedQuantity: dto.batteryIds.length,
+                        approvedQuantity: updatedApprovedQuantity,
                         requestedQuantity: request.requestedQuantity,
                         note
                     });
 
                     return {
-                        message: `Đã cấp ${dto.batteryIds.length}/${request.requestedQuantity} pin cho trạm ${request.station.name}. Đang chờ staff bỏ pin vào tủ.`
+                        message: isFulfilled
+                            ? `Đã cấp đủ ${updatedApprovedQuantity}/${request.requestedQuantity} pin cho trạm ${request.station.name}. Request đã đóng.`
+                            : `Đã cấp ${updatedApprovedQuantity}/${request.requestedQuantity} pin cho trạm ${request.station.name}. Đang chờ staff bỏ pin vào tủ. Có thể tiếp tục cấp thêm pin.`
                     };
                 }
             );
@@ -228,12 +264,22 @@ export class RequestService {
                 throw new NotFoundException('Request không tồn tại');
             }
 
-            if (request.status !== RequestStatus.PENDING) {
-                throw new BadRequestException('Request đã được xử lý');
+            if (request.isClosed) {
+                throw new BadRequestException('Request đã được đóng');
+            }
+
+            if (
+                request.status !== RequestStatus.PENDING &&
+                request.status !== RequestStatus.TRANSFERRING
+            ) {
+                throw new BadRequestException(
+                    'Request đã được xử lý hoặc không thể từ chối'
+                );
             }
 
             await this.requestRepository.update(requestId, {
                 status: RequestStatus.CANCELLED,
+                isClosed: true,
                 note: note
             });
 
@@ -244,7 +290,7 @@ export class RequestService {
             });
 
             return {
-                message: 'Đã từ chối yêu cầu'
+                message: 'Đã từ chối yêu cầu và đóng request'
             };
         } catch (error) {
             if (
@@ -290,6 +336,7 @@ export class RequestService {
                 requestedQuantity: request.requestedQuantity,
                 approvedQuantity: request.approvedQuantity,
                 note: request.note,
+                isClosed: request.isClosed,
                 createdAt: request.createdAt,
                 updatedAt: request.updatedAt,
                 batteryType: request.batteryType
@@ -318,7 +365,8 @@ export class RequestService {
                         model: detail.battery.model,
                         healthScore: detail.battery.healthScore,
                         inUse: detail.battery.inUse,
-                        status: detail.battery.status
+                        status: detail.battery.status,
+                        detailStatus: detail.status
                     })) || []
             }));
 
@@ -385,6 +433,7 @@ export class RequestService {
                 requestedQuantity: request.requestedQuantity,
                 approvedQuantity: request.approvedQuantity,
                 note: request.note,
+                isClosed: request.isClosed,
                 createdAt: request.createdAt,
                 updatedAt: request.updatedAt,
                 batteryType: request.batteryType
@@ -399,7 +448,8 @@ export class RequestService {
                         model: detail.battery.model,
                         healthScore: detail.battery.healthScore,
                         inUse: detail.battery.inUse,
-                        status: detail.battery.status
+                        status: detail.battery.status,
+                        detailStatus: detail.status
                     })) || []
             }));
 

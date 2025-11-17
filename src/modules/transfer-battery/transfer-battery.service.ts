@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Battery, Slot, SlotHistory } from 'src/entities';
-import { BatteryStatus, SlotStatus } from 'src/enums';
+import { BatteryStatus, RequestDetailStatus, SlotStatus } from 'src/enums';
 import { TakeBatteryDto } from './dto/take-battery.dto';
 import { PutBatteryDto } from './dto/put-battery.dto';
 
@@ -127,7 +127,7 @@ export class TransferBatteryService {
                         throw new NotFoundException('Pin không tồn tại');
                     }
 
-                    // Chỉ được bỏ pin AVAILABLE, CHARGING hoặc DAMAGED
+                    // Chỉ được bỏ pin AVAILABLE
                     if (battery.status !== BatteryStatus.AVAILABLE) {
                         throw new BadRequestException(
                             'Chỉ được bỏ vào slot những pin ở trạng thái AVAILABLE'
@@ -169,24 +169,30 @@ export class TransferBatteryService {
                             );
                         }
 
-                        // Kiểm tra tất cả pin trong request đã được bỏ vào slot chưa
+                        // Cập nhật RequestDetail của pin này thành COMPLETED
+                        await manager.update(
+                            RequestDetail,
+                            { id: requestDetail.id },
+                            { status: RequestDetailStatus.COMPLETED }
+                        );
+
+                        // Kiểm tra tất cả RequestDetail của request đã COMPLETED chưa
                         const allRequestDetails = await manager.find(
                             RequestDetail,
                             {
-                                where: { requestId: request.id },
-                                relations: ['battery']
+                                where: { requestId: request.id }
                             }
                         );
 
-                        // Đếm số pin đã bỏ vào slot (inUse = true) + pin hiện tại
-                        const deliveredCount = allRequestDetails.filter(
+                        // Kiểm tra tất cả detail đã COMPLETED
+                        const allCompleted = allRequestDetails.every(
                             (rd) =>
-                                rd.battery.inUse === true ||
-                                rd.batteryId === battery.id
-                        ).length;
+                                rd.status === RequestDetailStatus.COMPLETED ||
+                                rd.id === requestDetail.id // detail hiện tại vừa cập nhật
+                        );
 
-                        // Nếu tất cả pin đã được bỏ vào slot → COMPLETED
-                        if (deliveredCount === allRequestDetails.length) {
+                        // Nếu tất cả detail đã COMPLETED → COMPLETED request
+                        if (allCompleted) {
                             await manager.update(Request, request.id, {
                                 status: RequestStatus.COMPLETED
                             });
@@ -202,7 +208,7 @@ export class TransferBatteryService {
                     });
                     await manager.save(SlotHistory, slotHistory);
 
-                    // Cập nhật slot với pin và trạng thái theo pin
+                    // Cập nhật slot với pin và trạng thái
                     slot.batteryId = battery.id;
                     slot.status = SlotStatus.AVAILABLE;
                     await manager.save(Slot, slot);

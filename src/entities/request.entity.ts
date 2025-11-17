@@ -44,6 +44,9 @@ export class Request {
     @Column({ type: 'text', nullable: true })
     note: string;
 
+    @Column({ type: 'boolean', default: false })
+    isClosed: boolean;
+
     @CreateDateColumn()
     createdAt: Date;
 

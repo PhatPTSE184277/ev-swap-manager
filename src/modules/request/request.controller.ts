@@ -7,7 +7,7 @@ import {
     Post,
     Body,
     Patch,
-    Req
+    Req,
 } from '@nestjs/common';
 import { RequestService } from './request.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -41,7 +41,7 @@ export class RequestController {
     @ApiBody({ type: CreateRequestDto })
     @ApiCreatedResponse({ description: 'Tạo yêu cầu cấp pin thành công' })
     async createRequest(@Body() dto: CreateRequestDto, @Req() req: any) {
-        return this.requestService.createRequest(dto, req.user.userId);
+        return this.requestService.createRequest(dto, req.user.id);
     }
 
     // ADMIN chấp nhận yêu cầu và cấp pin
@@ -121,13 +121,17 @@ export class RequestController {
     })
     async getRequestsByStation(
         @Param('stationId') stationId: number,
+        @Req() req: any,
         @Query('page') page?: number,
         @Query('limit') limit?: number,
         @Query('status') status?: RequestStatus,
         @Query('order') order: 'ASC' | 'DESC' = 'DESC'
     ) {
+
+        const userId = req.user.id;
         return this.requestService.getRequestsByStation(
             stationId,
+            userId,
             page,
             limit,
             status,

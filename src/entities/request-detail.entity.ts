@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Request } from './request.entity';
 import { Battery } from './battery.entity';
+import { RequestDetailStatus } from '../enums/request.enum';
 
 @Entity('request_details')
 export class RequestDetail {
@@ -19,6 +20,13 @@ export class RequestDetail {
 
     @Column()
     batteryId: number;
+
+    @Column({
+        type: 'enum',
+        enum: RequestDetailStatus,
+        default: RequestDetailStatus.TRANSFERRING
+    })
+    status: RequestDetailStatus;
 
     @CreateDateColumn()
     createdAt: Date;

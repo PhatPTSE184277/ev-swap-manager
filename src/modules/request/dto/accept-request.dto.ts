@@ -6,7 +6,6 @@ import {
     IsString
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { StringNotRequired } from 'src/common/decorators';
 
 export class AcceptRequestDto {
     @ApiProperty({
@@ -17,7 +16,4 @@ export class AcceptRequestDto {
     @ArrayNotEmpty()
     @IsNumber({}, { each: true })
     batteryIds: number[];
-
-    @StringNotRequired('Ghi chú')
-    note?: string;
 }
